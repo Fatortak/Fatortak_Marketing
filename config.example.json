@@ -1,0 +1,56 @@
+{
+  "brand": "Fatortak",
+  "repo": "Ahmed-Nasser99/Fatortak_Software",
+  "links": {
+    "repo": "https://github.com/Ahmed-Nasser99/Fatortak_Software",
+    "site": "https://ahmed-nasser99.github.io/Fatortak_Software/",
+    "docs": "https://github.com/Ahmed-Nasser99/Fatortak_Software/tree/main/docs",
+    "demo": "mailto:info@fatortak.net?subject=Fatortak%20demo",
+    "pricing": "https://ahmed-nasser99.github.io/Fatortak_Software/#pricing",
+    "discussions": "https://github.com/Ahmed-Nasser99/Fatortak_Software/discussions"
+  },
+  "posting": {
+    "timezone": "Africa/Cairo",
+    "dryRun": true,
+    "maxPerRun": 4,
+    "maxAgeHours": 36
+  },
+  "channels": {
+    "x": { "enabled": true },
+    "linkedin": { "enabled": true },
+    "bluesky": { "enabled": true },
+    "mastodon": { "enabled": false, "instance": "https://mastodon.social" },
+    "telegram": { "enabled": false },
+    "discord": { "enabled": false }
+  },
+  "utm": {
+    "enabled": true,
+    "medium": "social",
+    "campaign": "oss-launch",
+    "trackHosts": ["ahmed-nasser99.github.io"]
+  },
+  "analytics": {
+    "plausible": { "enabled": false, "siteId": "" }
+  },
+  "repoMetadata": {
+    "description": "Open-source business management for MENA: invoicing, accounting, projects, HR & payroll. Arabic-first, self-hostable, AGPL-3.0.",
+    "homepage": "https://ahmed-nasser99.github.io/Fatortak_Software/",
+    "topics": [
+      "accounting",
+      "invoicing",
+      "erp",
+      "open-source",
+      "arabic",
+      "rtl",
+      "mena",
+      "self-hosted",
+      "react",
+      "dotnet",
+      "sql-server",
+      "payroll",
+      "project-management",
+      "small-business",
+      "saas"
+    ]
+  }
+}

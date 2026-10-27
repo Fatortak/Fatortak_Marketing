@@ -1,0 +1,26 @@
+{
+  "name": "Fatortak — Open-source business software for MENA",
+  "short_name": "Fatortak",
+  "description": "Arabic-first invoicing, accounting, projects, inventory, HR and payroll. Self-hostable and open source.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070d1b",
+  "theme_color": "#070d1b",
+  "lang": "en",
+  "dir": "auto",
+  "icons": [
+    {
+      "src": "assets/logo-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/logo-mark.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

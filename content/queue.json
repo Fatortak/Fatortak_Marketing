@@ -1,0 +1,1475 @@
+{
+  "version": 1,
+  "timezone": "Africa/Cairo",
+  "generatedAt": "2026-10-27T09:57:56.825Z",
+  "startDate": "2026-11-02",
+  "endDate": "2027-01-30",
+  "cadence": "X/Bluesky/Mastodon 4x/week · LinkedIn 2x/week · Arabic 1x/week",
+  "items": [
+    {
+      "id": "20261102-x-01",
+      "date": "2026-11-02",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "VAT-ready invoices\n\nLine-level VAT, discounts and totals that post to the same ledger your reports read from — not a spreadsheet formula you hope is right.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261102-x"
+      }
+    },
+    {
+      "id": "20261103-li-01",
+      "date": "2026-11-03",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "A finance stack should answer one question: what is actually happening in the business?\n\nMonth-end close should not take a week of copy-pasting between Excel files.\n\nHow Fatortak handles it: Invoices, payments, expenses and cheques post to the ledger automatically. Review the entry when you need to, not every time.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261103-li"
+      }
+    },
+    {
+      "id": "20261104-x-01",
+      "date": "2026-11-04",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Fatortak is AGPL-3.0. Read the code that touches your money.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261104-x"
+      }
+    },
+    {
+      "id": "20261105-li-01",
+      "date": "2026-11-05",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for marketing and creative agencies.\n\nRetainers, project fees, freelance costs and expenses in one place. See which client is profitable before the quarterly review, not after.\n\nOne feature that matters here: real project profitability — Link invoices, expenses, payroll and purchases to a project. See the actual margin, not the number someone typed into a deck.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261105-li"
+      }
+    },
+    {
+      "id": "20261106-x-01",
+      "date": "2026-11-06",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "Fatortak Cloud: managed hosting, backups, updates and support — from 300 EGP/month.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261106-x"
+      }
+    },
+    {
+      "id": "20261107-ar-01",
+      "date": "2026-11-07",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "فاتورتك: فواتير عربية، ضريبة قيمة مضافة، وتقارير محاسبية من نفس النظام. مفتوح المصدر ومتاح للاستضافة الذاتية.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261107-ar"
+      }
+    },
+    {
+      "id": "20261108-x-01",
+      "date": "2026-11-08",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: reconcile receivables weekly, not monthly. Thirty-day-old surprises are harder to fix.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261108-x"
+      }
+    },
+    {
+      "id": "20261109-x-01",
+      "date": "2026-11-09",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Six invoice templates\n\nPick a template, add your logo and brand colour, and send a PDF that looks like your company — not a generic export.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261109-x"
+      }
+    },
+    {
+      "id": "20261110-li-01",
+      "date": "2026-11-10",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "Most SMBs do not have an accounting problem. They have a data-entry problem.\n\nYour accountant should not have to re-type supplier invoices that already exist as PDFs.\n\nHow Fatortak handles it: Photograph a supplier invoice. Fatortak extracts the supplier, lines and totals into a draft purchase invoice.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261110-li"
+      }
+    },
+    {
+      "id": "20261111-x-01",
+      "date": "2026-11-11",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Self-host the full stack with Docker: API, web app, SQL Server. No per-invoice fee.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261111-x"
+      }
+    },
+    {
+      "id": "20261112-li-01",
+      "date": "2026-11-12",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for trading and distribution.\n\nPurchase invoices, item costs, VAT, supplier balances and post-dated cheques. Know your real margin per SKU and per customer.\n\nOne feature that matters here: purchase invoices and supplier balances — Record supplier bills with attachments, then check AP aging before due dates sneak up on you.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261112-li"
+      }
+    },
+    {
+      "id": "20261113-x-01",
+      "date": "2026-11-13",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for marketing and creative agencies\n\nRetainers, project fees, freelance costs and expenses in one place. See which client is profitable before the quarterly review, not after.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261113-x"
+      }
+    },
+    {
+      "id": "20261114-ar-01",
+      "date": "2026-11-14",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "هل تعرف ربح كل مشروع فعليًا؟ اربط الفواتير والمصروفات والرواتب بالمشروع وشاهد الهامش الحقيقي.\n\n{{site}}",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261114-ar"
+      }
+    },
+    {
+      "id": "20261115-x-01",
+      "date": "2026-11-15",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: put a project ID on every expense. It is the difference between a P&L and a useful P&L.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261115-x"
+      }
+    },
+    {
+      "id": "20261116-x-01",
+      "date": "2026-11-16",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Public invoice links\n\nSend a link instead of an attachment. Your customer can view, download and pay without creating an account.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261116-x"
+      }
+    },
+    {
+      "id": "20261117-li-01",
+      "date": "2026-11-17",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "Your books should be boring. Predictable, reconciled, and ready before the deadline.\n\nIf invoices, payments and projects live in three tools, your profit number is a guess.\n\nHow Fatortak handles it: Link invoices, expenses, payroll and purchases to a project. See the actual margin, not the number someone typed into a deck.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261117-li"
+      }
+    },
+    {
+      "id": "20261118-x-01",
+      "date": "2026-11-18",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "The roadmap is public. Open an issue, vote on it, or send the pull request yourself.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261118-x"
+      }
+    },
+    {
+      "id": "20261119-li-01",
+      "date": "2026-11-19",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for contracting and construction.\n\nContract value, variations, project lines, cost breakdown and progress invoices. Stop reconstructing project cost from WhatsApp threads.\n\nOne feature that matters here: contracts and project lines — Track contract value, variations, VAT and cost breakdown per project — built for contracting and agencies, not generic task boards.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261119-li"
+      }
+    },
+    {
+      "id": "20261120-x-01",
+      "date": "2026-11-20",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "We migrate your chart of accounts, customers and open invoices. You do not start from zero.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261120-x"
+      }
+    },
+    {
+      "id": "20261121-ar-01",
+      "date": "2026-11-21",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "نظام واحد للفواتير والحسابات والمشاريع والرواتب. لا مزيد من ملفات إكسل المتفرقة.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261121-ar"
+      }
+    },
+    {
+      "id": "20261122-x-01",
+      "date": "2026-11-22",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: invoice in the customer's language. Payment friction is often a communication problem.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261122-x"
+      }
+    },
+    {
+      "id": "20261123-x-01",
+      "date": "2026-11-23",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Installments and partial payments\n\nSplit an invoice into scheduled payments and see what is paid, late or still due — per customer, per invoice.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261123-x"
+      }
+    },
+    {
+      "id": "20261124-li-01",
+      "date": "2026-11-24",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "The best accounting feature is the one that removes a spreadsheet.\n\nQuickBooks is great — until you need a proper Arabic VAT invoice and an RTL interface.\n\nHow Fatortak handles it: Line-level VAT, discounts and totals that post to the same ledger your reports read from — not a spreadsheet formula you hope is right.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261124-li"
+      }
+    },
+    {
+      "id": "20261125-x-01",
+      "date": "2026-11-25",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Built with .NET 8, React 18 and SQL Server — boring technology your team can maintain.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261125-x"
+      }
+    },
+    {
+      "id": "20261126-li-01",
+      "date": "2026-11-26",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for accounting and bookkeeping firms.\n\nOne workspace per client, consolidated access for your team and reports generated from the same ledger. Less re-keying, more advisory work.\n\nOne feature that matters here: roles and company isolation — Each company gets its own workspace; each teammate gets only the access their job needs.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261126-li"
+      }
+    },
+    {
+      "id": "20261127-x-01",
+      "date": "2026-11-27",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for trading and distribution\n\nPurchase invoices, item costs, VAT, supplier balances and post-dated cheques. Know your real margin per SKU and per customer.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261127-x"
+      }
+    },
+    {
+      "id": "20261128-ar-01",
+      "date": "2026-11-28",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "لا تعِد كتابة فواتير الموردين. صوّر الفاتورة ودع الذكاء الاصطناعي ينشئ مسودة فاتورة مشتريات.\n\n{{site}}",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261128-ar"
+      }
+    },
+    {
+      "id": "20261129-x-01",
+      "date": "2026-11-29",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: keep your chart of accounts short. You can always add detail later; merging accounts is painful.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261129-x"
+      }
+    },
+    {
+      "id": "20261130-x-01",
+      "date": "2026-11-30",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Purchase invoices and supplier balances\n\nRecord supplier bills with attachments, then check AP aging before due dates sneak up on you.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261130-x"
+      }
+    },
+    {
+      "id": "20261201-li-01",
+      "date": "2026-12-01",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "A finance stack should answer one question: what is actually happening in the business?\n\nOdoo can do almost anything. That is also why it takes months and a consultant to launch.\n\nHow Fatortak handles it: Docker Compose: API, web app and SQL Server. Your data stays in your database, on your server, under your policy.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261201-li"
+      }
+    },
+    {
+      "id": "20261202-x-01",
+      "date": "2026-12-02",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "We need tests more than features. Invoice math, VAT, installments and accounting posting are perfect first PRs.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261202-x"
+      }
+    },
+    {
+      "id": "20261203-li-01",
+      "date": "2026-12-03",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for retail and e-commerce.\n\nItems, sales invoices, purchase costs and expenses. A clean daily picture without a separate POS spreadsheet.\n\nOne feature that matters here: inventory that ties to accounting — Items, purchase and selling prices, stock quantities and images in one catalogue that invoices can actually use.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261203-li"
+      }
+    },
+    {
+      "id": "20261204-x-01",
+      "date": "2026-12-04",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "Enterprise on-prem with SSO, audit logs and an SLA is on the roadmap. Tell us what your security team needs.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261204-x"
+      }
+    },
+    {
+      "id": "20261205-ar-01",
+      "date": "2026-12-05",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "رواتب وحضور وانصراف في نفس النظام، مع سجل لكل دورة رواتب.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261205-ar"
+      }
+    },
+    {
+      "id": "20261206-x-01",
+      "date": "2026-12-06",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: record supplier invoices the day they arrive, not the day they are due.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261206-x"
+      }
+    },
+    {
+      "id": "20261207-x-01",
+      "date": "2026-12-07",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Expenses with receipts\n\nAttach the receipt, pick a category, link the expense to a project, and keep an audit trail that survives an inspection.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261207-x"
+      }
+    },
+    {
+      "id": "20261208-li-01",
+      "date": "2026-12-08",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "Most SMBs do not have an accounting problem. They have a data-entry problem.\n\nAgencies track project margin in a spreadsheet nobody updates after week three.\n\nHow Fatortak handles it: Link invoices, expenses, payroll and purchases to a project. See the actual margin, not the number someone typed into a deck.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261208-li"
+      }
+    },
+    {
+      "id": "20261209-x-01",
+      "date": "2026-12-09",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Arabic translations are a first-class contribution. If you speak Arabic, you can improve the product today.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261209-x"
+      }
+    },
+    {
+      "id": "20261210-li-01",
+      "date": "2026-12-10",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for software startups.\n\nInvoices, payroll, expenses and project costs in one system. A finance stack that fits before you hire a full finance team.\n\nOne feature that matters here: payroll runs — Run payroll from salary and attendance data, and keep a record of every run instead of a folder of spreadsheets.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261210-li"
+      }
+    },
+    {
+      "id": "20261211-x-01",
+      "date": "2026-12-11",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for contracting and construction\n\nContract value, variations, project lines, cost breakdown and progress invoices. Stop reconstructing project cost from WhatsApp threads.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261211-x"
+      }
+    },
+    {
+      "id": "20261212-ar-01",
+      "date": "2026-12-12",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "فروع متعددة؟ تقارير مجمعة للإدارة وصلاحيات دقيقة لكل مستخدم.\n\n{{site}}",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261212-ar"
+      }
+    },
+    {
+      "id": "20261213-x-01",
+      "date": "2026-12-13",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: separate owner drawings from payroll. Your accountant will thank you.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261213-x"
+      }
+    },
+    {
+      "id": "20261214-x-01",
+      "date": "2026-12-14",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Automatic journal entries\n\nInvoices, payments, expenses and cheques post to the ledger automatically. Review the entry when you need to, not every time.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261214-x"
+      }
+    },
+    {
+      "id": "20261215-li-01",
+      "date": "2026-12-15",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "Your books should be boring. Predictable, reconciled, and ready before the deadline.\n\nContracting companies know the contract value. Fewer know the actual cost per project.\n\nHow Fatortak handles it: Track contract value, variations, VAT and cost breakdown per project — built for contracting and agencies, not generic task boards.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261215-li"
+      }
+    },
+    {
+      "id": "20261216-x-01",
+      "date": "2026-12-16",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Every good first issue includes context, acceptance criteria and the files to touch.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261216-x"
+      }
+    },
+    {
+      "id": "20261217-li-01",
+      "date": "2026-12-17",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for freelancers and consultants.\n\nCreate a branded invoice, share a public link and track payment. No spreadsheet, no monthly software subscription.\n\nOne feature that matters here: public invoice links — Send a link instead of an attachment. Your customer can view, download and pay without creating an account.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261217-li"
+      }
+    },
+    {
+      "id": "20261218-x-01",
+      "date": "2026-12-18",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "Transparent pricing: no per-invoice tax, no surprise seat fees. The community edition is free forever.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261218-x"
+      }
+    },
+    {
+      "id": "20261219-ar-01",
+      "date": "2026-12-19",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "ابنِ نظامك فوق API موثّق، أو استضف النسخة كاملة على سيرفرك.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261219-ar"
+      }
+    },
+    {
+      "id": "20261220-x-01",
+      "date": "2026-12-20",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: back up the database before every upgrade. Test the restore once, not on the worst day.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261220-x"
+      }
+    },
+    {
+      "id": "20261221-x-01",
+      "date": "2026-12-21",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Trial balance that balances\n\nGenerated from the same ledger as your financial statements, so you stop reconciling two versions of the truth.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261221-x"
+      }
+    },
+    {
+      "id": "20261222-li-01",
+      "date": "2026-12-22",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "The best accounting feature is the one that removes a spreadsheet.\n\nMultiple branches should not mean multiple spreadsheets and one very tired accountant.\n\nHow Fatortak handles it: Give each branch its own operations while management sees the whole company in one report.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261222-li"
+      }
+    },
+    {
+      "id": "20261223-x-01",
+      "date": "2026-12-23",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Fork it, rebrand it, run it for your clients. The AGPL asks you to share changes when you host it for others.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261223-x"
+      }
+    },
+    {
+      "id": "20261224-li-01",
+      "date": "2026-12-24",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for multi-branch service companies.\n\nBranch-level operations, attendance, payroll and consolidated management reports. One company, many locations, one truth.\n\nOne feature that matters here: branches with consolidated reporting — Give each branch its own operations while management sees the whole company in one report.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261224-li"
+      }
+    },
+    {
+      "id": "20261225-x-01",
+      "date": "2026-12-25",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for accounting and bookkeeping firms\n\nOne workspace per client, consolidated access for your team and reports generated from the same ledger. Less re-keying, more advisory work.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261225-x"
+      }
+    },
+    {
+      "id": "20261226-ar-01",
+      "date": "2026-12-26",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "الترخيص AGPL-3.0: راجع الكود الذي يلمس أموالك قبل أن تثق به.\n\n{{site}}",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20261226-ar"
+      }
+    },
+    {
+      "id": "20261227-x-01",
+      "date": "2026-12-27",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: send a public invoice link. It removes the 'attachment blocked' email thread.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261227-x"
+      }
+    },
+    {
+      "id": "20261228-x-01",
+      "date": "2026-12-28",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "P&L, balance sheet and cash flow\n\nThree statements, one ledger. Export them without rebuilding the numbers in Excel.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261228-x"
+      }
+    },
+    {
+      "id": "20261229-li-01",
+      "date": "2026-12-29",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "A finance stack should answer one question: what is actually happening in the business?\n\nPaying for accounting software in USD gets expensive before you have USD revenue.\n\nHow Fatortak handles it: Read the code that touches your money. Fork it, audit it, extend it. No black box between you and your books.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261229-li"
+      }
+    },
+    {
+      "id": "20261230-x-01",
+      "date": "2026-12-30",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "No vendor lock-in: your data is in SQL Server, your files are on your disk, your code is on GitHub.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261230-x"
+      }
+    },
+    {
+      "id": "20261231-li-01",
+      "date": "2026-12-31",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for consulting firms.\n\nUtilization, project fees, subcontractor costs and expenses. See which engagement pays for the overhead it consumes.\n\nOne feature that matters here: real project profitability — Link invoices, expenses, payroll and purchases to a project. See the actual margin, not the number someone typed into a deck.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20261231-li"
+      }
+    },
+    {
+      "id": "20270101-x-01",
+      "date": "2027-01-01",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "Running your books on a spreadsheet is cheap until the first audit, the first investor, or the first big customer.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270101-x"
+      }
+    },
+    {
+      "id": "20270102-ar-01",
+      "date": "2027-01-02",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "الإصدار المجتمعي مجاني للأبد. الدعم والاستضافة السحابية اختياريان.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20270102-ar"
+      }
+    },
+    {
+      "id": "20270103-x-01",
+      "date": "2027-01-03",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: check aging before you chase a customer. Know the exact invoice and amount.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270103-x"
+      }
+    },
+    {
+      "id": "20270104-x-01",
+      "date": "2027-01-04",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "AR and AP aging\n\nSee who owes you and whom you owe, bucketed by 30, 60 and 90+ days. Chase the right invoice with the right amount.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270104-x"
+      }
+    },
+    {
+      "id": "20270105-li-01",
+      "date": "2027-01-05",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "Most SMBs do not have an accounting problem. They have a data-entry problem.\n\nWhen your SaaS vendor gets acquired, your data and your workflow go with it.\n\nHow Fatortak handles it: Read the code that touches your money. Fork it, audit it, extend it. No black box between you and your books.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270105-li"
+      }
+    },
+    {
+      "id": "20270106-x-01",
+      "date": "2027-01-06",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "A commercial license is available for teams that cannot use AGPL. The community edition stays free.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270106-x"
+      }
+    },
+    {
+      "id": "20270107-li-01",
+      "date": "2027-01-07",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for import and export traders.\n\nPurchase invoices, supplier balances, landed costs and post-dated cheques. A clear position before the next shipment.\n\nOne feature that matters here: installments and partial payments — Split an invoice into scheduled payments and see what is paid, late or still due — per customer, per invoice.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270107-li"
+      }
+    },
+    {
+      "id": "20270108-x-01",
+      "date": "2027-01-08",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for retail and e-commerce\n\nItems, sales invoices, purchase costs and expenses. A clean daily picture without a separate POS spreadsheet.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270108-x"
+      }
+    },
+    {
+      "id": "20270109-ar-01",
+      "date": "2027-01-09",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "جرّب فاتورة عربية بتصميم احترافي خلال دقائق، وشاركها برابط مباشر مع عميلك.\n\n{{site}}",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20270109-ar"
+      }
+    },
+    {
+      "id": "20270110-x-01",
+      "date": "2027-01-10",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: close the month in the ledger, not in a spreadsheet.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270110-x"
+      }
+    },
+    {
+      "id": "20270111-x-01",
+      "date": "2027-01-11",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Real project profitability\n\nLink invoices, expenses, payroll and purchases to a project. See the actual margin, not the number someone typed into a deck.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270111-x"
+      }
+    },
+    {
+      "id": "20270112-li-01",
+      "date": "2027-01-12",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "Your books should be boring. Predictable, reconciled, and ready before the deadline.\n\nSending invoices on WhatsApp is fine. Tracking who paid, for what, and when is not.\n\nHow Fatortak handles it: Send invoices and reminders through the channel your customers actually read, then track the status.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270112-li"
+      }
+    },
+    {
+      "id": "20270113-x-01",
+      "date": "2027-01-13",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "The best way to make accounting software trustworthy is to let people read it.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270113-x"
+      }
+    },
+    {
+      "id": "20270114-li-01",
+      "date": "2027-01-14",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for facilities and maintenance companies.\n\nContracts, project lines, materials, payroll and branch-level expenses. Margin per contract, not a monthly guess.\n\nOne feature that matters here: cheque tracking — Post-dated cheques, statuses and due dates without a paper register or a reminder in someone's head.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270114-li"
+      }
+    },
+    {
+      "id": "20270115-x-01",
+      "date": "2027-01-15",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "We publish the roadmap and the code. Commercial support buys speed, not access.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270115-x"
+      }
+    },
+    {
+      "id": "20270116-ar-01",
+      "date": "2027-01-16",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "محتاج ترحّل بياناتك من إكسل؟ فريق فاتورتك يساعدك في نقل الأرصدة والافتتاحيات.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20270116-ar"
+      }
+    },
+    {
+      "id": "20270117-x-01",
+      "date": "2027-01-17",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: track cheques by due date, not by the date someone remembered to tell you.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270117-x"
+      }
+    },
+    {
+      "id": "20270118-x-01",
+      "date": "2027-01-18",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Contracts and project lines\n\nTrack contract value, variations, VAT and cost breakdown per project — built for contracting and agencies, not generic task boards.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270118-x"
+      }
+    },
+    {
+      "id": "20270119-li-01",
+      "date": "2027-01-19",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "The best accounting feature is the one that removes a spreadsheet.\n\nYou do not need 40 modules. You need invoices, books, projects and payroll to agree.\n\nHow Fatortak handles it: Invoices, payments, expenses and cheques post to the ledger automatically. Review the entry when you need to, not every time.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270119-li"
+      }
+    },
+    {
+      "id": "20270120-x-01",
+      "date": "2027-01-20",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "Open source is not a marketing badge here. It is how a finance system earns trust.\n\nSee it → {{site}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270120-x"
+      }
+    },
+    {
+      "id": "20270121-li-01",
+      "date": "2027-01-21",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for family businesses with a finance team.\n\nRoles, approvals and a shared ledger. The owner sees the company; the accountant sees the detail they need.\n\nOne feature that matters here: contracts and project lines — Track contract value, variations, VAT and cost breakdown per project — built for contracting and agencies, not generic task boards.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270121-li"
+      }
+    },
+    {
+      "id": "20270122-x-01",
+      "date": "2027-01-22",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for software startups\n\nInvoices, payroll, expenses and project costs in one system. A finance stack that fits before you hire a full finance team.\n\nBook a 20-min demo → {{demo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270122-x"
+      }
+    },
+    {
+      "id": "20270123-ar-01",
+      "date": "2027-01-23",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "المحاسبون وشركاء التنفيذ: برنامج شراكة بعائد متكرر من كل عميل.\n\n{{site}}",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20270123-ar"
+      }
+    },
+    {
+      "id": "20270124-x-01",
+      "date": "2027-01-24",
+      "time": "18:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "tip",
+      "lang": "en",
+      "text": "Tip: review project cost weekly. Monthly reviews hide the overrun until it is expensive.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270124-x"
+      }
+    },
+    {
+      "id": "20270125-x-01",
+      "date": "2027-01-25",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "product",
+      "lang": "en",
+      "text": "Inventory that ties to accounting\n\nItems, purchase and selling prices, stock quantities and images in one catalogue that invoices can actually use.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270125-x"
+      }
+    },
+    {
+      "id": "20270126-li-01",
+      "date": "2027-01-26",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "insight",
+      "lang": "en",
+      "text": "A finance stack should answer one question: what is actually happening in the business?\n\nYour best customer is also your slowest payer, and you only find out when cash gets tight.\n\nHow Fatortak handles it: Invoices, payments, expenses and cheques post to the ledger automatically. Review the entry when you need to, not every time.\n\nFatortak is open source (AGPL-3.0), bilingual Arabic/English, and self-hostable. If you want the long version, the code and docs are here: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270126-li"
+      }
+    },
+    {
+      "id": "20270127-x-01",
+      "date": "2027-01-27",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "open-source",
+      "lang": "en",
+      "text": "The API is documented with Swagger. Your integrations should not depend on scraping the UI.",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270127-x"
+      }
+    },
+    {
+      "id": "20270128-li-01",
+      "date": "2027-01-28",
+      "time": "09:30",
+      "channels": [
+        "linkedin"
+      ],
+      "pillar": "use-case",
+      "lang": "en",
+      "text": "Built for professional training companies.\n\nCourse revenue, instructor costs, venues and expenses. Know which programme is profitable before you schedule the next cohort.\n\nOne feature that matters here: attendance and work settings — Daily and monthly attendance, weekends, vacations and work hours — in the same system as payroll.\n\nOpen source, self-hostable, Arabic-first: {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270128-li"
+      }
+    },
+    {
+      "id": "20270129-x-01",
+      "date": "2027-01-29",
+      "time": "10:00",
+      "channels": [
+        "x",
+        "bluesky",
+        "mastodon"
+      ],
+      "pillar": "commercial",
+      "lang": "en",
+      "text": "One database for invoicing, accounting, projects and payroll. Fewer integrations to break.\n\nCode + docs → {{repo}}",
+      "utm": {
+        "campaign": "oss-launch",
+        "content": "20270129-x"
+      }
+    },
+    {
+      "id": "20270130-ar-01",
+      "date": "2027-01-30",
+      "time": "20:00",
+      "channels": [
+        "x",
+        "bluesky"
+      ],
+      "pillar": "arabic",
+      "lang": "ar",
+      "text": "عرض توضيحي في 20 دقيقة على سير عمل شركتك، بدون عرض تقديمي طويل.",
+      "utm": {
+        "campaign": "oss-launch-ar",
+        "content": "20270130-ar"
+      }
+    }
+  ]
+}

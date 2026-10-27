@@ -1,0 +1,23 @@
+{
+  "name": "fatortak-marketing-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Zero-dependency marketing automation for the Fatortak open-source project",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "post": "node src/cli.mjs post",
+    "post:dry": "node src/cli.mjs post --dry-run",
+    "post:live": "node src/cli.mjs post --live",
+    "validate": "node src/cli.mjs validate",
+    "generate": "node src/cli.mjs generate --force",
+    "schedule": "node src/cli.mjs schedule",
+    "stats": "node src/cli.mjs stats",
+    "report": "node src/cli.mjs report",
+    "report:issue": "node src/cli.mjs report --issue",
+    "repo": "node src/cli.mjs repo",
+    "repo:dry": "node src/cli.mjs repo --dry-run"
+  }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    color: #f8fafc;
+    background:
+      radial-gradient(700px 420px at 82% 10%, rgba(56, 189, 248, .22), transparent 65%),
+      radial-gradient(560px 420px at 10% 95%, rgba(99, 102, 241, .26), transparent 65%),
+      linear-gradient(145deg, #070d1b 0%, #0b1a33 58%, #07121f 100%);
+    padding: 64px 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(125,211,252,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(125,211,252,.05) 1px, transparent 1px);
+    background-size: 68px 68px;
+    mask-image: linear-gradient(to bottom, #000, transparent 80%);
+  }
+  .top, .middle, .bottom { position: relative; z-index: 1; }
+  .brand { display: flex; align-items: center; gap: 20px; }
+  .brand img { width: 84px; height: 84px; border-radius: 22px; }
+  .wordmark { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; }
+  .arabic { color: #7dd3fc; font-size: 26px; font-weight: 600; margin-left: 8px; }
+  .kicker {
+    display: inline-flex; align-items: center; gap: 10px;
+    color: #7dd3fc; font-size: 17px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 5px rgba(52,211,153,.16); }
+  h1 { font-size: 66px; line-height: 1.06; letter-spacing: -2.5px; margin-top: 18px; max-width: 950px; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, #7dd3fc, #a5b4fc 55%, #6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; }
+  .tags { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tag { padding: 9px 15px; border: 1px solid rgba(125,211,252,.28); border-radius: 999px; color: #bae6fd; font-size: 16px; font-weight: 600; }
+  .tag.green { color: #6ee7b7; border-color: rgba(52,211,153,.28); }
+  .tag.indigo { color: #c7d2fe; border-color: rgba(129,140,248,.3); }
+  .url { color: #94a3b8; font-size: 16px; text-align: right; line-height: 1.6; }
+  .url strong { display: block; color: #e2e8f0; font-size: 19px; }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="top brand">
+    <img src="assets/logo-mark.svg" alt="" />
+    <div>
+      <div class="wordmark">Fatortak <span class="arabic">فاتورتك</span></div>
+      <div style="color:#94a3b8;font-size:17px;margin-top:4px;">The open-source business OS for MENA</div>
+    </div>
+  </div>
+  <div class="middle">
+    <div class="kicker"><span class="dot"></span> Open source · AGPL-3.0 · Self-hostable</div>
+    <h1>Invoicing, accounting, projects<br />and payroll. <em>One ledger.</em></h1>
+  </div>
+  <div class="bottom">
+    <div class="tags">
+      <span class="tag">Arabic-first</span>
+      <span class="tag indigo">Full RTL</span>
+      <span class="tag green">Docker Compose</span>
+      <span class="tag">.NET 8 + React</span>
+    </div>
+    <div class="url"><strong>github.com/Ahmed-Nasser99/Fatortak_Software</strong>Built in Egypt for MENA SMBs</div>
+  </div>
+</body>
+</html>

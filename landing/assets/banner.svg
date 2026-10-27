@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520" role="img" aria-label="Fatortak — open-source business software for MENA">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070d1b"/>
+      <stop offset="0.55" stop-color="#0b1a33"/>
+      <stop offset="1" stop-color="#07121f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="0.5" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="70"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#bg)"/>
+
+  <circle cx="1320" cy="80" r="260" fill="url(#glow)" filter="url(#blur)"/>
+  <circle cx="180" cy="470" r="220" fill="#6366f1" opacity="0.16" filter="url(#blur)"/>
+
+  <g opacity="0.12" stroke="#7dd3fc" stroke-width="1">
+    <path d="M0 420 L1600 120"/>
+    <path d="M0 470 L1600 170"/>
+    <path d="M0 370 L1600 70"/>
+    <path d="M1150 0 L1450 520"/>
+    <path d="M1250 0 L1550 520"/>
+  </g>
+
+  <g transform="translate(96 96)">
+    <rect x="0" y="0" width="88" height="88" rx="24" fill="#0f172a" stroke="#1e3a5f"/>
+    <path d="M24 62V26h18c12 0 19 6 19 16s-7 16-19 16H34v4h-10zm10-14h8c6 0 9-2 9-6s-3-6-9-6h-8v12z" fill="url(#accent)"/>
+    <circle cx="68" cy="26" r="6" fill="#34d399"/>
+  </g>
+
+  <text x="208" y="132" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="8" fill="#7dd3fc">OPEN SOURCE · AGPL-3.0</text>
+  <text x="204" y="214" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="76" font-weight="800" fill="#f8fafc">Fatortak</text>
+  <text x="204" y="296" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="42" font-weight="600" fill="#cbd5e1">فاتورتك — the business OS for MENA</text>
+  <text x="204" y="362" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="26" font-weight="400" fill="#94a3b8">Invoicing · Accounting · Projects · HR &amp; Payroll · AI</text>
+
+  <g transform="translate(204 402)">
+    <rect width="166" height="44" rx="22" fill="#0ea5e9" opacity="0.14" stroke="#0ea5e9" stroke-opacity="0.45"/>
+    <text x="83" y="28" text-anchor="middle" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="16" font-weight="600" fill="#7dd3fc">Arabic-first</text>
+    <rect x="182" width="186" height="44" rx="22" fill="#6366f1" opacity="0.14" stroke="#6366f1" stroke-opacity="0.45"/>
+    <text x="275" y="28" text-anchor="middle" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="16" font-weight="600" fill="#a5b4fc">Self-hostable</text>
+    <rect x="384" width="190" height="44" rx="22" fill="#10b981" opacity="0.14" stroke="#10b981" stroke-opacity="0.45"/>
+    <text x="479" y="28" text-anchor="middle" font-family="Segoe UI, Tahoma, Arial, sans-serif" font-size="16" font-weight="600" fill="#6ee7b7">Open source</text>
+  </g>
+
+  <g transform="translate(1080 140)" opacity="0.9">
+    <rect width="420" height="250" rx="18" fill="#0b1729" stroke="#1e3a5f"/>
+    <rect x="0" y="0" width="420" height="44" rx="18" fill="#0f2038"/>
+    <circle cx="24" cy="22" r="5" fill="#f87171"/>
+    <circle cx="42" cy="22" r="5" fill="#fbbf24"/>
+    <circle cx="60" cy="22" r="5" fill="#34d399"/>
+    <rect x="26" y="70" width="120" height="10" rx="5" fill="#334155"/>
+    <rect x="26" y="96" width="368" height="42" rx="8" fill="#12233d"/>
+    <rect x="40" y="110" width="90" height="8" rx="4" fill="#38bdf8" opacity="0.8"/>
+    <rect x="26" y="150" width="176" height="74" rx="8" fill="#12233d"/>
+    <rect x="218" y="150" width="176" height="74" rx="8" fill="#12233d"/>
+    <path d="M42 208 L74 190 L106 198 L138 176 L170 184" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round"/>
+    <path d="M234 206 L266 192 L298 200 L330 180 L362 188" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+    <rect x="26" y="238" width="368" height="1" fill="#1e3a5f"/>
+  </g>
+</svg>
