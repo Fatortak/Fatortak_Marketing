@@ -23,6 +23,7 @@ This folder is the marketing department for the open-source project. It is desig
 | Contributor welcome | GitHub Action comments on first issue/PR | none |
 | CI | build backend and frontend on every PR | none |
 | Landing page deploy | InterServer FTPS workflow, or GitHub Pages mirror | one-time FTP secrets / Pages setup |
+| Control room dashboard | `marketing/portal` local Node service: calendar, composer, dry-run/live publish, metrics, reports and CSV/JSON export | one-time API credentials per channel |
 | Email sequences | ready-to-paste copy for your email tool | one-time import |
 | Launch copy | Show HN, Product Hunt, Reddit, LinkedIn, X, Dev.to, Arabic | one-time posting where APIs do not exist |
 
@@ -35,6 +36,18 @@ This folder is the marketing department for the open-source project. It is desig
 5. **Commercial conversations.** Demos and contracts are human. The system fills the top of the funnel and removes the busywork.
 
 > If someone sells you "fully automated" Hacker News and Reddit posting, they are selling you a ban.
+
+## Marketing portal
+
+[`marketing/portal`](portal/README.md) is a local-first control room for every channel. It seeds itself from `content/queue.json`, shows the calendar, composer, connection matrix, analytics and reports, and keeps dry-run on by default.
+
+```powershell
+cd marketing/portal
+Copy-Item .env.example .env   # optional: fill only the channels you have
+npm start                     # http://127.0.0.1:4180
+```
+
+The portal publishes through channel APIs where the platform allows it. It marks Hacker News, Reddit and Product Hunt as monitoring-only, and blocks TikTok/YouTube/WhatsApp until their app review, media and opt-in requirements are met. It never pretends a restricted channel succeeded.
 
 ## Deployment targets
 
@@ -160,6 +173,7 @@ marketing/
     src/report.mjs           growth report + GitHub issue
     src/repo.mjs             repo metadata sync
   landing/                   bilingual static landing page
+  portal/                    local control room: calendar, composer, publishing, metrics, reports
   deploy/                    InterServer Plesk + auto-deploy references, dry-run FTPS script
   reports/                   generated weekly reports
 ```

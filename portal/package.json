@@ -1,0 +1,14 @@
+{
+  "name": "fatortak-marketing-portal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local-first marketing control room for Fatortak: schedule, publish, monitor and report across social channels.",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

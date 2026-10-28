@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fatortak Marketing OS</title>
+  <meta name="theme-color" content="#060816" />
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></symbol>
+    <symbol id="i-queue" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="m4 20 4-.8L20 7.2 16.8 4 4.8 16Z"/><path d="m14 6 4 4"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v6M15 3v6M7 9h10v3a5 5 0 0 1-10 0ZM12 17v4"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-report" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-2.8v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2-2 .1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H4v-2.8h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-2 .1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V4h2.8v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2 2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v2.8h-.2a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.4-2L20 10M4 14l2.5 3a7 7 0 0 0 11.4-2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M7 7l1 14h8l1-14M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20Z"/><path d="M12 9v5M12 18h.01"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.8 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.8-4-9s1.5-6.5 4-9Z"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.2-3.4-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 3 .8.1-.7.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5A3.9 3.9 0 0 1 6.7 8c-.1-.3-.5-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c2-1.3 2.8-1 2.8-1 .6 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"/></symbol>
+  </svg>
+
+  <div class="app">
+    <div class="scrim" id="scrim" hidden></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><img src="favicon.png" alt="" /></div>
+        <div><strong>Fatortak</strong><span>Marketing OS</span></div>
+      </div>
+      <nav class="nav" aria-label="Marketing portal">
+        <button class="nav-item is-active" data-view="overview"><svg><use href="#i-grid"></use></svg><span>Overview</span></button>
+        <button class="nav-item" data-view="calendar"><svg><use href="#i-calendar"></use></svg><span>Calendar</span></button>
+        <button class="nav-item" data-view="queue"><svg><use href="#i-queue"></use></svg><span>Content</span></button>
+        <button class="nav-item" data-view="composer"><svg><use href="#i-pen"></use></svg><span>Composer</span></button>
+        <button class="nav-item" data-view="connections"><svg><use href="#i-plug"></use></svg><span>Connections</span></button>
+        <button class="nav-item" data-view="analytics"><svg><use href="#i-chart"></use></svg><span>Analytics</span></button>
+        <button class="nav-item" data-view="reports"><svg><use href="#i-report"></use></svg><span>Reports</span></button>
+        <button class="nav-item" data-view="settings"><svg><use href="#i-settings"></use></svg><span>Settings</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="mode-card">
+          <span class="mode-dot" id="mode-dot"></span>
+          <div><strong id="mode-label">Dry run</strong><span id="mode-detail">Live publishing locked</span></div>
+        </div>
+        <a class="sidebar-link" href="https://fatortak.rabbeh.com/" target="_blank" rel="noopener">Landing page <svg><use href="#i-external"></use></svg></a>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button class="icon-btn mobile-menu" id="mobile-menu" aria-label="Toggle menu"><svg><use href="#i-menu"></use></svg></button>
+        <div class="topbar-title"><h1 id="page-title">Overview</h1><p id="page-subtitle">One control room for every channel.</p></div>
+        <div class="topbar-actions">
+          <span class="pill" id="site-pill"><span class="dot"></span><span id="site-pill-text">Checking site…</span></span>
+          <button class="icon-btn" id="refresh" aria-label="Refresh"><svg><use href="#i-refresh"></use></svg></button>
+          <button class="btn btn-primary" id="new-post"><svg><use href="#i-plus"></use></svg>New post</button>
+        </div>
+      </header>
+      <main class="view" id="view" aria-live="polite"></main>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" hidden></div>
+  <aside class="drawer" id="drawer" hidden aria-label="Post editor">
+    <div class="drawer-head">
+      <div><span class="eyebrow">Post editor</span><h2 id="drawer-title">New post</h2></div>
+      <button class="icon-btn" id="drawer-close" aria-label="Close"><svg><use href="#i-close"></use></svg></button>
+    </div>
+    <form id="post-form" class="drawer-body">
+      <input type="hidden" id="post-id" />
+      <label class="field"><span>Internal title</span><input id="post-title" maxlength="140" placeholder="October performance review" /></label>
+      <label class="field"><span>Content</span><textarea id="post-content" rows="9" placeholder="Write the post… Use {{site}} or {{repo}} for tracked links."></textarea></label>
+      <div class="field-row">
+        <label class="field"><span>Language</span><select id="post-language"><option value="en">English</option><option value="ar">Arabic</option></select></label>
+        <label class="field"><span>Pillar</span><select id="post-pillar"><option value="product">Product</option><option value="insight">Insight</option><option value="open-source">Open source</option><option value="use-case">Use case</option><option value="arabic">Arabic</option><option value="ai-ocr">AI + OCR</option><option value="commercial">Commercial</option></select></label>
+      </div>
+      <div class="field"><span>Channels</span><div class="channel-picker" id="channel-picker"></div><div class="char-counts" id="char-counts"></div></div>
+      <div class="field-row">
+        <label class="field"><span>Schedule (Cairo time)</span><input id="post-schedule" type="datetime-local" /></label>
+        <label class="field"><span>Status</span><select id="post-status"><option value="draft">Draft</option><option value="needs_review">Needs review</option><option value="approved">Approved</option><option value="scheduled">Scheduled</option><option value="published">Published</option><option value="blocked">Blocked</option><option value="failed">Failed</option><option value="dry_run">Dry run</option></select></label>
+      </div>
+      <label class="field"><span>Media URL (Instagram/Threads require a public image)</span><input id="post-media" type="url" placeholder="https://…" /></label>
+      <label class="field"><span>Notes</span><textarea id="post-notes" rows="2" placeholder="Reviewer notes, asset links, etc."></textarea></label>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-ghost" id="save-draft">Save draft</button>
+        <button type="button" class="btn btn-outline" id="publish-dry">Dry-run publish</button>
+        <button type="button" class="btn btn-primary" id="publish-live">Publish live</button>
+      </div>
+    </form>
+  </aside>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="modal-title">Confirm</h2><button class="icon-btn" id="modal-close" aria-label="Close"><svg><use href="#i-close"></use></svg></button></div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
