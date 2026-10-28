@@ -152,7 +152,7 @@ These have adapters in the portal. They publish when the corresponding API crede
 
 ## Metrics and traffic
 
-- Landing traffic: Plausible aggregate (30 days) when `PLAUSIBLE_SITE_ID` and `PLAUSIBLE_API_KEY` are set.
+- Landing traffic: Plausible aggregate and a 30-day source breakdown (UTM source) when `PLAUSIBLE_SITE_ID` and `PLAUSIBLE_API_KEY` are set.
 - GitHub: stars/forks/open issues from the public API.
 - Bluesky: followers/posts from the public profile.
 - Mastodon: followers/statuses from the instance API.

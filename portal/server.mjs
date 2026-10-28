@@ -182,6 +182,7 @@ function seedQueue(data) {
 
 function ensureDataShape(data) {
   data.version = data.version || 1;
+  delete data._trafficCache;
   data.settings = { ...defaultSettings(), ...(data.settings || {}) };
   data.posts = Array.isArray(data.posts) ? data.posts : [];
   data.metrics = { ...defaultMetrics(), ...(data.metrics || {}) };
@@ -216,6 +217,7 @@ function loadData() {
 let CONFIG = loadConfig();
 let DATA = loadData();
 let siteLiveCache = { at: 0, value: false };
+let trafficCache = { at: 0, value: null };
 
 function saveData() {
   DATA.updatedAt = new Date().toISOString();
@@ -343,8 +345,8 @@ async function getTraffic(force = false) {
   const siteId = env("PLAUSIBLE_SITE_ID");
   const apiKey = env("PLAUSIBLE_API_KEY");
   if (!siteId || !apiKey) return { configured: false };
-  if (!force && DATA._trafficCache && Date.now() - DATA._trafficCache.at < 5 * 60_000) {
-    return DATA._trafficCache.value;
+  if (!force && trafficCache.value && Date.now() - trafficCache.at < 5 * 60_000) {
+    return trafficCache.value;
   }
   try {
     const url = new URL("https://plausible.io/api/v1/stats/aggregate");
@@ -356,14 +358,39 @@ async function getTraffic(force = false) {
     const response = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(12000) });
     if (!response.ok) throw new Error(`Plausible HTTP ${response.status}`);
     const data = await response.json();
+    let sources = [];
+    try {
+      const breakdown = new URL("https://plausible.io/api/v1/stats/breakdown");
+      breakdown.searchParams.set("site_id", siteId);
+      breakdown.searchParams.set("period", "30d");
+      breakdown.searchParams.set("property", "visit:source");
+      breakdown.searchParams.append("metrics", "visitors");
+      breakdown.searchParams.append("metrics", "pageviews");
+      breakdown.searchParams.set("limit", "12");
+      const breakdownResponse = await fetch(breakdown, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (breakdownResponse.ok) {
+        const breakdownData = await breakdownResponse.json();
+        sources = (breakdownData.results || []).map((row) => ({
+          source: row.source || "direct",
+          visitors: row.visitors || 0,
+          pageviews: row.pageviews || 0,
+        }));
+      }
+    } catch {
+      sources = [];
+    }
     const value = {
       configured: true,
       period: "30d",
       visitors: data.results?.visitors?.value ?? 0,
       pageviews: data.results?.pageviews?.value ?? 0,
       bounceRate: data.results?.bounce_rate?.value ?? 0,
+      sources,
     };
-    DATA._trafficCache = { at: Date.now(), value };
+    trafficCache = { at: Date.now(), value };
     return value;
   } catch (error) {
     return { configured: true, error: error.message };
