@@ -40,8 +40,8 @@ Honest limitations:
 - Test coverage is thin
 - CORS defaults are development-friendly and must be tightened for production
 
-Repo: https://github.com/Ahmed-Nasser99/Fatortak_Software
-Self-hosting guide: https://github.com/Ahmed-Nasser99/Fatortak_Software/blob/main/docs/self-hosting.md
+Repo: https://github.com/Fatortak/Fatortak_Software
+Self-hosting guide: https://github.com/Fatortak/Fatortak_Software/blob/main/docs/self-hosting.md
 
 I am not posting this as a finished product. I would genuinely value feedback on the Docker setup and the security defaults. If you self-host business software, what would you check before trusting it with real invoices?
 ```
@@ -73,8 +73,8 @@ What we are trying to avoid:
 - A license that sounds open but restricts commercial use. AGPL is a recognized OSI license.
 - Pretending the project is production-ready. It is alpha, and the README says so.
 
-Repo: https://github.com/Ahmed-Nasser99/Fatortak_Software
-Licensing notes: https://github.com/Ahmed-Nasser99/Fatortak_Software/blob/main/LICENSING.md
+Repo: https://github.com/Fatortak/Fatortak_Software
+Licensing notes: https://github.com/Fatortak/Fatortak_Software/blob/main/LICENSING.md
 
 For maintainers who have done this before: what would you change about the boundary between the community edition and the commercial services? I am especially interested in avoiding the "open source until it hurts" trap.
 ```
@@ -100,7 +100,7 @@ I am looking for 10 businesses in Egypt or Saudi Arabia to try it and tell me wh
 
 The honest caveats: it is alpha, it does not have ETA/ZATCA e-invoicing clearance yet, and it needs SQL Server.
 
-Repo: https://github.com/Ahmed-Nasser99/Fatortak_Software
+Repo: https://github.com/Fatortak/Fatortak_Software
 ```
 
 Do not DM people who did not ask. Do not post the same message in five country subs on the same day.

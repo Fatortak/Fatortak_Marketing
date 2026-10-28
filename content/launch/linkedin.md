@@ -25,7 +25,7 @@ What is deliberately honest:
 
 I am looking for 10 agencies, contractors, distributors or accounting firms in Egypt and Saudi Arabia to run a pilot and tell me what breaks. Not a demo request: a real month-end close.
 
-Repo: https://github.com/Ahmed-Nasser99/Fatortak_Software
+Repo: https://github.com/Fatortak/Fatortak_Software
 
 #OpenSource #Accounting #MENA #Arabic #SMB #ERP #Invoicing
 ```

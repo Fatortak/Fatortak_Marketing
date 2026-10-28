@@ -35,7 +35,7 @@ Thanks for trying Fatortak. It is an open-source business platform for MENA SMBs
 The fastest path:
 
 1. Clone the repo:
-   git clone https://github.com/Ahmed-Nasser99/Fatortak_Software.git
+   git clone https://github.com/Fatortak/Fatortak_Software.git
 2. Copy the Docker env file:
    cp .env.docker.example .env
 3. Start the stack:
@@ -46,7 +46,7 @@ API: http://localhost:5000
 Swagger: http://localhost:5000/swagger
 
 The self-hosting guide covers HTTPS, backups and production settings:
-https://github.com/Ahmed-Nasser99/Fatortak_Software/blob/main/docs/self-hosting.md
+https://github.com/Fatortak/Fatortak_Software/blob/main/docs/self-hosting.md
 
 Honest status: this is alpha. There is no independent security audit yet, no ETA/ZATCA e-invoicing clearance, and SQL Server is the only supported database. Please do not put real customer data into a public instance.
 
@@ -109,7 +109,7 @@ Thanks,
 Ahmed
 
 P.S. Contributions are welcome, especially accounting tests and Arabic review. Start here:
-https://github.com/Ahmed-Nasser99/Fatortak_Software/blob/main/CONTRIBUTING.md
+https://github.com/Fatortak/Fatortak_Software/blob/main/CONTRIBUTING.md
 ```
 
 ---
@@ -323,8 +323,8 @@ It is live.
 
 Fatortak is now open source under AGPL-3.0: invoicing, double-entry accounting, projects, inventory, HR and payroll in one Arabic-first platform.
 
-- GitHub: https://github.com/Ahmed-Nasser99/Fatortak_Software
-- Self-host in minutes: https://github.com/Ahmed-Nasser99/Fatortak_Software#quickstart
+- GitHub: https://github.com/Fatortak/Fatortak_Software
+- Self-host in minutes: https://github.com/Fatortak/Fatortak_Software#quickstart
 - Managed cloud: reply "cloud"
 
 What is honest: it is alpha, there is no independent security audit yet, and ETA/ZATCA e-invoicing is not implemented. The accounting core is real and the code is auditable.

@@ -4,7 +4,7 @@ description: "Revenue minus freelancer invoices is not project profit. A practic
 date: 2026-10-27
 author: Ahmed Nasser
 tags: [project-profitability, agencies, accounting, mena]
-canonical: https://ahmed-nasser99.github.io/Fatortak_Software/blog/project-profitability-formula
+canonical: https://fatortak.github.io/Fatortak_Software/blog/project-profitability-formula
 ---
 
 # Project profitability: the formula agencies and contractors get wrong
@@ -150,7 +150,7 @@ Two honest constraints:
 
 The community edition is free under AGPL-3.0 and self-hostable with Docker. If you want to see the project report on your own data, start here:
 
-- [GitHub repository](https://github.com/Ahmed-Nasser99/Fatortak_Software)
-- [Project profitability page](https://ahmed-nasser99.github.io/Fatortak_Software/#features)
+- [GitHub repository](https://github.com/Fatortak/Fatortak_Software)
+- [Project profitability page](https://fatortak.github.io/Fatortak_Software/#features)
 
 *Example figures are illustrative. Tax treatment and payroll allocation rules vary by jurisdiction; confirm them with your accountant.*

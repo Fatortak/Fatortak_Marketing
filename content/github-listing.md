@@ -11,7 +11,7 @@ Everything here is ready to paste into GitHub. Keep claims accurate.
 **Website:**
 
 ```
-https://ahmed-nasser99.github.io/Fatortak_Software/
+https://fatortak.github.io/Fatortak_Software/
 ```
 
 **Topics (paste one per line in the GitHub UI):**
@@ -62,7 +62,7 @@ Fatortak is an open-source business platform for MENA: invoices, double-entry ac
 - Accessibility on login/register
 - Docs: migration from Excel
 
-Browse [`good first issue`](https://github.com/Ahmed-Nasser99/Fatortak_Software/labels/good%20first%20issue).
+Browse [`good first issue`](https://github.com/Fatortak/Fatortak_Software/labels/good%20first%20issue).
 
 **Rules**
 - Be kind: CODE_OF_CONDUCT.md

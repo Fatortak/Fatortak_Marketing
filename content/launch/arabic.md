@@ -22,7 +22,7 @@
 أبحث عن 10 شركات في مصر أو السعودية لتجربة حقيقية لغلق الشهر — وليس عرضاً تجارياً. أحتاج أن أرى أين يتعثر الاستخدام الفعلي، وأن أصلحه.
 
 المستودع وخطوات التشغيل:
-https://github.com/Ahmed-Nasser99/Fatortak_Software
+https://github.com/Fatortak/Fatortak_Software
 
 #مفتوح_المصدر #محاسبة #فواتير #مصر #السعودية #الشرق_الأوسط #إدارة_أعمال
 ```
@@ -38,7 +38,7 @@ https://github.com/Ahmed-Nasser99/Fatortak_Software
 
 أطلقنا «فاتورتك»: نظام مفتوح المصدر بالعربية أولاً، يجمع الفواتير والمحاسبة والمشروعات والرواتب في دفتر واحد.
 
-https://github.com/Ahmed-Nasser99/Fatortak_Software
+https://github.com/Fatortak/Fatortak_Software
 ```
 
 ## WhatsApp / Telegram — رسالة قصيرة
@@ -52,7 +52,7 @@ https://github.com/Ahmed-Nasser99/Fatortak_Software
 • استضافة ذاتية عبر Docker أو سحابة مُدارة
 
 النسخة المجتمعية مجانية بترخيص AGPL-3.0:
-https://github.com/Ahmed-Nasser99/Fatortak_Software
+https://github.com/Fatortak/Fatortak_Software
 
 ملاحظة بصراحة: النسخة ألفا، ولا يوجد تكامل مع الفاتورة الإلكترونية بعد. لو جرّبته وأخبرتني بما كسر، ساعدتني أكثر من أي إعجاب.
 ```
@@ -79,7 +79,7 @@ https://github.com/Ahmed-Nasser99/Fatortak_Software
 • سعر تأسيسي للنسخة السحابية إن قررت الاستمرار
 
 النسخة المجتمعية مجانية ويمكنك استضافتها بنفسك:
-https://github.com/Ahmed-Nasser99/Fatortak_Software
+https://github.com/Fatortak/Fatortak_Software
 
 هل يناسبك أن نتحدث الأسبوع القادم؟
 

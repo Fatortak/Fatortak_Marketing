@@ -61,7 +61,7 @@ One-time setup:
 The default URL is:
 
 ```
-https://ahmed-nasser99.github.io/Fatortak_Software/
+https://fatortak.github.io/Fatortak_Software/
 ```
 
 ### Custom domain (recommended)

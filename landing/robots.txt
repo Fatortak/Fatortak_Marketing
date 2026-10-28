@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ahmed-nasser99.github.io/Fatortak_Software/sitemap.xml
+Sitemap: https://fatortak.github.io/Fatortak_Software/sitemap.xml

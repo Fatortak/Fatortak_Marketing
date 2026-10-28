@@ -29,9 +29,9 @@ Fatortak is an open-source business OS for MENA SMBs: invoicing, double-entry ac
 
 **Pricing:** Free · Paid plans from 300 EGP/month
 
-**Website:** https://ahmed-nasser99.github.io/Fatortak_Software/
+**Website:** https://fatortak.github.io/Fatortak_Software/
 
-**GitHub:** https://github.com/Ahmed-Nasser99/Fatortak_Software
+**GitHub:** https://github.com/Fatortak/Fatortak_Software
 
 ## Gallery plan (use real screenshots, not mockups)
 

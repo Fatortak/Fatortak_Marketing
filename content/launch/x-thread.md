@@ -79,7 +79,7 @@ Looking for 10 pilots in Egypt and Saudi Arabia to watch a real month-end close.
 
 ```text
 Repo + Docker quickstart:
-https://github.com/Ahmed-Nasser99/Fatortak_Software
+https://github.com/Fatortak/Fatortak_Software
 
 If you run an SMB in MENA, tell me what breaks in your current workflow. Even if you never use Fatortak.
 ```

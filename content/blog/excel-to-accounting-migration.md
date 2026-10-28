@@ -4,7 +4,7 @@ description: "A practical, non-technical migration plan: clean your data, map th
 date: 2026-10-27
 author: Ahmed Nasser
 tags: [accounting, excel, migration, mena, smb]
-canonical: https://ahmed-nasser99.github.io/Fatortak_Software/blog/excel-to-accounting-migration
+canonical: https://fatortak.github.io/Fatortak_Software/blog/excel-to-accounting-migration
 ---
 
 # From Excel to accounting software: a 30-day migration plan for MENA SMBs
@@ -177,7 +177,7 @@ The migration checklist is in the repository under `marketing/content/seo/` and 
 
 If you want to see how Fatortak handles opening balances, multi-company scoping and project costs, the community edition is free under AGPL-3.0:
 
-- [GitHub repository](https://github.com/Ahmed-Nasser99/Fatortak_Software)
-- [Self-hosting guide](https://github.com/Ahmed-Nasser99/Fatortak_Software/blob/main/docs/self-hosting.md)
+- [GitHub repository](https://github.com/Fatortak/Fatortak_Software)
+- [Self-hosting guide](https://github.com/Fatortak/Fatortak_Software/blob/main/docs/self-hosting.md)
 
 *This article is practical guidance, not legal, tax or audit advice. Confirm your chart of accounts, VAT treatment and e-invoicing obligations with a qualified accountant in your jurisdiction.*

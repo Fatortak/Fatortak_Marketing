@@ -3,7 +3,7 @@ title: "Why we built an Arabic-first ERP for MENA — and open-sourced it under 
 published: false
 description: "Arabic-first is an architecture decision, not a translation layer. Notes from building an open-source invoicing, accounting and payroll platform for MENA SMBs."
 tags: opensource, accounting, dotnet, react
-canonical_url: https://ahmed-nasser99.github.io/Fatortak_Software/blog/arabic-first-erp
+canonical_url: https://fatortak.github.io/Fatortak_Software/blog/arabic-first-erp
 ---
 
 Most business software for the Middle East is built in English first and translated later. The translation is usually the easy part. The hard part is everything underneath: right-to-left layouts, Arabic PDF fonts, invoice numbering that finance teams recognize, and workflows that match how an Egyptian or Saudi SMB actually closes a month.
@@ -114,7 +114,7 @@ The most useful contributions are not more features. They are:
 
 If you run a 5–50 person company in MENA and want to try it, the Docker quickstart is in the README. If you are an accountant and want to tell us where the model is wrong, open an issue. That is more valuable than a star.
 
-Repo: [github.com/Ahmed-Nasser99/Fatortak_Software](https://github.com/Ahmed-Nasser99/Fatortak_Software)
+Repo: [github.com/Fatortak/Fatortak_Software](https://github.com/Fatortak/Fatortak_Software)
 
 ---
 

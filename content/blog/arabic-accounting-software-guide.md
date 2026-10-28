@@ -4,7 +4,7 @@ description: "دليل عملي لاختيار نظام محاسبة عربي ل
 date: 2026-10-27
 author: أحمد ناصر
 tags: [محاسبة, فواتير, الشركات-الصغيرة, مصر, السعودية]
-canonical: https://ahmed-nasser99.github.io/Fatortak_Software/ar/blog/accounting-software-guide
+canonical: https://fatortak.github.io/Fatortak_Software/ar/blog/accounting-software-guide
 ---
 
 # كيف تختار برنامج محاسبة عربي لشركتك الصغيرة: 9 أسئلة قبل الدفع
@@ -167,7 +167,7 @@ canonical: https://ahmed-nasser99.github.io/Fatortak_Software/ar/blog/accounting
 
 ولأن الصراحة جزء من الاختيار: النسخة الحالية ألفا، ولا يوجد تدقيق أمني مستقل بعد، ولا تكامل ETA/ZATCA، وقاعدة البيانات المدعومة هي SQL Server. إن كانت هذه النقاط تمنعك اليوم، فمن الأفضل أن تعرفها قبل الشراء لا بعده.
 
-- [المستودع على GitHub](https://github.com/Ahmed-Nasser99/Fatortak_Software)
-- [دليل الاستضافة الذاتية](https://github.com/Ahmed-Nasser99/Fatortak_Software/blob/main/docs/self-hosting.md)
+- [المستودع على GitHub](https://github.com/Fatortak/Fatortak_Software)
+- [دليل الاستضافة الذاتية](https://github.com/Fatortak/Fatortak_Software/blob/main/docs/self-hosting.md)
 
 *هذا المقال إرشاد عملي وليس استشارة ضريبية أو قانونية. راجع محاسبك المعتمد قبل اعتماد طريقة المحاسبة أو الامتثال.*
