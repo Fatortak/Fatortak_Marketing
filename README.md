@@ -39,15 +39,19 @@ This folder is the marketing department for the open-source project. It is desig
 
 ## Marketing portal
 
-[`marketing/portal`](portal/README.md) is a local-first control room for every channel. It seeds itself from `content/queue.json`, shows the calendar, composer, connection matrix, analytics and reports, and keeps dry-run on by default.
+[`marketing/portal`](portal/README.md) is a local-first control room for every channel. It seeds itself from `content/queue.json`, shows the calendar, composer, connection wizard, analytics and reports, and keeps dry-run on by default.
 
 ```powershell
 cd marketing/portal
-Copy-Item .env.example .env   # optional: fill only the channels you have
+Copy-Item .env.example .env   # optional: the Connections wizard can write values for you
 npm start                     # http://127.0.0.1:4180
 ```
 
 The portal publishes through channel APIs where the platform allows it. It marks Hacker News, Reddit and Product Hunt as monitoring-only, and blocks TikTok/YouTube/WhatsApp until their app review, media and opt-in requirements are met. It never pretends a restricted channel succeeded.
+
+Posts require an image or video by default. The composer includes a media library built from the real Fatortak screenshots, a file upload (images/videos up to 100 MB) and alt text. Native-upload channels receive the file directly; Instagram, Threads and Dev.to require a public URL (`PORTAL_PUBLIC_URL`).
+
+The **Connections** page has a Connect wizard: it opens the official developer console, accepts the token/ID, saves it to the private `.env`, and tests the connection. The portal cannot create accounts, accept platform terms, pass app review or enter an OTP; those are one-time owner steps.
 
 ## Deployment targets
 

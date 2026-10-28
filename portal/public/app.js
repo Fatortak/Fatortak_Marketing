@@ -9,6 +9,8 @@
     metrics: null,
     reports: null,
     settings: null,
+    mediaLibrary: [],
+    mediaFiles: [],
     filters: { status: "", channel: "", lang: "", q: "" },
     calendarMonth: monthKey(new Date()),
     editing: null,
@@ -86,10 +88,22 @@
   }
 
   function channelStatusChip(channel) {
-    if (channel.configured) return `<span class="chip lime">connected</span>`;
+    if (channel.configured && channel.verified?.ok) return `<span class="chip lime">verified</span>`;
+    if (channel.configured) return `<span class="chip cyan">configured</span>`;
     if (channel.mode === "monitoring") return `<span class="chip cyan">monitoring</span>`;
     if (channel.mode === "restricted") return `<span class="chip muted">blocked by platform</span>`;
     return `<span class="chip amber">needs setup</span>`;
+  }
+
+  function mediaSupportLabel(value) {
+    const labels = {
+      "image/video": "Image + video",
+      "public-url": "Public image/video URL",
+      image: "Image upload",
+      video: "Video only",
+      none: "No media",
+    };
+    return labels[value] || value || "No media";
   }
 
   function toast(message, type = "") {
@@ -122,13 +136,14 @@
   }
 
   async function refreshAll() {
-    const [overview, posts, connections, metrics, reports, settings] = await Promise.all([
+    const [overview, posts, connections, metrics, reports, settings, media] = await Promise.all([
       api("/api/overview"),
       api("/api/posts"),
       api("/api/connections"),
       api("/api/metrics"),
       api("/api/reports/summary"),
       api("/api/settings"),
+      api("/api/media"),
     ]);
     state.overview = overview;
     state.posts = posts.posts || [];
@@ -136,6 +151,8 @@
     state.metrics = metrics;
     state.reports = reports;
     state.settings = settings.settings;
+    state.mediaLibrary = media.library || [];
+    state.mediaFiles = media.media || [];
     renderMode();
     renderView();
     renderSitePill();
@@ -342,7 +359,7 @@
         ${posts.length ? `<div class="table-wrap"><table><thead><tr><th>Post</th><th>Channels</th><th>Schedule</th><th>Status</th><th></th></tr></thead><tbody>
           ${posts.map((post) => `
             <tr>
-              <td><div class="cell-title"><strong>${esc(post.title)}</strong><span>${esc(post.language.toUpperCase())} · ${esc(post.pillar)}${post.source === "queue" ? " · queue" : ""}</span></div></td>
+              <td><div class="cell-title"><strong>${esc(post.title)}</strong><span>${esc(post.language.toUpperCase())} · ${esc(post.pillar)}${post.source === "queue" ? " · queue" : ""} · ${post.mediaUrl ? "media" : "no media"}</span></div></td>
               <td>${channelChips(post.channels)}</td>
               <td>${fmtDate(post.scheduledAt)}</td>
               <td>${statusChip(post.status)}</td>
@@ -388,23 +405,32 @@ OCR invoice capture is built into Fatortak.
 
   function renderConnections() {
     const channels = state.connections;
+    const connected = channels.filter((c) => c.configured).length;
+    const verified = channels.filter((c) => c.verified?.ok).length;
     $("#view").innerHTML = `
-      <div class="page-head"><div><span class="eyebrow">Connections</span><h2>${channels.filter((c) => c.configured).length} connected · ${channels.length} channels</h2><p>API posting is automated where the platform allows it. Restricted channels explain why.</p></div><div class="page-head-actions"><button class="btn btn-ghost" data-refresh-connections>Refresh status</button><button class="btn btn-primary" data-view="queue">Open content</button></div></div>
-      <div class="channel-grid">
+      <div class="page-head"><div><span class="eyebrow">Connections</span><h2>${connected} connected · ${verified} verified · ${channels.length} channels</h2><p>Save credentials once, test them, then the scheduler posts without you. Platform account creation and app review still happen in the platform's own console.</p></div><div class="page-head-actions"><button class="btn btn-ghost" data-refresh-connections>Refresh status</button><button class="btn btn-primary" data-view="queue">Open content</button></div></div>
+      <div class="card card-pad section" style="margin-top:0">
+        <div class="section-head"><h3>How connection works</h3><span>one-time</span></div>
+        <p style="color:var(--muted);font-size:.78rem;line-height:1.7;margin-bottom:8px">Click <strong>Connect</strong> on a channel, open its official console, paste the token or ID, and hit <strong>Save &amp; test</strong>. The portal writes the values to its private <code>.env</code>, verifies the connection and never returns the secret. It cannot create social accounts, accept platform terms, pass app review or enter an OTP for you — those steps need the account owner.</p>
+        <div class="chips"><span class="chip lime">${verified} verified</span><span class="chip cyan">${connected} configured</span><span class="chip amber">${channels.filter((c) => c.mode === "api" && !c.configured).length} waiting</span><span class="chip muted">${channels.filter((c) => c.mode === "restricted").length} blocked</span></div>
+      </div>
+      <div class="channel-grid section">
         ${channels.map((channel) => `
           <div class="card channel-card">
             <div class="channel-head"><div class="channel-name">${channelIcon(channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div>${channelStatusChip(channel)}</div>
             <p>${esc(channel.requirements)}</p>
+            <div class="chips" style="margin-bottom:2px"><span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>${channel.verified ? `<span class="chip ${channel.verified.ok ? "lime" : "rose"}">${channel.verified.ok ? "test ok" : "test failed"}</span>` : ""}</div>
+            ${channel.verified?.detail ? `<p style="min-height:0;color:var(--muted-2);font-size:.64rem">${esc(channel.verified.detail)}</p>` : ""}
             <div class="env-list">${(channel.env || []).map((name) => `<code>${esc(name)}</code>`).join("") || `<code>no API credentials</code>`}</div>
             <div class="channel-metrics"><div><span>Followers</span><strong>${fmtNumber(channel.metrics?.followers)}</strong></div><div><span>Engagement</span><strong>${fmtNumber(channel.metrics?.engagement)}</strong></div><div><span>Clicks</span><strong>${fmtNumber(channel.metrics?.clicks)}</strong></div></div>
             <div class="channel-actions">
               ${channel.profile ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.profile)}" target="_blank" rel="noopener">Profile <svg><use href="#i-external"></use></svg></a>` : ""}
-              <button class="btn btn-outline btn-sm" data-channel-help="${esc(channel.key)}">Setup</button>
+              <button class="btn ${channel.mode === "api" ? "btn-primary" : "btn-outline"} btn-sm" data-connect="${esc(channel.key)}">${channel.mode === "api" ? (channel.configured ? "Manage" : "Connect") : "Why blocked"}</button>
             </div>
           </div>
         `).join("")}
       </div>
-      <div class="card card-pad section"><div class="section-head"><h3>Why some channels are restricted</h3><span>platform rules</span></div><p style="color:var(--muted);font-size:.78rem;line-height:1.7">Hacker News, Reddit and Product Hunt do not provide compliant unattended posting. TikTok requires a Content Posting API audit and a video asset. YouTube requires OAuth, a video asset and quota. WhatsApp requires opt-in template approval. The portal will not pretend those are automated; it will monitor where possible and block the publish instead of risking the account.</p></div>
+      <div class="card card-pad section"><div class="section-head"><h3>Why some channels are restricted</h3><span>platform rules</span></div><p style="color:var(--muted);font-size:.78rem;line-height:1.7">Hacker News, Reddit and Product Hunt do not provide compliant unattended posting. TikTok requires a Content Posting API audit and a video asset. YouTube requires OAuth, a video asset and quota. WhatsApp requires opt-in template approval. The portal will not pretend those are automated; it monitors where possible and blocks the publish instead of risking the account.</p></div>
     `;
   }
 
@@ -484,7 +510,9 @@ OCR invoice capture is built into Fatortak.
           <div class="setting-row"><div><strong>Dry run</strong><span>Simulate publishes and show what would happen.</span></div><label class="switch"><input type="checkbox" id="setting-dry" ${settings.dryRun ? "checked" : ""}/><span></span></label></div>
           <div class="setting-row"><div><strong>Auto-approve queue</strong><span>New queue imports are scheduled without review.</span></div><label class="switch"><input type="checkbox" id="setting-auto-approve" ${settings.autoApprove ? "checked" : ""}/><span></span></label></div>
           <div class="setting-row"><div><strong>Require live landing page</strong><span>Block {{site}} posts until the page is reachable.</span></div><label class="switch"><input type="checkbox" id="setting-require-site" ${settings.requireLiveSite ? "checked" : ""}/><span></span></label></div>
+          <div class="setting-row"><div><strong>Require image or video</strong><span>Block text-only posts on every channel.</span></div><label class="switch"><input type="checkbox" id="setting-media-required" ${settings.mediaRequired ? "checked" : ""}/><span></span></label></div>
           <label class="field" style="margin-top:14px"><span>Timezone</span><input type="text" id="setting-timezone" value="${esc(settings.timezone || "Africa/Cairo")}" /></label>
+          <label class="field"><span>Public media host</span><input type="url" id="setting-public-url" value="${esc(settings.publicUrl || "")}" placeholder="https://marketing.example.com" /><small style="color:var(--muted-2);font-size:.64rem;line-height:1.5">Instagram, Threads and Dev.to fetch media from this public address. It must reach the portal from the internet; localhost cannot be used.</small></label>
         </div>
         <div class="card card-pad">
           <div class="section-head"><h3>Environment</h3><span>read-only</span></div>
@@ -502,7 +530,7 @@ OCR invoice capture is built into Fatortak.
       </div>
       <div class="card card-pad section">
         <div class="section-head"><h3>Security</h3><span>local-first</span></div>
-        <p style="color:var(--muted);font-size:.78rem;line-height:1.7">The portal binds to <code>127.0.0.1</code> by default. Set <code>PORTAL_ADMIN_TOKEN</code> before exposing it behind a reverse proxy. Credentials are read from environment variables and are never returned by the API or stored in the portal JSON.</p>
+        <p style="color:var(--muted);font-size:.78rem;line-height:1.7">The portal binds to <code>127.0.0.1</code> by default. Set <code>PORTAL_ADMIN_TOKEN</code> before exposing it behind a reverse proxy. Credentials saved by the Connections wizard are written to <code>marketing/portal/.env</code>, loaded as environment variables and never returned by the API.</p>
       </div>
     `;
   }
@@ -538,6 +566,93 @@ OCR invoice capture is built into Fatortak.
     }).join("");
   }
 
+  function defaultMediaForPillar(pillar) {
+    const item = state.mediaLibrary.find((entry) => (entry.pillars || []).includes(pillar)) || state.mediaLibrary[0];
+    return item ? { ...item } : null;
+  }
+
+  function setPostMedia(media) {
+    const current = media || {};
+    $("#post-media-url").value = current.url || "";
+    $("#post-media-public").value = current.publicUrl || "";
+    $("#post-media-kind").value = current.kind || "";
+    $("#post-media-name").value = current.name || "";
+    $("#post-media-source").value = current.source || "";
+    $("#post-media-alt").value = current.alt || "";
+    const preview = $("#media-preview");
+    if (!current.url) {
+      preview.innerHTML = `<span>No media attached</span>`;
+      $("#media-hint").textContent = "Posts without an image or video are blocked.";
+      return;
+    }
+    if (current.kind === "video") {
+      preview.innerHTML = `<video src="${esc(current.url)}" controls muted playsinline></video>`;
+    } else {
+      preview.innerHTML = `<img src="${esc(current.url)}" alt="${esc(current.alt || "")}" />`;
+    }
+    const publicReady = /^https?:\/\//i.test(current.publicUrl || "");
+    $("#media-hint").textContent = publicReady
+      ? "Media ready. Instagram, Threads and Dev.to can use the public URL."
+      : "Local media works for native uploads. Instagram, Threads and Dev.to need PORTAL_PUBLIC_URL or a public https URL.";
+  }
+
+  function postMediaFromForm() {
+    return {
+      url: $("#post-media-url").value.trim(),
+      publicUrl: $("#post-media-public").value.trim(),
+      kind: $("#post-media-kind").value.trim(),
+      name: $("#post-media-name").value.trim(),
+      source: $("#post-media-source").value.trim(),
+      alt: $("#post-media-alt").value.trim(),
+    };
+  }
+
+  async function uploadMediaFile(file) {
+    if (!file) return;
+    if (!/^image\/|^video\//.test(file.type || "")) {
+      toast("Choose an image or video file.", "error");
+      return;
+    }
+    const headers = {
+      "Content-Type": file.type || "application/octet-stream",
+      "X-File-Name": encodeURIComponent(file.name),
+    };
+    if (state.token) headers.Authorization = `Bearer ${state.token}`;
+    toast("Uploading media…");
+    try {
+      const response = await fetch("/api/media", { method: "POST", headers, body: file });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setPostMedia({ ...data.media, source: "upload" });
+      toast("Media uploaded.", "success");
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  function openMediaLibrary() {
+    const uploaded = state.mediaFiles.map((item) => ({ ...item, label: item.name, source: "upload" }));
+    const entries = [...uploaded, ...state.mediaLibrary.map((item) => ({ ...item, name: item.name || item.file, source: "library" }))];
+    modal("Media library", `
+      <div class="media-grid">
+        ${entries.length ? entries.map((item, index) => `
+          <button type="button" class="media-item" data-media-index="${index}">
+            ${item.kind === "video" ? `<video src="${esc(item.url)}" muted playsinline></video>` : `<img src="${esc(item.url)}" alt="${esc(item.alt || item.label || "")}" />`}
+            <span>${esc(item.label || item.name)}</span>
+            <em>${esc(item.kind || "image")}</em>
+          </button>
+        `).join("") : `<div class="empty"><strong>No media yet</strong><span>Upload an image or video first.</span></div>`}
+      </div>
+    `, []);
+    $$("[data-media-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const item = entries[Number(button.dataset.mediaIndex)];
+        setPostMedia(item);
+        closeModal();
+      });
+    });
+  }
+
   function openDrawer(post = null, prefill = null) {
     state.editing = post;
     $("#drawer-title").textContent = post?.id ? "Edit post" : "New post";
@@ -548,7 +663,17 @@ OCR invoice capture is built into Fatortak.
     $("#post-pillar").value = prefill?.pillar || post?.pillar || "product";
     $("#post-schedule").value = (post?.scheduledAt || localDateTimeValue(new Date())).slice(0, 16);
     $("#post-status").value = ["draft", "needs_review", "approved", "scheduled"].includes(post?.status) ? post.status : "draft";
-    $("#post-media").value = post?.mediaUrl || "";
+    const existingMedia = post?.mediaUrl
+      ? {
+          url: post.mediaUrl,
+          publicUrl: post.mediaPublicUrl || "",
+          kind: post.mediaKind || "",
+          name: post.mediaName || "",
+          source: post.mediaSource || "",
+          alt: post.mediaAlt || "",
+        }
+      : null;
+    setPostMedia(prefill?.media || existingMedia || (post?.id ? null : defaultMediaForPillar(prefill?.pillar || "product")));
     $("#post-notes").value = post?.notes || "";
     renderChannelPicker(prefill?.channels || post?.channels || []);
     updateCharCounts();
@@ -565,6 +690,7 @@ OCR invoice capture is built into Fatortak.
 
   async function savePost(statusOverride) {
     const id = $("#post-id").value;
+    const media = postMediaFromForm();
     const body = {
       title: $("#post-title").value.trim() || "Untitled post",
       content: $("#post-content").value,
@@ -573,11 +699,19 @@ OCR invoice capture is built into Fatortak.
       pillar: $("#post-pillar").value,
       scheduledAt: $("#post-schedule").value,
       status: statusOverride || $("#post-status").value,
-      mediaUrl: $("#post-media").value.trim(),
+      mediaUrl: media.url,
+      mediaPublicUrl: media.publicUrl,
+      mediaKind: media.kind,
+      mediaName: media.name,
+      mediaSource: media.source,
+      mediaAlt: media.alt,
       notes: $("#post-notes").value.trim(),
     };
     if (!body.content.trim()) return toast("Write the post content first.", "error");
     if (!body.channels.length) return toast("Select at least one channel.", "error");
+    if (!body.mediaUrl && ["scheduled", "approved", "published"].includes(body.status)) {
+      return toast("Attach an image or video before scheduling or publishing.", "error");
+    }
     try {
       const response = id
         ? await api(`/api/posts/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) })
@@ -672,16 +806,133 @@ OCR invoice capture is built into Fatortak.
     });
   }
 
-  function channelHelp(key) {
+  function credentialLabel(key) {
+    const labels = {
+      X_ACCESS_TOKEN: "X user access token (OAuth 2.0)",
+      X_API_KEY: "X API key (OAuth 1.0a, images)",
+      X_API_SECRET: "X API secret (OAuth 1.0a)",
+      X_OAUTH1_ACCESS_TOKEN: "X OAuth 1.0a user token (optional if your main token is OAuth 1.0a)",
+      X_OAUTH1_ACCESS_TOKEN_SECRET: "X OAuth 1.0a token secret",
+      LINKEDIN_ACCESS_TOKEN: "LinkedIn access token",
+      LINKEDIN_AUTHOR_URN: "Company URN (urn:li:organization:…)",
+      LINKEDIN_VERSION: "LinkedIn API version",
+      FACEBOOK_PAGE_ID: "Facebook Page ID",
+      FACEBOOK_PAGE_ACCESS_TOKEN: "Facebook Page access token",
+      INSTAGRAM_USER_ID: "Instagram Business account ID",
+      INSTAGRAM_ACCESS_TOKEN: "Instagram access token",
+      THREADS_USER_ID: "Threads user ID",
+      THREADS_ACCESS_TOKEN: "Threads access token",
+      BLUESKY_HANDLE: "Bluesky handle (name.bsky.social)",
+      BLUESKY_APP_PASSWORD: "Bluesky app password",
+      BLUESKY_SERVICE: "Bluesky service URL",
+      MASTODON_INSTANCE: "Mastodon instance URL",
+      MASTODON_ACCESS_TOKEN: "Mastodon access token",
+      MASTODON_ACCOUNT: "Mastodon account handle",
+      TELEGRAM_BOT_TOKEN: "Telegram bot token",
+      TELEGRAM_CHAT_ID: "Telegram channel ID (starts with -100)",
+      DISCORD_WEBHOOK_URL: "Discord webhook URL",
+      DEVTO_API_KEY: "Dev.to API key",
+    };
+    return labels[key] || key;
+  }
+
+  function secretField(key) {
+    return /TOKEN|SECRET|PASSWORD|API_KEY/i.test(key);
+  }
+
+  async function testChannelConnection(key) {
+    const box = $("#connect-result");
+    if (box) {
+      box.className = "connect-result";
+      box.textContent = "Testing the saved credentials…";
+    }
+    try {
+      const data = await api(`/api/connections/${encodeURIComponent(key)}/test`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      if (box) {
+        box.className = `connect-result ${data.result?.ok ? "ok" : "error"}`;
+        box.textContent = data.result?.detail || (data.result?.ok ? "Connection verified." : "Connection failed.");
+      }
+      toast(data.result?.ok ? "Connection verified." : data.result?.detail || "Connection failed.", data.result?.ok ? "success" : "error");
+      await refreshAll();
+    } catch (error) {
+      if (box) {
+        box.className = "connect-result error";
+        box.textContent = error.message;
+      }
+      toast(error.message, "error");
+    }
+  }
+
+  async function saveChannelCredentials(key) {
+    const values = {};
+    $$("#connect-form [data-env-key]").forEach((input) => {
+      const value = input.value.trim();
+      if (value) values[input.dataset.envKey] = value;
+    });
+    if (!Object.keys(values).length) {
+      toast("Enter at least one credential value.", "error");
+      return;
+    }
+    try {
+      await api(`/api/connections/${encodeURIComponent(key)}/credentials`, {
+        method: "PUT",
+        body: JSON.stringify({ values }),
+      });
+      toast("Credentials saved locally.", "success");
+      await testChannelConnection(key);
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  function openChannelSetup(key) {
     const channel = state.connections.find((item) => item.key === key);
     if (!channel) return;
-    const env = (channel.env || []).map((name) => `<code>${esc(name)}</code>`).join(", ") || "No API credentials for this channel.";
-    modal(`${channel.label} setup`, `
-      <p style="margin-bottom:10px">${esc(channel.requirements)}</p>
-      <p style="margin-bottom:10px">Required environment variables: ${env}</p>
-      <p style="margin-bottom:10px">Set them in <code>marketing/portal/.env</code> or <code>marketing/automation/.env</code>, then restart the portal. The portal never asks for platform passwords.</p>
-      ${channel.profile ? `<a class="btn btn-outline btn-sm" href="${esc(channel.profile)}" target="_blank" rel="noopener">Open live profile</a>` : ""}
-    `, [{ label: "Close", className: "btn-primary" }]);
+    const fields = channel.credentialKeys || [];
+    const isApi = channel.mode === "api" && fields.length > 0;
+    const links = [
+      channel.console ? `<a class="btn btn-outline btn-sm" href="${esc(channel.console)}" target="_blank" rel="noopener">Open developer console <svg><use href="#i-external"></use></svg></a>` : "",
+      channel.docs ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.docs)}" target="_blank" rel="noopener">Platform docs <svg><use href="#i-external"></use></svg></a>` : "",
+      channel.signup ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.signup)}" target="_blank" rel="noopener">Platform signup <svg><use href="#i-external"></use></svg></a>` : "",
+      channel.profile ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.profile)}" target="_blank" rel="noopener">Live profile <svg><use href="#i-external"></use></svg></a>` : "",
+    ].filter(Boolean).join("");
+    const form = isApi ? `
+      <form id="connect-form" class="connect-form" autocomplete="off">
+        ${fields.map((name) => `
+          <label class="field">
+            <span>${esc(credentialLabel(name))} <code>${esc(name)}</code></span>
+            <input type="${secretField(name) ? "password" : "text"}" data-env-key="${esc(name)}"
+              placeholder="${channel.configured ? "Saved — leave blank to keep" : name}"
+              autocomplete="off" spellcheck="false" />
+          </label>
+        `).join("")}
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="connect-save">Save &amp; test</button>
+          <button type="button" class="btn btn-outline" id="connect-test">Test saved connection</button>
+        </div>
+        <div id="connect-result" class="connect-result">${channel.verified ? esc(channel.verified.detail || "") : "Credentials are written to marketing/portal/.env and never returned by the API."}</div>
+      </form>
+    ` : `<div class="connect-result error">${esc(channel.requirements)}</div>`;
+
+    modal(`${channel.label} connection`, `
+      <div class="connect-head">
+        ${channelStatusChip(channel)}
+        <span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>
+      </div>
+      <p style="margin-bottom:12px">${esc(channel.note || channel.requirements)}</p>
+      ${isApi ? `<p style="margin-bottom:12px;color:var(--muted-2);font-size:.72rem">This is the one-time platform step. The portal cannot create the account, accept the platform terms, pass app review or enter an OTP. After you paste a valid token, posting is automated.</p>` : ""}
+      ${form}
+      <div class="connect-links">${links}</div>
+      ${channel.media === "public-url" ? `<p style="margin-top:12px;color:var(--muted-2);font-size:.7rem">This channel fetches media from a public URL. Set <code>PORTAL_PUBLIC_URL</code> to a public address for the portal, or attach a CDN URL.</p>` : ""}
+    `, []);
+
+    if (isApi) {
+      $("#connect-save").addEventListener("click", () => saveChannelCredentials(key));
+      $("#connect-test").addEventListener("click", () => testChannelConnection(key));
+    }
   }
 
   async function syncMetrics() {
@@ -714,6 +965,8 @@ OCR invoice capture is built into Fatortak.
           dryRun: $("#setting-dry").checked,
           autoApprove: $("#setting-auto-approve").checked,
           requireLiveSite: $("#setting-require-site").checked,
+          mediaRequired: $("#setting-media-required").checked,
+          publicUrl: $("#setting-public-url").value.trim(),
           timezone: $("#setting-timezone").value.trim() || "Africa/Cairo",
         }),
       });
@@ -734,6 +987,13 @@ OCR invoice capture is built into Fatortak.
     $("#mobile-menu").addEventListener("click", () => setSidebar(!$("#sidebar").classList.contains("is-open")));
     $("#scrim").addEventListener("click", () => setSidebar(false));
     $("#post-content").addEventListener("input", updateCharCounts);
+    $("#media-file").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (file) uploadMediaFile(file);
+    });
+    $("#media-library").addEventListener("click", openMediaLibrary);
+    $("#media-clear").addEventListener("click", () => setPostMedia(null));
     $("#save-draft").addEventListener("click", () => savePost("draft"));
     $("#publish-dry").addEventListener("click", async () => {
       const saved = await savePost($("#post-status").value || "draft");
@@ -757,17 +1017,19 @@ OCR invoice capture is built into Fatortak.
     });
 
     $("#view").addEventListener("click", async (event) => {
-      const target = event.target.closest("[data-view],[data-edit],[data-dry],[data-publish],[data-delete],[data-new],[data-template],[data-import-queue],[data-refresh],[data-sync-metrics],[data-save-settings],[data-channel-help],[data-cal-prev],[data-cal-next],[data-cal-today],[data-refresh-connections]");
+      const target = event.target.closest("[data-view],[data-edit],[data-dry],[data-publish],[data-delete],[data-new],[data-template],[data-import-queue],[data-refresh],[data-sync-metrics],[data-save-settings],[data-connect],[data-channel-help],[data-cal-prev],[data-cal-next],[data-cal-today],[data-refresh-connections]");
       if (!target) return;
       if (target.dataset.view) return setView(target.dataset.view);
       if (target.dataset.template) {
         const source = document.querySelector(`#tpl-${target.dataset.template}`);
         const title = target.dataset.template === "ocr" ? "OCR invoice capture" : "Ask your ledger";
+        const pillar = target.dataset.template === "ocr" ? "ai-ocr" : "product";
         return openDrawer(null, {
           title,
           content: source ? source.value : "",
-          pillar: target.dataset.template === "ocr" ? "ai-ocr" : "product",
+          pillar,
           channels: ["x", "linkedin"],
+          media: defaultMediaForPillar(pillar),
         });
       }
       if (target.dataset.new !== undefined) return openDrawer();
@@ -783,7 +1045,8 @@ OCR invoice capture is built into Fatortak.
       if (target.dataset.refresh !== undefined || target.dataset.refreshConnections !== undefined) return refreshAll();
       if (target.dataset.syncMetrics !== undefined) return syncMetrics();
       if (target.dataset.saveSettings !== undefined) return saveSettings();
-      if (target.dataset.channelHelp) return channelHelp(target.dataset.channelHelp);
+      if (target.dataset.connect) return openChannelSetup(target.dataset.connect);
+      if (target.dataset.channelHelp) return openChannelSetup(target.dataset.channelHelp);
       if (target.dataset.calPrev !== undefined) {
         const date = new Date(`${state.calendarMonth}-01T00:00:00`);
         date.setMonth(date.getMonth() - 1);

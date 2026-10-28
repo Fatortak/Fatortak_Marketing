@@ -89,6 +89,24 @@
         <label class="field"><span>Pillar</span><select id="post-pillar"><option value="product">Product</option><option value="insight">Insight</option><option value="open-source">Open source</option><option value="use-case">Use case</option><option value="arabic">Arabic</option><option value="ai-ocr">AI + OCR</option><option value="commercial">Commercial</option></select></label>
       </div>
       <div class="field"><span>Channels</span><div class="channel-picker" id="channel-picker"></div><div class="char-counts" id="char-counts"></div></div>
+      <div class="field">
+        <span>Image or video <em class="req">required</em></span>
+        <div class="media-box" id="media-box">
+          <div class="media-preview" id="media-preview"><span>No media attached</span></div>
+          <div class="media-tools">
+            <label class="btn btn-ghost btn-sm">Upload image/video<input type="file" id="media-file" accept="image/*,video/*" hidden /></label>
+            <button type="button" class="btn btn-ghost btn-sm" id="media-library">Media library</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="media-clear">Remove</button>
+          </div>
+          <p class="media-hint" id="media-hint">Posts without an image or video are blocked.</p>
+        </div>
+        <input type="hidden" id="post-media-url" />
+        <input type="hidden" id="post-media-public" />
+        <input type="hidden" id="post-media-kind" />
+        <input type="hidden" id="post-media-name" />
+        <input type="hidden" id="post-media-source" />
+        <label class="field" style="margin:10px 0 0"><span>Alt text</span><input id="post-media-alt" maxlength="1000" placeholder="Describe the image for accessibility" /></label>
+      </div>
       <div class="field-row">
         <label class="field"><span>Schedule (Cairo time)</span><input id="post-schedule" type="datetime-local" /></label>
         <label class="field"><span>Status</span><select id="post-status"><option value="draft">Draft</option><option value="needs_review">Needs review</option><option value="approved">Approved</option><option value="scheduled">Scheduled</option><option value="published">Published</option><option value="blocked">Blocked</option><option value="failed">Failed</option><option value="dry_run">Dry run</option></select></label>

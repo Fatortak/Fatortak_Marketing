@@ -6,7 +6,8 @@
   "description": "Local-first marketing control room for Fatortak: schedule, publish, monitor and report across social channels.",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "node --watch server.mjs"
+    "dev": "node --watch server.mjs",
+    "test": "node test-adapters.mjs"
   },
   "engines": {
     "node": ">=20"

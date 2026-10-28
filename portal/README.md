@@ -8,7 +8,10 @@ It is intentionally one service with no build step:
 - Static dashboard with no frontend framework.
 - Reuses the existing automation channel adapters.
 - Dry-run by default; live publishing is locked behind an environment flag.
+- Media is required by default: every post must carry an image or video.
 - Secrets stay in `.env` outside the API; the portal never returns them.
+
+> The portal can save and test credentials, but it cannot create social accounts, accept platform terms, pass app review or enter an OTP for you. That one-time identity step belongs to the account owner; after it, posting is automated.
 
 ## Run it
 
@@ -29,11 +32,11 @@ The portal seeds itself from `marketing/content/queue.json` on first run. State 
 | **Overview** | Publishing pipeline, followers, traffic, channel health, upcoming posts and activity |
 | **Calendar** | Month view of scheduled and published posts |
 | **Content** | Search/filter every post; edit, dry-run, publish, delete |
-| **Composer** | Create a post, select channels, see per-channel character limits, schedule |
-| **Connections** | Which channels are API-ready, which need app review, and which are monitoring-only |
-| **Analytics** | Traffic, followers, reach, engagement, clicks and last sync |
+| **Composer** | Create a post, attach an image/video from the library or upload, select channels, see per-channel character limits, schedule |
+| **Connections** | Click Connect, open the official console, paste credentials, save and test; see which channels are API-ready, need review, or are monitoring-only |
+| **Analytics** | Traffic, traffic by source, followers, reach, engagement, clicks and last sync |
 | **Reports** | Rule-based recommendations, channel mix, CSV/JSON export, latest automation report |
-| **Settings** | Dry-run, auto-approve, live-site guard, timezone, queue import |
+| **Settings** | Dry-run, auto-approve, require media, live-site guard, timezone, queue import |
 
 ## Channel automation matrix
 
@@ -41,18 +44,18 @@ The portal seeds itself from `marketing/content/queue.json` on first run. State 
 
 These have adapters in the portal. They publish when the corresponding API credentials exist and `MARKETING_LIVE=true`.
 
-| Channel | Posting | Monitoring | Credentials |
-| --- | --- | --- | --- |
-| X | API v2 | Partial (elevated access may be required) | `X_ACCESS_TOKEN` |
-| LinkedIn company page | API | Organization statistics need app review | `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN` |
-| Facebook Page | Graph API | Page Insights need app review | `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN` |
-| Instagram Business | Graph API — image URL required | Insights need app review | `INSTAGRAM_USER_ID`, `INSTAGRAM_ACCESS_TOKEN` |
-| Threads | Threads API | Insights need app review | `THREADS_USER_ID`, `THREADS_ACCESS_TOKEN` |
-| Bluesky | AT Protocol | Public profile; post metrics later | `BLUESKY_HANDLE`, `BLUESKY_APP_PASSWORD` |
-| Mastodon | API | Public account metrics | `MASTODON_INSTANCE`, `MASTODON_ACCESS_TOKEN`, `MASTODON_ACCOUNT` |
-| Telegram | Bot API | Member count only | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
-| Discord | Webhook | No native message analytics | `DISCORD_WEBHOOK_URL` |
-| Dev.to | Forem API | Article views/reactions via API | `DEVTO_API_KEY` |
+| Channel | Posting | Media | Monitoring | Credentials |
+| --- | --- | --- | --- | --- |
+| X | API v2 | Image upload (OAuth 1.0a media keys) | Partial (elevated access may be required) | `X_ACCESS_TOKEN`; image posts also `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN_SECRET` |
+| LinkedIn company page | API | Image upload | Organization statistics need app review | `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN` |
+| Facebook Page | Graph API | Image and video upload | Page Insights need app review | `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN` |
+| Instagram Business | Graph API | Public image URL; video as Reels | Insights need app review | `INSTAGRAM_USER_ID`, `INSTAGRAM_ACCESS_TOKEN` |
+| Threads | Threads API | Public image/video URL | Insights need app review | `THREADS_USER_ID`, `THREADS_ACCESS_TOKEN` |
+| Bluesky | AT Protocol | Image upload | Public profile; post metrics later | `BLUESKY_HANDLE`, `BLUESKY_APP_PASSWORD` |
+| Mastodon | API | Image and video upload | Public account metrics | `MASTODON_INSTANCE`, `MASTODON_ACCESS_TOKEN`, `MASTODON_ACCOUNT` |
+| Telegram | Bot API | Image and video upload | Member count only | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
+| Discord | Webhook | Image and video upload | No native message analytics | `DISCORD_WEBHOOK_URL` |
+| Dev.to | Forem API | Public cover image URL | Article views/reactions via API | `DEVTO_API_KEY` |
 
 ### Requires app review, audit or a media asset
 
@@ -74,6 +77,30 @@ These have adapters in the portal. They publish when the corresponding API crede
 | GitHub | Repository/release monitoring, not a social post channel. |
 
 > **The honest answer to “nothing manual”:** every channel that allows API posting can be fully automated after a one-time OAuth/app connection. Hacker News, Reddit and Product Hunt do not allow compliant unattended posting. Automating them would risk the accounts. The portal monitors where possible and blocks the rest instead of pretending.
+
+## Connect from the dashboard
+
+1. Open **Connections**.
+2. Click **Connect** on a channel.
+3. Click **Open developer console** and create the app/token there.
+4. Paste the values into the form and click **Save & test**.
+5. The portal writes the values to `marketing/portal/.env`, reloads them in memory and verifies the connection. It never returns the secret.
+
+This removes the manual file editing, but it cannot remove the platform's one-time identity step. Creating accounts, accepting terms, app review and OTP verification cannot be performed by the portal.
+
+## Media
+
+Text-only publishing is disabled by default (`mediaRequired: true`). The composer will not schedule or publish a post without an image or video.
+
+- **Media library**: ten real Fatortak screenshots (dashboard, invoices, clients, projects, profitability, income statement, AI chat, AI chart, AI receivables, OCR). Queue posts are automatically matched to a relevant screenshot by pillar.
+- **Upload**: images and videos up to 100 MB are stored in `marketing/portal/data/media/` (gitignored) and served from `/media/...`.
+- **Native upload**: Facebook, LinkedIn, Mastodon, Telegram, Discord and Bluesky accept the file directly.
+- **Image only**: X (OAuth 1.0a media keys) and Bluesky.
+- **Public URL required**: Instagram, Threads and Dev.to. Set **Public media host** in Settings or `PORTAL_PUBLIC_URL` to the public address of the portal, or attach a CDN URL. Local `127.0.0.1` URLs cannot be fetched by Meta.
+- **Video**: Facebook, Instagram (Reels), Threads, Mastodon, Telegram and Discord. LinkedIn, X and Bluesky video uploads are not implemented yet; the portal blocks those combinations instead of silently posting text.
+- **Alt text** is stored with every post and passed to channels that support it.
+
+The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as their public URL. Until the landing page is uploaded, Instagram/Threads/Dev.to cannot fetch them; native-upload channels can use the local copy.
 
 ## Connect the live profiles
 
@@ -97,14 +124,15 @@ These have adapters in the portal. They publish when the corresponding API crede
 1. Convert the Instagram account to a Business or Creator account.
 2. Link it to the Fatortak Facebook Page.
 3. Request `instagram_basic`, `instagram_content_publish` and `instagram_manage_insights`.
-4. Set `INSTAGRAM_USER_ID` and `INSTAGRAM_ACCESS_TOKEN`.
-5. Every post needs a public `mediaUrl` (image or video URL).
+4. Set `INSTAGRAM_USER_ID` and `INSTAGRAM_ACCESS_TOKEN` in the Connections wizard.
+5. Every post needs a public image URL; videos are published as Reels.
 
 ### Threads
 
 1. Create a Threads API app through Meta.
 2. Request `threads_basic`, `threads_content_publish` and `threads_manage_insights`.
 3. Set `THREADS_USER_ID` and `THREADS_ACCESS_TOKEN`.
+4. Media must be a public https image or video URL.
 
 ### LinkedIn company page
 
@@ -112,12 +140,14 @@ These have adapters in the portal. They publish when the corresponding API crede
 2. Request `w_organization_social`, `r_organization_social` and `r_organization_admin`.
 3. Authorize the Fatortak company page admin.
 4. Set `LINKEDIN_ACCESS_TOKEN` and `LINKEDIN_AUTHOR_URN=urn:li:organization:<id>`.
+5. Images upload natively; LinkedIn video is blocked until the video upload flow is added.
 
 ### X
 
 1. Create an X developer app with OAuth 2.0 user context.
 2. Request `tweet.write` and `users.read`; elevated access is needed for some metrics.
 3. Set `X_ACCESS_TOKEN`.
+4. For image posts, also create OAuth 1.0a consumer/token keys: `X_API_KEY`, `X_API_SECRET`, `X_OAUTH1_ACCESS_TOKEN`, `X_OAUTH1_ACCESS_TOKEN_SECRET`.
 
 ### Bluesky
 
@@ -147,6 +177,7 @@ These have adapters in the portal. They publish when the corresponding API crede
 - `PORTAL_AUTO_PUBLISH=true` enables the local scheduler. It only runs while the portal process is running.
 - The scheduler publishes posts with status `scheduled` when their time is due.
 - If `requireLiveSite` is on, posts containing `{{site}}` are blocked until `https://fatortak.rabbeh.com/` responds.
+- If `mediaRequired` is on (default), posts without an image or video are blocked before any channel API is called.
 - A post can be published manually with **Publish live** after confirmation.
 - The portal never deletes a published platform post; deleting in the portal removes only the local record.
 
@@ -172,7 +203,13 @@ These have adapters in the portal. They publish when the corresponding API crede
 | POST | `/api/posts/:id/duplicate` | Copy post |
 | DELETE | `/api/posts/:id` | Delete local post |
 | GET | `/api/calendar?month=YYYY-MM` | Calendar posts |
-| GET | `/api/connections` | Channel modes and status |
+| GET | `/api/connections` | Channel modes, setup links, media support and verification |
+| PUT | `/api/connections/:channel/credentials` | Save whitelisted credentials to `.env` |
+| POST | `/api/connections/:channel/test` | Verify the saved credentials |
+| GET | `/api/media` | Uploaded files + screenshot library |
+| GET | `/api/media/library` | Screenshot library only |
+| POST | `/api/media` | Upload image/video (raw body, `X-File-Name` header) |
+| DELETE | `/api/media/:id` | Delete an uploaded file |
 | GET | `/api/metrics` | Metrics + traffic |
 | POST | `/api/metrics/sync` | Sync available metrics |
 | GET | `/api/reports/summary` | Report payload |
@@ -184,9 +221,12 @@ These have adapters in the portal. They publish when the corresponding API crede
 
 - Binds to `127.0.0.1` by default.
 - Set `PORTAL_ADMIN_TOKEN` before exposing it behind a reverse proxy. The API requires `Authorization: Bearer <token>`.
+- Mutating API calls reject cross-origin requests (`Origin` must match the host), which blocks drive-by CSRF against localhost.
 - Tokens are read from `marketing/automation/.env` and `marketing/portal/.env`; existing environment variables win.
+- The Connections wizard writes only whitelisted keys to `marketing/portal/.env` (mode `0600`) and updates the running process without a restart.
 - The portal never stores tokens in `portal.json` and never returns them from an API.
-- `data/portal.json`, `.env`, `export/` and `backups/` are gitignored.
+- Media uploads are stored in `data/media/` (gitignored) and served with `nosniff`, `SAMEORIGIN` and path-traversal protection.
+- `data/`, `.env`, `export/` and `backups/` are gitignored.
 
 ## Extending
 
