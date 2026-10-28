@@ -55,9 +55,9 @@ Do not send customer names, invoice amounts or personal data to analytics. Count
 
 | Parameter | Values |
 | --- | --- |
-| `utm_source` | `x`, `linkedin`, `bluesky`, `mastodon`, `newsletter`, `hn`, `producthunt`, `reddit`, `devto`, `partner`, `direct` |
+| `utm_source` | `x`, `linkedin`, `bluesky`, `mastodon`, `telegram`, `discord`, `facebook`, `instagram`, `tiktok`, `youtube`, `threads`, `whatsapp`, `newsletter`, `hn`, `producthunt`, `reddit`, `devto`, `partner`, `direct` |
 | `utm_medium` | `social`, `email`, `community`, `referral`, `paid`, `launch` |
-| `utm_campaign` | `oss-launch`, `oss-launch-ar`, `selfhost-guide`, `comparison`, `webinar`, `partner-q1` |
+| `utm_campaign` | `oss-launch`, `oss-launch-ar`, `ai-ocr-sprint`, `selfhost-guide`, `comparison`, `webinar`, `partner-q1` |
 | `utm_content` | item id or asset id (e.g. `20261102-x`) |
 
 The automation adds these automatically to owned domains. Never tag links to GitHub; the referrer is enough and UTM params make the repo URL ugly.

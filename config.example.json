@@ -1,12 +1,18 @@
 {
   "brand": "Fatortak",
   "repo": "Fatortak/Fatortak_Software",
+  "profiles": {
+    "facebook": "https://www.facebook.com/people/Fatortak-%D9%81%D8%A7%D8%AA%D9%88%D8%B1%D8%AA%D9%83/61578152019660/",
+    "instagram": "https://www.instagram.com/fatortak.app/",
+    "tiktok": "https://www.tiktok.com/@fatortak.app",
+    "linkedin": "https://www.linkedin.com/company/fatortak/posts/"
+  },
   "links": {
     "repo": "https://github.com/Fatortak/Fatortak_Software",
-    "site": "https://fatortak.github.io/Fatortak_Software/",
+    "site": "https://fatortak.rabbeh.com/",
     "docs": "https://github.com/Fatortak/Fatortak_Software/tree/main/docs",
     "demo": "mailto:info@fatortak.net?subject=Fatortak%20demo",
-    "pricing": "https://fatortak.github.io/Fatortak_Software/#pricing",
+    "pricing": "https://fatortak.rabbeh.com/#pricing",
     "discussions": "https://github.com/Fatortak/Fatortak_Software/discussions"
   },
   "posting": {
@@ -27,14 +33,14 @@
     "enabled": true,
     "medium": "social",
     "campaign": "oss-launch",
-    "trackHosts": ["fatortak.github.io"]
+    "trackHosts": ["fatortak.rabbeh.com", "fatortak.github.io", "ahmed-nasser99.github.io"]
   },
   "analytics": {
     "plausible": { "enabled": false, "siteId": "" }
   },
   "repoMetadata": {
     "description": "Open-source business management for MENA: invoicing, accounting, projects, HR & payroll. Arabic-first, self-hostable, AGPL-3.0.",
-    "homepage": "https://fatortak.github.io/Fatortak_Software/",
+    "homepage": "https://fatortak.rabbeh.com/",
     "topics": [
       "accounting",
       "invoicing",

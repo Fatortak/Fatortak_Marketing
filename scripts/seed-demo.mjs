@@ -555,6 +555,22 @@ async function main() {
       },
     ],
   });
+
+  await createInvoice({
+    customerId: clients.riyadh,
+    issueDate: "2026-10-18",
+    dueDate: "2026-11-17",
+    status: "Paid",
+    notes: "Arabic brand rollout — phase 2, delivered October.",
+    items: [
+      {
+        itemId: items["SRV-101"],
+        description: "Arabic brand rollout — phase 2",
+        quantity: 1,
+        unitPrice: 420000,
+      },
+    ],
+  });
   log("created opening paid invoices");
 
   const expenseSeeds = [

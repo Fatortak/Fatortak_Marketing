@@ -1,4 +1,10 @@
-const TRACKED = new Set(["fatortak.github.io", "fatortak.net", "www.fatortak.net"]);
+const TRACKED = new Set([
+  "fatortak.rabbeh.com",
+  "fatortak.github.io",
+  "ahmed-nasser99.github.io",
+  "fatortak.net",
+  "www.fatortak.net",
+]);
 
 export function withUtm(url, { source, medium = "social", campaign = "oss-launch", content } = {}) {
   if (!url || !/^https?:\/\//i.test(url)) return url;

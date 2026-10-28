@@ -216,7 +216,7 @@ Two assets per week maximum. A thin 500-word post published for the sake of a ca
 
 - Submit `sitemap.xml` to Google Search Console and Bing Webmaster Tools.
 - Add `robots.txt` that allows crawling and points to the sitemap.
-- Use a custom domain (`fatortak.net`) rather than a GitHub Pages subpath for the commercial site. GitHub Pages can host the open-source landing page, but a custom domain is better for brand searches and email trust.
+- Use the live custom hostname (`fatortak.rabbeh.com`) rather than a GitHub Pages subpath for the commercial site. GitHub Pages can host an optional mirror, but a custom domain is better for brand searches and email trust.
 - Ensure the Arabic pages are server-rendered or statically generated with `lang="ar"` and `dir="rtl"` in the HTML, not only set by JavaScript.
 - Use clean URLs. No `?lang=ar` for indexable content; use `/ar/...`.
 - Compress images to WebP/AVIF, but keep the invoice template PDFs as PDF.

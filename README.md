@@ -2,18 +2,27 @@
 
 This folder is the marketing department for the open-source project. It is designed to run on autopilot, but it is honest about the one thing no software can do for you: create verified accounts and accept platform terms on your behalf.
 
+## Strategy references
+
+- [`strategy/social-media-plan.md`](strategy/social-media-plan.md) - all-channel strategy, 90-day phases, first-14-days calendar, AI/OCR sprint, platform playbooks and guardrails.
+- [`strategy/positioning.md`](strategy/positioning.md) - ICP, messaging, objections and pricing architecture.
+- [`strategy/launch-90-days.md`](strategy/launch-90-days.md) - launch phases and manual channel playbooks.
+- [`strategy/metrics.md`](strategy/metrics.md) - funnel, events, UTM and weekly dashboard.
+- [`strategy/commercial-funnel.md`](strategy/commercial-funnel.md) - demos, proposals and partner program.
+- [`strategy/contributor-growth.md`](strategy/contributor-growth.md) - GitHub and contributor plan.
+
 ## What is automated
 
 | Job | How | Human effort |
 | --- | --- | --- |
 | 90-day content calendar | `content/queue.json` generated from a curated copy bank | none |
-| Daily social posting | GitHub Actions → X, LinkedIn, Bluesky, Mastodon | one-time API keys |
+| Daily social posting | GitHub Actions → X, LinkedIn, Bluesky, Mastodon (Telegram/Discord optional) | one-time API keys |
 | UTM tagging | every link is tagged per channel and campaign | none |
 | Weekly growth report | GitHub Actions → stars, forks, traffic, contributors, queue | none |
 | Repo metadata | `npm run repo` sets description, homepage, topics | one-time token |
 | Contributor welcome | GitHub Action comments on first issue/PR | none |
 | CI | build backend and frontend on every PR | none |
-| Landing page deploy | GitHub Pages workflow | one-time Pages enable |
+| Landing page deploy | InterServer FTPS workflow, or GitHub Pages mirror | one-time FTP secrets / Pages setup |
 | Email sequences | ready-to-paste copy for your email tool | one-time import |
 | Launch copy | Show HN, Product Hunt, Reddit, LinkedIn, X, Dev.to, Arabic | one-time posting where APIs do not exist |
 
@@ -26,6 +35,13 @@ This folder is the marketing department for the open-source project. It is desig
 5. **Commercial conversations.** Demos and contracts are human. The system fills the top of the funnel and removes the busywork.
 
 > If someone sells you "fully automated" Hacker News and Reddit posting, they are selling you a ban.
+
+## Deployment targets
+
+- **InterServer Plesk** - the primary target. The landing page target is `https://fatortak.rabbeh.com/`; the existing app stays on `fatortakEpic.rabbeh.com` and `apiFatortakEpic.rabbeh.com`. The subdomain and SSL are created; the first upload is pending. See [`deploy/INTERSERVER-PLESK.md`](deploy/INTERSERVER-PLESK.md) for the verified host, least-privilege access, FTPS setup and rollback.
+- **Automatic deployment** - `.github/workflows/deploy-interserver.yml` deploys `marketing/landing/**` over FTPS on pushes to `main` when the repository variable `INTERSERVER_AUTODEPLOY=true`. It can also be run manually with a dry-run input. Setup and troubleshooting: [`deploy/INTERSERVER-AUTODEPLOY.md`](deploy/INTERSERVER-AUTODEPLOY.md).
+- **Static deploy script** - [`deploy/deploy-static.ps1`](deploy/deploy-static.ps1) is dry-run by default, reads credentials from `%USERPROFILE%\.config\fatortak\plesk.env`, backs up the current remote root files and verifies the public page.
+- **GitHub Pages** - optional mirror via `.github/workflows/pages.yml`. If used, update the canonical and social URLs to the live hostname.
 
 ## One-time setup
 
@@ -67,8 +83,8 @@ Repository → **Settings → Secrets and variables → Actions**:
 - The schedule takes over: daily at 09:00 UTC, weekly report on Monday at 07:00 UTC.
 - **Actions → Marketing growth report → Run workflow** to create the first issue immediately.
 - **Actions → Repository metadata** with `apply: false` to preview the repo description/topics, then `apply: true` (needs `REPO_ADMIN_TOKEN`).
-- **Settings → Pages → Source: GitHub Actions** to publish the landing page.
-- The landing page deploys automatically on pushes to `main` that change `marketing/landing/**`.
+- **Settings → Pages → Source: GitHub Actions** only if you want the optional GitHub Pages mirror. The primary deploy is the InterServer FTPS workflow.
+- The landing page deploys automatically on pushes to `main` that change `marketing/landing/**` when `INTERSERVER_AUTODEPLOY=true`.
 
 Posting state is kept in the GitHub Actions cache (`marketing/automation/.state`), not committed to the repository. The cache is enough to prevent duplicate posts; it is not an audit log. If the cache is evicted, the 36-hour stale window still prevents a backlog from being posted all at once.
 
@@ -123,6 +139,7 @@ marketing/
   README.md                  this file
   config.example.json        links, channels, cadence
   strategy/
+    social-media-plan.md     all-channel plan, 90-day phases, platform playbooks
     positioning.md           ICP, messaging, competitors, pricing
     launch-90-days.md        week-by-week launch plan
     commercial-funnel.md     open-core offers, demos, outbound, partners
@@ -130,6 +147,7 @@ marketing/
     metrics.md               north star, dashboard, targets
   content/
     queue.json               90-day generated calendar
+    ai-ocr-sprint.md         10 ready-to-post AI + OCR launch items
     github-listing.md        repo description, topics, pinned issue
     launch/                  Show HN, Product Hunt, Reddit, LinkedIn, X, Arabic, Dev.to
     email/sequences.md       welcome, activation, upgrade, win-back
@@ -142,6 +160,7 @@ marketing/
     src/report.mjs           growth report + GitHub issue
     src/repo.mjs             repo metadata sync
   landing/                   bilingual static landing page
+  deploy/                    InterServer Plesk + auto-deploy references, dry-run FTPS script
   reports/                   generated weekly reports
 ```
 
@@ -151,7 +170,8 @@ Related workflows live in `.github/workflows/`:
 | --- | --- | --- |
 | `marketing-daily.yml` | Daily 09:00 UTC + manual | Post due queue items; dry-run by default |
 | `marketing-report.yml` | Monday 07:00 UTC + manual | Growth report + GitHub issue |
-| `pages.yml` | Push to `marketing/landing/**` + manual | Deploy the landing page |
+| `deploy-interserver.yml` | Push to `marketing/landing/**` when `INTERSERVER_AUTODEPLOY=true` + manual | Deploy the landing page to `fatortak.rabbeh.com` over FTPS |
+| `pages.yml` | Push to `marketing/landing/**` + manual | Optional GitHub Pages mirror |
 | `repo-metadata.yml` | Manual | Preview/apply repo description and topics |
 | `ci.yml` | Push/PR | Build backend/frontend and validate the queue |
 

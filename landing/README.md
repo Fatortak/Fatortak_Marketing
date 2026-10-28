@@ -1,15 +1,17 @@
-# Landing page
+# Fatortak landing page
 
-A dependency-free, bilingual landing page for Fatortak. It is designed to be deployed to GitHub Pages from this folder without a build step.
+A static, bilingual landing page for Fatortak with an interactive 3D product showcase. It uses real screenshots of the running application, not mockups.
+
+The page is plain HTML, CSS and JavaScript. There is no build step. Google Fonts is the only external request; the page falls back to system fonts if it is unavailable.
 
 ## Preview locally
 
-```bash
+```powershell
 cd marketing/landing
-python -m http.server 4173
+py -m http.server 4173
 ```
 
-Open <http://localhost:4173>. On Windows, `py -m http.server 4173` works if `python` is not on the PATH.
+Open <http://localhost:4173>.
 
 You can also open `index.html` directly, but a local server is better for testing the manifest and relative paths.
 
@@ -17,70 +19,87 @@ You can also open `index.html` directly, but a local server is better for testin
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | The page. English first, Arabic content embedded. |
-| `styles.css` | All styling, responsive layout and RTL rules. |
-| `app.js` | Language toggle, pricing toggle, mobile nav, reveal animation. |
-| `assets/logo-mark.svg` | Compact logo mark used in the header and footer. |
-| `assets/logo-mark.png` | 180×180 fallback icon. |
+| `index.html` | Page structure, English/Arabic copy and metadata. |
+| `styles.css` | Dark 3D design, responsive layout, RTL rules, reduced-motion support. |
+| `app.js` | Language toggle, 3D screen tour, showcase tabs, AI/OCR demos, lightbox, reveal animations. |
+| `assets/fatortak-logo-white.png` | Real Fatortak wordmark for dark surfaces. |
+| `assets/fatortak-logo.png` | Real Fatortak wordmark on transparent background. |
+| `assets/favicon.png` | Square real F mark on brand purple. |
 | `assets/og.png` | 1200×630 social preview image. |
-| `assets/banner.svg` | Wide banner, useful for README or GitHub social preview. |
+| `assets/screenshots/` | Real application screenshots captured from the local demo tenant. |
 | `site.webmanifest`, `robots.txt`, `sitemap.xml` | Basic PWA/SEO files. |
 
-No fonts, analytics, trackers or third-party scripts are loaded. The page works offline after the first load.
+## Interaction
 
-## Language behavior
+- **Hero screen**: a 3D browser frame that tilts with the pointer, supports drag-to-rotate, and switches between Dashboard, AI chat, OCR invoice and Sales invoices. The tour auto-advances every 7 seconds and pauses on hover or interaction.
+- **Product tour**: six real screens with clickable tabs, previous/next buttons and keyboard navigation.
+- **AI section**: example prompt chips switch between real AI chat screenshots and captions.
+- **OCR section**: a four-step selector explains upload, extraction, review and invoice creation.
+- **Screen gallery**: every screenshot opens in a full-size dialog with keyboard navigation.
+- **Language**: English/Arabic toggle with full RTL layout. The choice is stored in `localStorage` under `fatortak-lang`, and `?lang=ar` opens Arabic directly.
+- **Accessibility**: skip link, focus styles, keyboard-operable tabs and lightbox, and `prefers-reduced-motion` support.
 
-- The page starts in English unless the browser language is Arabic, the URL has `?lang=ar`, or the visitor previously chose Arabic.
-- The toggle updates `lang`, `dir`, the document title, the meta description, the Open Graph tags and the URL.
-- The choice is stored in `localStorage` under `fatortak-lang`.
-- Arabic uses RTL layout through logical CSS properties; the terminal block stays LTR because commands are LTR.
+## Screenshot provenance
+
+The screenshots were captured from the running application against the local `FatortakDemo` SQL Server database. They use demo data only. Production credentials and customer data were not used.
+
+To refresh a screenshot:
+
+1. Start the local backend on `http://localhost:5002` against `FatortakDemo`.
+2. Start the frontend on `http://localhost:8081` with `VITE_API_URL=http://localhost:5002`.
+3. Log in with the demo tenant.
+4. Capture the page at 1440×900 with a 1.5× device scale factor.
+5. Save over the matching file in `assets/screenshots/`.
+
+The AI chat scenes were seeded with a local-only SQL script (`marketing/scripts/seed-demo-chat.sql`) so the conversation shows accurate demo figures. The OCR screenshot uses a generated demo supplier invoice, not a real customer document.
 
 ## Pricing
 
-The page mirrors the in-app plans:
+The page uses the current in-app monthly pricing:
 
-| Plan | Monthly | Yearly (10 months) |
-| --- | ---: | ---: |
-| Community (self-host) | 0 | 0 |
-| Starter | 300 EGP | 2,700 EGP |
-| Professional | 600 EGP | 5,400 EGP |
-| Enterprise | 900 EGP | 8,100 EGP |
+| Plan | Monthly |
+| --- | ---: |
+| Community (self-hosted) | 0 EGP |
+| Starter | 300 EGP |
+| Professional | 600 EGP |
+| Enterprise | 900 EGP |
 
-If the app pricing changes, update both the visible amounts and the `data-monthly` / `data-yearly` attributes in `index.html`, plus the `SoftwareApplication` JSON-LD block.
+If the app pricing changes, update the visible amounts and the `SoftwareApplication` JSON-LD block in `index.html`.
 
-## Deploy to GitHub Pages
+## Deploy to InterServer Plesk
 
-The included workflow `.github/workflows/pages.yml` publishes this folder on every push to `main` that changes `marketing/landing/**`.
+The production target is the new subdomain:
 
-One-time setup:
-
-1. Repository → **Settings → Pages**.
-2. Source: **GitHub Actions**.
-3. Push (or run the workflow manually).
-
-The default URL is:
-
-```
-https://fatortak.github.io/Fatortak_Software/
+```text
+https://fatortak.rabbeh.com
 ```
 
-### Custom domain (recommended)
+The Plesk reference is in [`../deploy/INTERSERVER-PLESK.md`](../deploy/INTERSERVER-PLESK.md). For automatic deployment through GitHub Actions, see [`../deploy/INTERSERVER-AUTODEPLOY.md`](../deploy/INTERSERVER-AUTODEPLOY.md).
 
-A GitHub Pages subpath is fine for the open-source project, but a custom domain is better for a commercial site, email trust and brand searches. If you use `fatortak.net`:
+Deployment is a static file upload:
 
-1. Add a `CNAME` file in this folder containing `fatortak.net` (or `www.fatortak.net`).
-2. Configure the DNS records GitHub documents for Pages.
-3. Update canonical, `hreflang`, Open Graph URLs, `robots.txt`, `sitemap.xml` and the automation config to the custom domain.
-4. Enable HTTPS in Pages settings.
+```text
+index.html
+styles.css
+app.js
+assets/
+site.webmanifest
+robots.txt
+sitemap.xml
+```
 
-Do not publish the page on a domain you do not control with a valid certificate.
+Do not upload `.og-card.html`, README files or local scripts. The page has no client-side routes, so no SPA rewrite is required.
+
+### GitHub Pages (optional)
+
+The existing `.github/workflows/pages.yml` can still publish this folder to GitHub Pages. If GitHub Pages remains in use, update the canonical, `hreflang`, Open Graph, `robots.txt` and `sitemap.xml` URLs to the actual public hostname.
 
 ## Regenerate the social image
 
-`assets/og.png` is a 1200×630 screenshot of `.og-card.html`, rendered with headless Edge/Chrome. If you change the copy or logo:
+The source card is `.og-card.html`. Render it at 1200×630 with headless Chrome or Edge:
 
 ```powershell
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" `
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" `
   --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 `
   --run-all-compositor-stages-before-draw --virtual-time-budget=5000 `
   --window-size=1200,630 `
@@ -88,28 +107,26 @@ Do not publish the page on a domain you do not control with a valid certificate.
   "file:///$((Resolve-Path .og-card.html).Path -replace '\\','/')"
 ```
 
-Keep the source card in `.og-card.html` for future edits. It is hidden by the leading dot; remove it before deploying if you prefer a clean folder (the page does not reference it).
+Adjust the browser path if Chrome is not installed there.
 
 ## Before publishing
 
-- [ ] Replace the placeholder GitHub Pages URLs if a custom domain is used.
-- [ ] Verify every claim: no ETA/ZATCA compliance, no "production-ready", no customer logos or testimonials.
-- [ ] Check the Arabic copy with a native finance/accounting reviewer.
-- [ ] Test at 360px, 768px and 1440px widths.
-- [ ] Test the language toggle, pricing toggle and mobile menu with a keyboard.
-- [ ] Run Lighthouse; the page should score well because it has no external dependencies.
+- [ ] Verify the new screenshots and the Arabic copy.
+- [ ] Test at 390px, 768px, 1024px and 1440px widths.
+- [ ] Test the language toggle, hero tabs, product tour, AI chips, OCR steps and lightbox with a keyboard.
+- [ ] Confirm the page has no horizontal overflow in English or Arabic.
+- [ ] Run Lighthouse and check accessibility.
 - [ ] Confirm `info@fatortak.net` receives demo and license requests.
-- [ ] If adding Plausible/Umami, add it to the privacy policy and disclose it. Do not add a tracker silently.
-- [ ] Make sure the pricing links and mailto subjects are correct.
+- [ ] Do not add analytics or trackers without a privacy disclosure.
+- [ ] Keep the honest claims: no ETA/ZATCA certification, no customer logos, no testimonials.
 
 ## Honest-claims policy
 
-The page deliberately says:
+The page deliberately avoids claiming:
 
-- Public alpha.
-- No independent security audit yet.
-- ETA/ZATCA e-invoicing is not implemented.
-- Community self-hosting is free; managed cloud is paid.
-- The commercial license is for companies that cannot use AGPL.
+- ETA or ZATCA e-invoicing certification.
+- 100% OCR accuracy.
+- Customer logos, testimonials or usage numbers that do not exist.
+- Independent security certification.
 
-Do not remove those lines to make the page look more mature. The trust cost is higher than the conversion gain.
+The open-source, AGPL-3.0, self-hosting, pricing and product-screen claims are verifiable. Keep them that way.

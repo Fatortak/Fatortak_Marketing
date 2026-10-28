@@ -4,6 +4,8 @@ The goal is not "go viral". It is to reach the right 5,000 people, convert 25 in
 
 Dates are relative: **T** = public launch day.
 
+> The all-channel operating plan is in [`social-media-plan.md`](social-media-plan.md). It contains the channel matrix, weekly rhythm, first-14-days calendar, AI/OCR sprint and platform-specific playbooks.
+
 ---
 
 ## Phase 0 — Foundation (T-21 to T-8)
@@ -19,9 +21,9 @@ Nothing below works if the artifact is weak. Do these in order.
 - [ ] Enable Discussions, Issues, and private vulnerability reporting.
 - [ ] Verify CI is green on `main`.
 - [ ] Test `docker compose up --build` from a clean clone.
-- [ ] Capture 4 real screenshots: dashboard, invoice editor, P&L, OCR import.
+- [ ] Capture 10 real screenshots: dashboard, sales invoices, clients, projects, project profitability, income statement, AI chat, AI chart, OCR invoice, OCR chart.
 - [ ] Record a 90-second demo: create invoice → send link → record payment → show P&L.
-- [ ] Deploy the landing page to GitHub Pages (or Vercel/Netlify).
+- [ ] Deploy the landing page to `https://fatortak.rabbeh.com/` over FTPS (or use the optional GitHub Pages mirror).
 - [ ] Add Plausible/Umami and verify events.
 
 **Exit criteria:** a stranger can understand the product, start it, and see a real screenshot in under 3 minutes.
@@ -144,6 +146,7 @@ The launch spike fades in 72 hours. This phase converts attention into compoundi
 | --- | --- | --- | --- |
 | 2 | "QuickBooks vs Odoo vs Fatortak for MENA SMBs" | Blog + LinkedIn + Dev.to | High-intent comparison traffic |
 | 2 | "How to self-host Fatortak with Docker in 10 minutes" | Blog + YouTube + README | Developer adoption |
+| 2 | "From supplier PDF to purchase invoice: the OCR flow" | Blog + LinkedIn + Instagram/TikTok | AI/OCR proof and saves |
 | 3 | "The real cost of Excel accounting" | LinkedIn + newsletter | Pain awareness |
 | 3 | "Arabic invoice template pack (free)" | Landing page + lead magnet | Email capture |
 | 4 | "Project profitability for agencies" | Webinar + blog | Commercial intent |
@@ -261,7 +264,7 @@ Each article: a real answer, a downloadable template, an internal link to the pr
 ## Asset checklist
 
 - [ ] 1280×640 GitHub social preview
-- [ ] 4 product screenshots (PNG, 2x)
+- [ ] 10 real product screenshots (PNG, 2x), including AI chat and OCR
 - [ ] 90-second demo video (MP4 + GIF)
 - [ ] 5 Product Hunt images + 1 GIF
 - [ ] Logo (SVG + PNG)

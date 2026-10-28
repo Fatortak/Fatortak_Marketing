@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://fatortak.github.io/Fatortak_Software/</loc>
-    <lastmod>2026-10-27</lastmod>
+    <loc>https://fatortak.rabbeh.com/</loc>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://fatortak.github.io/Fatortak_Software/" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://fatortak.github.io/Fatortak_Software/?lang=ar" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://fatortak.github.io/Fatortak_Software/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://fatortak.rabbeh.com/" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://fatortak.rabbeh.com/?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://fatortak.rabbeh.com/" />
   </url>
 </urlset>

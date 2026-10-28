@@ -2,29 +2,23 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fatortak — Open-source accounting and invoicing for MENA</title>
-  <meta name="description" content="Arabic-first invoicing, double-entry accounting, projects, inventory, HR and payroll. Self-host with Docker under AGPL-3.0, or use managed cloud." />
-  <meta name="theme-color" content="#070d1b" />
-  <link rel="canonical" href="https://fatortak.github.io/Fatortak_Software/" />
-  <link rel="alternate" hreflang="en" href="https://fatortak.github.io/Fatortak_Software/" />
-  <link rel="alternate" hreflang="ar" href="https://fatortak.github.io/Fatortak_Software/?lang=ar" />
-  <link rel="alternate" hreflang="x-default" href="https://fatortak.github.io/Fatortak_Software/" />
-  <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="assets/logo-mark.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fatortak — Arabic-first business management, open source</title>
+  <meta name="description" content="Invoicing, accounting, projects, inventory, payroll, AI chat and OCR invoice capture. Arabic-first, bilingual, open source under AGPL-3.0." />
+  <meta name="theme-color" content="#060816" />
+  <link rel="canonical" href="https://fatortak.rabbeh.com/" />
+  <link rel="alternate" hreflang="en" href="https://fatortak.rabbeh.com/" />
+  <link rel="alternate" hreflang="ar" href="https://fatortak.rabbeh.com/?lang=ar" />
+  <link rel="alternate" hreflang="x-default" href="https://fatortak.rabbeh.com/" />
+  <link rel="icon" href="assets/favicon.png" sizes="512x512" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
   <link rel="manifest" href="site.webmanifest" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Fatortak" />
-  <meta property="og:title" content="Fatortak — Open-source accounting and invoicing for MENA" />
-  <meta property="og:description" content="One Arabic-first ledger for invoicing, projects, inventory, HR and payroll. Open source, self-hostable, built for MENA SMBs." />
-  <meta property="og:url" content="https://fatortak.github.io/Fatortak_Software/" />
-  <meta property="og:image" content="https://fatortak.github.io/Fatortak_Software/assets/og.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Fatortak — Open-source accounting for MENA" />
-  <meta name="twitter:description" content="Arabic-first invoicing, accounting, projects and payroll. Self-host with Docker or use managed cloud." />
-  <meta name="twitter:image" content="https://fatortak.github.io/Fatortak_Software/assets/og.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="assets/screenshots/dashboard.png" />
+  <link rel="preload" as="image" href="assets/screenshots/ai-chat.png" />
+  <link rel="preload" as="image" href="assets/screenshots/ocr-invoice.png" />
   <link rel="stylesheet" href="styles.css" />
   <script>
     (function () {
@@ -40,6 +34,18 @@
       }
     })();
   </script>
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Fatortak" />
+  <meta property="og:title" content="Fatortak — Arabic-first business management, open source" />
+  <meta property="og:description" content="One Arabic-first ledger for invoices, accounting, projects, inventory, payroll, AI chat and OCR. Open source under AGPL-3.0." />
+  <meta property="og:url" content="https://fatortak.rabbeh.com/" />
+  <meta property="og:image" content="https://fatortak.rabbeh.com/assets/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Fatortak — Arabic-first business management" />
+  <meta name="twitter:description" content="Invoices, accounting, projects, payroll, AI chat and OCR. Open source, bilingual, built for MENA." />
+  <meta name="twitter:image" content="https://fatortak.rabbeh.com/assets/og.png" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -47,8 +53,8 @@
     "name": "Fatortak",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
-    "description": "Open-source, Arabic-first business management software for MENA SMBs: invoicing, double-entry accounting, projects, inventory, HR and payroll.",
-    "url": "https://fatortak.github.io/Fatortak_Software/",
+    "description": "Open-source, Arabic-first business management software for MENA SMBs: invoicing, double-entry accounting, projects, inventory, HR, payroll, AI chat and OCR invoice capture.",
+    "url": "https://fatortak.rabbeh.com/",
     "license": "https://www.gnu.org/licenses/agpl-3.0.html",
     "offers": [
       { "@type": "Offer", "name": "Community (self-hosted)", "price": "0", "priceCurrency": "EGP" },
@@ -60,515 +66,679 @@
   }
   </script>
 </head>
-<body>
+<body id="top">
   <a class="skip-link" href="#main">
     <span class="lang-en">Skip to content</span>
     <span class="lang-ar">تخطَّ إلى المحتوى</span>
   </a>
 
-  <svg class="svg-defs" aria-hidden="true" focusable="false">
-    <defs>
-      <symbol id="i-invoice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></symbol>
-      <symbol id="i-ledger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h14M8 7h6M8 11h6"/></symbol>
-      <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6M20 16v-9"/></symbol>
-      <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
-      <symbol id="i-people" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 6"/></symbol>
-      <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
-      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></symbol>
-      <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
-      <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9 19c-4 1.5-4-2.5-6-3m12 6v-3.9c0-1.1.1-1.6-.5-2.2 3-.3 6.1-1.5 6.1-6.6a5 5 0 0 0-1.4-3.5 4.6 4.6 0 0 0-.1-3.5s-1.1-.3-3.6 1.3a12.2 12.2 0 0 0-6.4 0C6.6 1.9 5.5 2.2 5.5 2.2a4.6 4.6 0 0 0-.1 3.5A5 5 0 0 0 4 9.2c0 5 3.1 6.3 6.1 6.6-.4.4-.6.9-.6 1.5V22"/></symbol>
-      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
-      <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></symbol>
-    </defs>
+  <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 4 5.8 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.8-4-9s1.5-6.5 4-9Z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h13v14H6a2 2 0 0 1-2-2Z"/><path d="M4 7V5a2 2 0 0 1 2-2h11v2M16 13h2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2"/><path d="M16 14c2.8 0 5 2.2 5 5"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 7h6M9 11h6M9 15h4"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13 5l-2 14"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5M3 17l9 5 9-5"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 10h18M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3Z"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.2-3.4-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 3 .8.1-.7.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5A3.9 3.9 0 0 1 6.7 8c-.1-.3-.5-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c2-1.3 2.8-1 2.8-1 .6 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 9-12h-7Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 8.5 7 9 4-.5 7-4.5 7-9V6Z"/><path d="m9 12 2 2 4-4"/></symbol>
   </svg>
 
-  <header class="site-header" id="top">
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="site-header" data-header>
     <div class="container header-inner">
       <a class="brand" href="#top" aria-label="Fatortak home">
-        <img src="assets/logo-mark.svg" alt="" width="40" height="40" />
-        <span class="brand-name">Fatortak</span>
-        <span class="brand-ar lang-ar" lang="ar">فاتورتك</span>
+        <img class="brand-logo" src="assets/fatortak-logo-white.png" alt="Fatortak" width="205" height="61" />
       </a>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
-        <span class="sr-only"><span class="lang-en">Menu</span><span class="lang-ar">القائمة</span></span>
-        <span></span><span></span><span></span>
-      </button>
-      <nav class="site-nav" id="site-nav" aria-label="Main">
-        <a href="#features"><span class="lang-en">Product</span><span class="lang-ar">المنتج</span></a>
+      <nav class="site-nav" id="site-nav" aria-label="Primary">
+        <a href="#product"><span class="lang-en">Product</span><span class="lang-ar">المنتج</span></a>
+        <a href="#ai"><span class="lang-en">AI &amp; OCR</span><span class="lang-ar">الذكاء وOCR</span></a>
+        <a href="#pricing"><span class="lang-en">Pricing</span><span class="lang-ar">التسعير</span></a>
         <a href="#open-source"><span class="lang-en">Open source</span><span class="lang-ar">مفتوح المصدر</span></a>
-        <a href="#pricing"><span class="lang-en">Pricing</span><span class="lang-ar">الأسعار</span></a>
-        <a href="#faq"><span class="lang-en">FAQ</span><span class="lang-ar">الأسئلة الشائعة</span></a>
+        <a href="#faq"><span class="lang-en">FAQ</span><span class="lang-ar">الأسئلة</span></a>
       </nav>
       <div class="header-actions">
-        <button class="lang-toggle" type="button" data-lang-toggle aria-label="Switch language">
-          <svg width="16" height="16" aria-hidden="true"><use href="#i-globe"></use></svg>
-          <span class="lang-en" lang="ar" dir="rtl">العربية</span>
+        <button class="lang-toggle" type="button" data-lang-toggle aria-label="العربية — Switch to Arabic">
+          <svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg>
+          <span class="lang-en">العربية</span>
           <span class="lang-ar">English</span>
         </button>
-        <a class="btn btn-ghost btn-sm header-github" href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener">
-          <svg width="16" height="16" aria-hidden="true"><use href="#i-github"></use></svg>
-          <span>GitHub</span>
+        <a class="btn btn-primary btn-sm header-cta" href="https://fatortakEpic.rabbeh.com/register">
+          <span class="lang-en">Start free</span><span class="lang-ar">ابدأ مجاناً</span>
+          <svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
         </a>
+        <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">
+          <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+        </button>
       </div>
     </div>
   </header>
 
   <main id="main">
-    <section class="hero">
-      <div class="hero-glow hero-glow-a" aria-hidden="true"></div>
-      <div class="hero-glow hero-glow-b" aria-hidden="true"></div>
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow eyebrow-light">
-            <span class="dot"></span>
-            <span class="lang-en">AGPL-3.0 · Self-hostable · Arabic-first</span>
-            <span class="lang-ar">AGPL-3.0 · استضافة ذاتية · العربية أولاً</span>
-          </p>
-          <h1>
-            <span class="lang-en">Run your business in Arabic.<br /><em>Own your data.</em></span>
-            <span class="lang-ar">أدر أعمالك بالعربية.<br /><em>وامتلك بياناتك.</em></span>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true">
+        <div class="hero-grid"></div>
+        <div class="orb orb-a"></div>
+        <div class="orb orb-b"></div>
+        <div class="orb orb-c"></div>
+        <div class="hero-vignette"></div>
+      </div>
+      <div class="container hero-inner">
+        <div class="hero-copy reveal">
+          <p class="eyebrow"><span class="eyebrow-dot"></span><span class="lang-en">Open source · Arabic-first · Built for MENA</span><span class="lang-ar">مفتوح المصدر · عربي أولاً · مصمم للشرق الأوسط</span></p>
+          <h1 id="hero-title">
+            <span class="lang-en">Run the whole business.<br /><em>In one place.</em></span>
+            <span class="lang-ar">أدر عملك بالكامل.<br /><em>في مكان واحد.</em></span>
           </h1>
           <p class="hero-sub">
-            <span class="lang-en">Fatortak brings invoicing, double-entry accounting, projects, inventory, HR and payroll into one Arabic-first system — open source, self-hostable, and built for MENA SMBs.</span>
-            <span class="lang-ar">تجمع «فاتورتك» الفواتير والمحاسبة بالقيد المزدوج والمشروعات والمخزون والموارد البشرية والرواتب في نظام واحد بالعربية أولاً — مفتوح المصدر، قابل للاستضافة الذاتية، ومبني لشركات الشرق الأوسط وشمال أفريقيا.</span>
+            <span class="lang-en">Invoicing, accounting, projects, inventory and payroll — with an AI assistant and OCR invoice capture. Arabic-first, bilingual, and open source.</span>
+            <span class="lang-ar">فواتير ومحاسبة ومشروعات ومخزون ورواتب — مع مساعد ذكي واستخراج فواتير OCR. عربي أولاً، ثنائي اللغة، ومفتوح المصدر.</span>
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener">
-              <svg width="18" height="18" aria-hidden="true"><use href="#i-github"></use></svg>
-              <span class="lang-en">Star on GitHub</span>
-              <span class="lang-ar">ادعمنا على GitHub</span>
+            <a class="btn btn-primary btn-lg" href="https://fatortakEpic.rabbeh.com/register">
+              <span class="lang-en">Start free</span><span class="lang-ar">ابدأ مجاناً</span>
+              <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
             </a>
-            <a class="btn btn-secondary" href="#pricing">
-              <span class="lang-en">See pricing</span>
-              <span class="lang-ar">تصفح الأسعار</span>
-              <svg width="18" height="18" aria-hidden="true"><use href="#i-arrow"></use></svg>
+            <a class="btn btn-ghost btn-lg" href="#product">
+              <span class="btn-play"><svg class="icon" aria-hidden="true"><use href="#i-play"></use></svg></span>
+              <span class="lang-en">See it in action</span><span class="lang-ar">شاهد المنتج</span>
             </a>
           </div>
-          <a class="text-link" href="https://github.com/Fatortak/Fatortak_Software#quickstart" target="_blank" rel="noopener">
-            <span class="lang-en">Self-host in 10 minutes</span>
-            <span class="lang-ar">استضفه بنفسك في 10 دقائق</span>
-            <span aria-hidden="true">→</span>
-          </a>
-          <p class="hero-note">
-            <svg width="14" height="14" aria-hidden="true"><use href="#i-lock"></use></svg>
-            <span class="lang-en">Public alpha · no independent security audit yet</span>
-            <span class="lang-ar">نسخة ألفا عامة · لا يوجد تدقيق أمني مستقل بعد</span>
-          </p>
+          <ul class="hero-facts" aria-label="Product facts">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg><span>AGPL-3.0</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg><span>AR / EN</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-database"></use></svg><span>SQL Server</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg><span>Docker</span></li>
+          </ul>
+          <p class="hero-alpha"><span class="live-dot"></span><span class="lang-en">Open-source alpha — expect rough edges.</span><span class="lang-ar">نسخة ألفا مفتوحة المصدر — توقع بعض العيوب.</span></p>
         </div>
 
-        <div class="hero-panel" aria-label="Product architecture preview">
-          <div class="panel-top">
-            <span class="panel-title">
-              <span class="lang-en">One ledger</span>
-              <span class="lang-ar">دفتر واحد</span>
-            </span>
-            <span class="panel-badge">RTL + EN</span>
-          </div>
-          <div class="flow">
-            <div class="flow-inputs">
-              <div class="flow-chip"><span class="chip-dot chip-blue"></span><span class="lang-en">Sales invoices</span><span class="lang-ar">فواتير البيع</span></div>
-              <div class="flow-chip"><span class="chip-dot chip-indigo"></span><span class="lang-en">Purchase bills</span><span class="lang-ar">فواتير الشراء</span></div>
-              <div class="flow-chip"><span class="chip-dot chip-amber"></span><span class="lang-en">Expenses</span><span class="lang-ar">المصروفات</span></div>
-              <div class="flow-chip"><span class="chip-dot chip-emerald"></span><span class="lang-en">Payments &amp; cheques</span><span class="lang-ar">المدفوعات والشيكات</span></div>
-              <div class="flow-chip"><span class="chip-dot chip-violet"></span><span class="lang-en">Payroll</span><span class="lang-ar">الرواتب</span></div>
+        <div class="hero-visual reveal">
+          <div class="stage-shell">
+            <div class="stage-note">
+              <span class="live-dot"></span>
+              <span class="lang-en">Real product screens · Demo data</span>
+              <span class="lang-ar">شاشات المنتج الحقيقية · بيانات تجريبية</span>
             </div>
-            <div class="flow-arrow" aria-hidden="true">↓</div>
-            <div class="flow-core">
-              <svg width="20" height="20" aria-hidden="true"><use href="#i-ledger"></use></svg>
-              <div>
-                <strong><span class="lang-en">Double-entry journal</span><span class="lang-ar">قيد محاسبي مزدوج</span></strong>
-                <small><span class="lang-en">Every transaction, one source of truth</span><span class="lang-ar">كل عملية، ومصدر واحد للحقيقة</span></small>
+            <div class="stage" data-stage>
+              <div class="stage-glow" aria-hidden="true"></div>
+              <div class="browser" data-browser>
+                <div class="browser-bar">
+                  <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <div class="browser-address"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><span data-hero-url>fatortak / dashboard</span></div>
+                  <div class="browser-live"><span class="live-dot"></span><span class="lang-en">PREVIEW</span><span class="lang-ar">معاينة</span></div>
+                </div>
+                <div class="browser-screen" id="hero-screen-panel" role="tabpanel" aria-live="polite">
+                  <img data-hero-screen src="assets/screenshots/dashboard.png" alt="Fatortak dashboard showing revenue, expenses, bank balance and profit chart" width="1440" height="900" fetchpriority="high" />
+                  <span class="screen-shine" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="float-card float-card-profit" aria-hidden="true">
+                <span class="float-icon"><svg class="icon"><use href="#i-trending"></use></svg></span>
+                <span class="float-copy">
+                  <span class="float-label lang-en">Net profit</span><span class="float-label lang-ar">صافي الربح</span>
+                  <strong>EGP 635,785</strong>
+                  <span class="float-delta">+22.9%</span>
+                </span>
+              </div>
+              <div class="float-card float-card-ocr" aria-hidden="true">
+                <span class="float-icon"><svg class="icon"><use href="#i-scan"></use></svg></span>
+                <span class="float-copy">
+                  <span class="float-label lang-en">OCR invoice</span><span class="float-label lang-ar">فاتورة OCR</span>
+                  <strong class="lang-en">Ready to review</strong><strong class="lang-ar">جاهزة للمراجعة</strong>
+                  <span class="float-delta neutral">EGP 42,750</span>
+                </span>
+              </div>
+              <div class="float-card float-card-ai" aria-hidden="true">
+                <span class="float-icon"><svg class="icon"><use href="#i-sparkles"></use></svg></span>
+                <span class="float-copy">
+                  <span class="float-label lang-en">AI answer</span><span class="float-label lang-ar">إجابة ذكية</span>
+                  <strong class="lang-en">October vs September</strong><strong class="lang-ar">أكتوبر مقابل سبتمبر</strong>
+                  <span class="float-delta">23% profit growth</span>
+                </span>
+              </div>
+              <div class="stage-reflection" aria-hidden="true"></div>
+            </div>
+
+            <div class="stage-controls">
+              <div class="hero-tabs" role="tablist" aria-label="Preview screens">
+                <button class="screen-tab is-active" type="button" role="tab" aria-selected="true" data-screen="dashboard">
+                  <svg class="icon" aria-hidden="true"><use href="#i-grid"></use></svg>
+                  <span class="lang-en">Dashboard</span><span class="lang-ar">لوحة التحكم</span>
+                </button>
+                <button class="screen-tab" type="button" role="tab" aria-selected="false" data-screen="ai-chat">
+                  <svg class="icon" aria-hidden="true"><use href="#i-sparkles"></use></svg>
+                  <span class="lang-en">AI chat</span><span class="lang-ar">المساعد الذكي</span>
+                </button>
+                <button class="screen-tab" type="button" role="tab" aria-selected="false" data-screen="ocr-invoice">
+                  <svg class="icon" aria-hidden="true"><use href="#i-scan"></use></svg>
+                  <span class="lang-en">OCR invoice</span><span class="lang-ar">فاتورة OCR</span>
+                </button>
+                <button class="screen-tab" type="button" role="tab" aria-selected="false" data-screen="sell-invoices">
+                  <svg class="icon" aria-hidden="true"><use href="#i-receipt"></use></svg>
+                  <span class="lang-en">Invoices</span><span class="lang-ar">الفواتير</span>
+                </button>
+              </div>
+              <div class="stage-meta">
+                <span class="drag-hint"><svg class="icon" aria-hidden="true"><use href="#i-move"></use></svg><span class="lang-en">Drag to rotate</span><span class="lang-ar">اسحب للتدوير</span></span>
+                <button class="play-toggle" type="button" data-autoplay-toggle aria-pressed="false">
+                  <svg class="icon icon-play" aria-hidden="true"><use href="#i-pause"></use></svg>
+                  <svg class="icon icon-paused" aria-hidden="true"><use href="#i-play"></use></svg>
+                  <span class="lang-en">Pause tour</span><span class="lang-ar">إيقاف الجولة</span>
+                </button>
+                <div class="tour-progress" aria-hidden="true"><span data-tour-progress></span></div>
               </div>
             </div>
-            <div class="flow-arrow" aria-hidden="true">↓</div>
-            <div class="flow-outputs">
-              <span><span class="lang-en">Trial balance</span><span class="lang-ar">ميزان المراجعة</span></span>
-              <span><span class="lang-en">P&amp;L</span><span class="lang-ar">قائمة الدخل</span></span>
-              <span><span class="lang-en">Balance sheet</span><span class="lang-ar">الميزانية</span></span>
-              <span><span class="lang-en">Project margin</span><span class="lang-ar">ربحية المشروع</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="container hero-marquee-wrap">
+        <div class="hero-marquee" dir="ltr" aria-hidden="true">
+          <div class="marquee-track">
+            <span>Invoicing</span><i></i><span>Double-entry accounting</span><i></i><span>Projects</span><i></i><span>Inventory</span><i></i><span>Payroll</span><i></i><span>AI chat</span><i></i><span>OCR</span><i></i><span>Reports</span><i></i><span>RTL</span><i></i>
+          </div>
+          <div class="marquee-track">
+            <span>Invoicing</span><i></i><span>Double-entry accounting</span><i></i><span>Projects</span><i></i><span>Inventory</span><i></i><span>Payroll</span><i></i><span>AI chat</span><i></i><span>OCR</span><i></i><span>Reports</span><i></i><span>RTL</span><i></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section showcase" id="product" aria-labelledby="showcase-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow"><span class="lang-en">Product tour</span><span class="lang-ar">جولة المنتج</span></p>
+          <h2 id="showcase-title"><span class="lang-en">Click through the actual product.</span><span class="lang-ar">تنقّل داخل المنتج الحقيقي.</span></h2>
+          <p class="section-sub"><span class="lang-en">No mockups. Every screen below is the running application, captured with demo data.</span><span class="lang-ar">لا توجد نماذج مرسومة. كل شاشة أدناه من التطبيق الفعلي، وبياناتها تجريبية.</span></p>
+        </div>
+
+        <div class="showcase-layout">
+          <div class="showcase-nav reveal" role="tablist" aria-label="Product screens">
+            <button class="showcase-tab is-active" type="button" role="tab" aria-selected="true" data-screen="dashboard">
+              <span class="showcase-num">01</span>
+              <span class="showcase-tab-icon"><svg class="icon" aria-hidden="true"><use href="#i-grid"></use></svg></span>
+              <span class="showcase-tab-copy"><strong><span class="lang-en">Dashboard</span><span class="lang-ar">لوحة التحكم</span></strong><small><span class="lang-en">Command center</span><span class="lang-ar">مركز القيادة</span></small></span>
+            </button>
+            <button class="showcase-tab" type="button" role="tab" aria-selected="false" data-screen="ai-chat">
+              <span class="showcase-num">02</span>
+              <span class="showcase-tab-icon"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"></use></svg></span>
+              <span class="showcase-tab-copy"><strong><span class="lang-en">AI chat</span><span class="lang-ar">المساعد الذكي</span></strong><small><span class="lang-en">Ask your ledger</span><span class="lang-ar">اسأل دفترك</span></small></span>
+            </button>
+            <button class="showcase-tab" type="button" role="tab" aria-selected="false" data-screen="ocr-invoice">
+              <span class="showcase-num">03</span>
+              <span class="showcase-tab-icon"><svg class="icon" aria-hidden="true"><use href="#i-scan"></use></svg></span>
+              <span class="showcase-tab-copy"><strong><span class="lang-en">OCR invoice</span><span class="lang-ar">فاتورة OCR</span></strong><small><span class="lang-en">Upload and review</span><span class="lang-ar">ارفع وراجع</span></small></span>
+            </button>
+            <button class="showcase-tab" type="button" role="tab" aria-selected="false" data-screen="sell-invoices">
+              <span class="showcase-num">04</span>
+              <span class="showcase-tab-icon"><svg class="icon" aria-hidden="true"><use href="#i-receipt"></use></svg></span>
+              <span class="showcase-tab-copy"><strong><span class="lang-en">Sales invoices</span><span class="lang-ar">فواتير البيع</span></strong><small><span class="lang-en">VAT and payments</span><span class="lang-ar">الضريبة والمدفوعات</span></small></span>
+            </button>
+            <button class="showcase-tab" type="button" role="tab" aria-selected="false" data-screen="projects">
+              <span class="showcase-num">05</span>
+              <span class="showcase-tab-icon"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span>
+              <span class="showcase-tab-copy"><strong><span class="lang-en">Projects</span><span class="lang-ar">المشروعات</span></strong><small><span class="lang-en">Profitability</span><span class="lang-ar">الربحية</span></small></span>
+            </button>
+            <button class="showcase-tab" type="button" role="tab" aria-selected="false" data-screen="income-statement">
+              <span class="showcase-num">06</span>
+              <span class="showcase-tab-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"></use></svg></span>
+              <span class="showcase-tab-copy"><strong><span class="lang-en">Reports</span><span class="lang-ar">التقارير</span></strong><small><span class="lang-en">Income statement</span><span class="lang-ar">قائمة الدخل</span></small></span>
+            </button>
+          </div>
+
+          <div class="showcase-main reveal">
+            <div class="showcase-browser-wrap" data-tilt>
+              <div class="showcase-browser" data-showcase-browser>
+                <div class="showcase-chrome">
+                  <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <span data-showcase-url>fatortak / dashboard</span>
+                  <span class="showcase-chrome-live"><span class="live-dot"></span><span class="lang-en">LIVE UI</span><span class="lang-ar">واجهة حقيقية</span></span>
+                </div>
+                <div class="showcase-screen" id="showcase-screen-panel" role="tabpanel" aria-live="polite">
+                  <img data-showcase-screen src="assets/screenshots/dashboard.png" alt="Fatortak dashboard" width="1440" height="900" />
+                  <span class="screen-shine" aria-hidden="true"></span>
+                </div>
+              </div>
+              <div class="showcase-badge"><span class="live-dot"></span><span class="lang-en">Real UI · Demo data</span><span class="lang-ar">واجهة حقيقية · بيانات تجريبية</span></div>
+            </div>
+
+            <div class="showcase-caption">
+              <div class="showcase-caption-top">
+                <span class="showcase-counter" data-showcase-counter>01 / 06</span>
+                <div class="showcase-arrows">
+                  <button type="button" data-showcase-prev aria-label="Previous screen"><svg class="icon" aria-hidden="true"><use href="#i-chevron-left"></use></svg></button>
+                  <button type="button" data-showcase-next aria-label="Next screen"><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg></button>
+                </div>
+              </div>
+              <h3 data-showcase-title>Your whole business, on one screen.</h3>
+              <p data-showcase-desc>Revenue, expenses, bank balance, receivables and payables update together.</p>
+              <ul class="showcase-bullets" data-showcase-bullets>
+                <li>Live KPIs for revenue, expenses and cash</li>
+                <li>Receivables and payables by client</li>
+                <li>Profit and growth chart with monthly trends</li>
+              </ul>
+              <button class="text-link" type="button" data-open-gallery="dashboard">
+                <span class="lang-en">View full screen</span><span class="lang-ar">عرض الشاشة كاملة</span>
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+              </button>
             </div>
           </div>
-          <p class="panel-foot">
-            <span class="lang-en">Invoices → journal → reports. No second version of the truth.</span>
-            <span class="lang-ar">فواتير ← قيود ← تقارير. لا نسخة ثانية من الحقيقة.</span>
-          </p>
-        </div>
-      </div>
-
-      <div class="container">
-        <div class="hero-stats">
-          <div><strong>6</strong><span class="lang-en">invoice templates</span><span class="lang-ar">قوالب فواتير</span></div>
-          <div><strong>AR / EN</strong><span class="lang-en">full RTL interface</span><span class="lang-ar">واجهة RTL كاملة</span></div>
-          <div><strong>1</strong><span class="lang-en">double-entry ledger</span><span class="lang-ar">دفتر قيد مزدوج</span></div>
-          <div><strong>AGPL-3.0</strong><span class="lang-en">open source, free to self-host</span><span class="lang-ar">مفتوح المصدر ومجاني للاستضافة الذاتية</span></div>
         </div>
       </div>
     </section>
 
-    <section class="section section-problem" id="problem">
-      <div class="container">
-        <div class="section-head reveal">
-          <p class="eyebrow"><span class="lang-en">The problem</span><span class="lang-ar">المشكلة</span></p>
-          <h2>
-            <span class="lang-en">Your numbers are not wrong.<br />They are scattered.</span>
-            <span class="lang-ar">أرقامك ليست خاطئة.<br />لكنها متفرقة.</span>
-          </h2>
+    <section class="section split-section ai-section" id="ai" aria-labelledby="ai-title">
+      <div class="container split-layout">
+        <div class="split-copy reveal">
+          <p class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"></use></svg><span class="lang-en">AI assistant</span><span class="lang-ar">المساعد الذكي</span></p>
+          <h2 id="ai-title"><span class="lang-en">Ask your ledger a question. Get the numbers back.</span><span class="lang-ar">اسأل دفترك سؤالاً. واحصل على الأرقام.</span></h2>
+          <p><span class="lang-en">The assistant answers in natural language and backs it up with KPI cards and charts from your own business data. Review any answer before you act on it.</span><span class="lang-ar">يجيب المساعد بلغة طبيعية ويدعم إجابته ببطاقات مؤشرات ورسوم من بيانات عملك. راجع أي إجابة قبل اتخاذ قرار.</span></p>
+          <div class="prompt-chips" role="group" aria-label="Example questions">
+            <button class="prompt-chip is-active" type="button" data-ai-prompt="october" aria-pressed="true"><span class="lang-en">How did October compare?</span><span class="lang-ar">كيف كان أكتوبر مقارنة بسبتمبر؟</span></button>
+            <button class="prompt-chip" type="button" data-ai-prompt="projects" aria-pressed="false"><span class="lang-en">Which project is most profitable?</span><span class="lang-ar">أي مشروع هو الأكثر ربحية؟</span></button>
+            <button class="prompt-chip" type="button" data-ai-prompt="receivables" aria-pressed="false"><span class="lang-en">Who owes us the most?</span><span class="lang-ar">من عليه أكبر مبلغ مستحق؟</span></button>
+          </div>
+          <p class="micro-note" data-ai-caption>October revenue was EGP 667,185 and net profit was EGP 635,785. Real demo answer.</p>
+          <ul class="check-list">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Session history, search and export</span><span class="lang-ar">سجل المحادثات والبحث والتصدير</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Answers with KPI cards and charts</span><span class="lang-ar">إجابات مع بطاقات مؤشرات ورسوم</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Works over your invoices, expenses and projects</span><span class="lang-ar">يعمل على فواتيرك ومصروفاتك ومشروعاتك</span></li>
+          </ul>
+          <a class="text-link" href="#pricing"><span class="lang-en">See plans with AI</span><span class="lang-ar">شاهد الخطط التي تشمل الذكاء</span><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
         </div>
-        <div class="problem-grid">
-          <article class="problem-card reveal">
-            <span class="problem-number">01</span>
-            <h3><span class="lang-en">The invoice lives in one app.</span><span class="lang-ar">الفاتورة في تطبيق.</span></h3>
-            <p><span class="lang-en">The customer list is in a sheet. The payment proof is on WhatsApp. The accountant rebuilds the story at month-end.</span><span class="lang-ar">قائمة العملاء في ملف، وإثبات الدفع على واتساب، والمحاسب يعيد بناء القصة في آخر الشهر.</span></p>
-          </article>
-          <article class="problem-card reveal">
-            <span class="problem-number">02</span>
-            <h3><span class="lang-en">The project cost lives in Excel.</span><span class="lang-ar">تكلفة المشروع في Excel.</span></h3>
-            <p><span class="lang-en">Freelancers, materials and payroll are tracked in different files. Revenue is visible; margin is a guess.</span><span class="lang-ar">الفريلانسرز والمواد والرواتب في ملفات مختلفة. الإيراد واضح، والربح تخمين.</span></p>
-          </article>
-          <article class="problem-card reveal">
-            <span class="problem-number">03</span>
-            <h3><span class="lang-en">The close takes a week.</span><span class="lang-ar">غلق الشهر يأخذ أسبوعاً.</span></h3>
-            <p><span class="lang-en">Three reports, three totals, three explanations. Nobody trusts the profit number enough to make a decision with it.</span><span class="lang-ar">ثلاثة تقارير وثلاثة أرقام وثلاثة تفسيرات. لا أحد يثق في رقم الربح بما يكفي لاتخاذ قرار.</span></p>
-          </article>
+        <div class="split-visual reveal" data-tilt>
+          <div class="panel-glow" aria-hidden="true"></div>
+          <div class="browser panel-browser">
+            <div class="browser-bar">
+              <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="browser-address"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><span>fatortak / ai-chat</span></div>
+              <div class="browser-live"><span class="live-dot"></span><span class="lang-en">AI</span><span class="lang-ar">ذكاء</span></div>
+            </div>
+            <div class="browser-screen"><img data-ai-screen src="assets/screenshots/ai-chat.png" alt="Fatortak AI chat answering a question about October revenue with KPI cards" width="1440" height="900" loading="lazy" /></div>
+          </div>
+          <div class="panel-tag"><span class="live-dot"></span><span class="lang-en">Real AI chat · Demo data</span><span class="lang-ar">محادثة ذكية حقيقية · بيانات تجريبية</span></div>
         </div>
-        <p class="problem-kicker reveal">
-          <span class="lang-en">Fatortak replaces the patchwork with one ledger.</span>
-          <span class="lang-ar">«فاتورتك» تستبدل التشتت بدفتر واحد.</span>
-        </p>
       </div>
     </section>
 
-    <section class="section" id="features">
+    <section class="section split-section ocr-section" id="ocr" aria-labelledby="ocr-title">
+      <div class="container split-layout reverse">
+        <div class="split-visual reveal" data-tilt>
+          <div class="panel-glow cyan" aria-hidden="true"></div>
+          <div class="browser panel-browser">
+            <div class="browser-bar">
+              <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="browser-address"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><span>fatortak / ocr-invoice</span></div>
+              <div class="browser-live"><span class="live-dot"></span><span class="lang-en">OCR</span><span class="lang-ar">OCR</span></div>
+            </div>
+            <div class="browser-screen"><img data-ocr-screen src="assets/screenshots/ocr-invoice.png" alt="Fatortak OCR invoice page with an uploaded supplier invoice preview" width="1440" height="900" loading="lazy" /></div>
+          </div>
+          <div class="panel-tag"><span class="live-dot"></span><span class="lang-en">Real OCR screen · Demo invoice</span><span class="lang-ar">شاشة OCR حقيقية · فاتورة تجريبية</span></div>
+        </div>
+        <div class="split-copy reveal">
+          <p class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-scan"></use></svg><span class="lang-en">OCR invoice capture</span><span class="lang-ar">استخراج الفواتير OCR</span></p>
+          <h2 id="ocr-title"><span class="lang-en">From supplier PDF to reviewable invoice.</span><span class="lang-ar">من ملف المورد إلى فاتورة قابلة للمراجعة.</span></h2>
+          <p><span class="lang-en">Upload a PDF or image, preview the document, review the extracted fields, then create the purchase invoice. Nothing is saved until you approve it.</span><span class="lang-ar">ارفع ملف PDF أو صورة، عاين المستند، راجع الحقول المستخرجة، ثم أنشئ فاتورة الشراء. لا يُحفظ شيء قبل موافقتك.</span></p>
+          <div class="ocr-steps" role="tablist" aria-label="OCR steps">
+            <button class="ocr-step is-active" type="button" role="tab" aria-selected="true" data-ocr-step="upload"><span>01</span><span class="lang-en">Upload</span><span class="lang-ar">الرفع</span></button>
+            <button class="ocr-step" type="button" role="tab" aria-selected="false" data-ocr-step="extract"><span>02</span><span class="lang-en">Extract</span><span class="lang-ar">الاستخراج</span></button>
+            <button class="ocr-step" type="button" role="tab" aria-selected="false" data-ocr-step="review"><span>03</span><span class="lang-en">Review</span><span class="lang-ar">المراجعة</span></button>
+            <button class="ocr-step" type="button" role="tab" aria-selected="false" data-ocr-step="create"><span>04</span><span class="lang-en">Create</span><span class="lang-ar">الإنشاء</span></button>
+          </div>
+          <p class="micro-note" data-ocr-caption>Drop a PDF or image and preview it before extraction.</p>
+          <ul class="check-list">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Side-by-side document preview</span><span class="lang-ar">معاينة المستند جنباً إلى جنب</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Edit supplier, dates, items and VAT</span><span class="lang-ar">عدّل المورد والتواريخ والأصناف والضريبة</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Create a purchase invoice after review</span><span class="lang-ar">أنشئ فاتورة شراء بعد المراجعة</span></li>
+          </ul>
+          <p class="honest-note"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg><span class="lang-en">OCR quality depends on the configured model and document. Always review every field before saving.</span><span class="lang-ar">تعتمد جودة OCR على النموذج والمستند. راجع كل حقل قبل الحفظ.</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section features" id="features" aria-labelledby="features-title">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow"><span class="lang-en">What is inside</span><span class="lang-ar">ما داخل النظام</span></p>
-          <h2>
-            <span class="lang-en">Everything that touches the number.</span>
-            <span class="lang-ar">كل ما يمس الرقم.</span>
-          </h2>
-          <p class="section-lede">
-            <span class="lang-en">Not a collection of bolt-on tools. Sales, purchasing, projects, inventory, HR and payroll write to the same books.</span>
-            <span class="lang-ar">ليست مجموعة أدوات منفصلة. البيع والشراء والمشروعات والمخزون والموارد البشرية والرواتب تُسجَّل في نفس الدفاتر.</span>
-          </p>
+          <p class="eyebrow"><span class="lang-en">One system</span><span class="lang-ar">نظام واحد</span></p>
+          <h2 id="features-title"><span class="lang-en">Every module. One ledger.</span><span class="lang-ar">كل الوحدات. دفتر واحد.</span></h2>
+          <p class="section-sub"><span class="lang-en">Invoices, accounting, projects, inventory, payroll and reports share the same data. No duplicate entry, no spreadsheet hand-offs.</span><span class="lang-ar">الفواتير والمحاسبة والمشروعات والمخزون والرواتب والتقارير تشترك في نفس البيانات. لا إدخال مكرر ولا جداول منفصلة.</span></p>
         </div>
-
         <div class="feature-grid">
-          <article class="feature-card reveal">
-            <div class="feature-icon icon-blue"><svg aria-hidden="true"><use href="#i-invoice"></use></svg></div>
-            <h3><span class="lang-en">Sales &amp; invoicing</span><span class="lang-ar">المبيعات والفواتير</span></h3>
-            <p><span class="lang-en">Cash and credit invoices, VAT, discounts, installments and partial payments. Six templates, Arabic/English PDFs and public invoice links.</span><span class="lang-ar">فواتير نقدية وآجلة، ضريبة قيمة مضافة، خصومات، أقساط ومدفوعات جزئية. ستة قوالب، PDF عربي/إنجليزي وروابط عامة للفاتورة.</span></p>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-receipt"></use></svg></span>
+            <h3><span class="lang-en">Sales &amp; purchase invoices</span><span class="lang-ar">فواتير البيع والشراء</span></h3>
+            <p><span class="lang-en">VAT, discounts, installments, partial payments and bilingual PDFs.</span><span class="lang-ar">ضريبة القيمة المضافة والخصومات والأقساط والمدفوعات الجزئية وملفات PDF ثنائية اللغة.</span></p>
+            <span class="feature-tag"><span class="lang-en">Core</span><span class="lang-ar">أساسي</span></span>
           </article>
-          <article class="feature-card reveal">
-            <div class="feature-icon icon-indigo"><svg aria-hidden="true"><use href="#i-ledger"></use></svg></div>
-            <h3><span class="lang-en">Double-entry accounting</span><span class="lang-ar">محاسبة بالقيد المزدوج</span></h3>
-            <p><span class="lang-en">Chart of accounts, journal entries, trial balance, P&amp;L, balance sheet, cash flow and AR/AP aging — all from the same postings.</span><span class="lang-ar">شجرة حسابات، قيود يومية، ميزان مراجعة، قائمة دخل، ميزانية، تدفقات نقدية وأعمار العملاء والموردين — من نفس القيود.</span></p>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-bank"></use></svg></span>
+            <h3><span class="lang-en">Double-entry accounting</span><span class="lang-ar">محاسبة القيد المزدوج</span></h3>
+            <p><span class="lang-en">Chart of accounts, journal entries, trial balance and financial statements.</span><span class="lang-ar">دليل الحسابات والقيود اليومية وميزان المراجعة والقوائم المالية.</span></p>
+            <span class="feature-tag"><span class="lang-en">Core</span><span class="lang-ar">أساسي</span></span>
           </article>
-          <article class="feature-card reveal">
-            <div class="feature-icon icon-emerald"><svg aria-hidden="true"><use href="#i-chart"></use></svg></div>
-            <h3><span class="lang-en">Project profitability</span><span class="lang-ar">ربحية المشروعات</span></h3>
-            <p><span class="lang-en">Link invoices, purchases, expenses and payroll to a project. See revenue, cost and margin per project — not just revenue.</span><span class="lang-ar">اربط الفواتير والمشتريات والمصروفات والرواتب بالمشروع. شاهد الإيراد والتكلفة والهامش لكل مشروع — وليس الإيراد فقط.</span></p>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"></use></svg></span>
+            <h3><span class="lang-en">Projects &amp; profitability</span><span class="lang-ar">المشروعات والربحية</span></h3>
+            <p><span class="lang-en">Contract value, costs, invoicing and collections for every project.</span><span class="lang-ar">قيمة العقد والتكاليف والفوترة والتحصيل لكل مشروع.</span></p>
+            <span class="feature-tag"><span class="lang-en">Margins</span><span class="lang-ar">الهوامش</span></span>
           </article>
-          <article class="feature-card reveal">
-            <div class="feature-icon icon-amber"><svg aria-hidden="true"><use href="#i-box"></use></svg></div>
-            <h3><span class="lang-en">Inventory &amp; purchasing</span><span class="lang-ar">المخزون والمشتريات</span></h3>
-            <p><span class="lang-en">Items, categories, stock quantities, supplier bills, statements, AP aging and expenses with attachments.</span><span class="lang-ar">أصناف وفئات وكميات مخزون وفواتير موردين وكشوف حساب وأعمار موردين ومصروفات مع مرفقات.</span></p>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-box"></use></svg></span>
+            <h3><span class="lang-en">Inventory &amp; suppliers</span><span class="lang-ar">المخزون والموردون</span></h3>
+            <p><span class="lang-en">Items, stock movements, purchase invoices and supplier balances.</span><span class="lang-ar">الأصناف وحركة المخزون وفواتير الشراء وأرصدة الموردين.</span></p>
+            <span class="feature-tag"><span class="lang-en">Operations</span><span class="lang-ar">العمليات</span></span>
           </article>
-          <article class="feature-card reveal">
-            <div class="feature-icon icon-violet"><svg aria-hidden="true"><use href="#i-people"></use></svg></div>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-users"></use></svg></span>
             <h3><span class="lang-en">HR &amp; payroll</span><span class="lang-ar">الموارد البشرية والرواتب</span></h3>
-            <p><span class="lang-en">Employees, departments, attendance, vacations and payroll runs — with costs that can be allocated to projects.</span><span class="lang-ar">موظفون وأقسام وحضور وإجازات ودورات رواتب — مع إمكانية تخصيص التكاليف للمشروعات.</span></p>
+            <p><span class="lang-en">Employees, departments, attendance and payroll runs.</span><span class="lang-ar">الموظفون والأقسام والحضور ودورات الرواتب.</span></p>
+            <span class="feature-tag"><span class="lang-en">People</span><span class="lang-ar">الفريق</span></span>
           </article>
-          <article class="feature-card reveal">
-            <div class="feature-icon icon-pink"><svg aria-hidden="true"><use href="#i-spark"></use></svg></div>
-            <h3><span class="lang-en">AI that removes typing</span><span class="lang-ar">ذكاء اصطناعي يقلل الإدخال</span></h3>
-            <p><span class="lang-en">Scan a supplier invoice into a draft purchase invoice, or ask the assistant about the ledger. Optional: accounting works without an API key.</span><span class="lang-ar">امسح فاتورة مورد لإنشاء مسودة فاتورة شراء، أو اسأل المساعد عن الدفاتر. اختياري: المحاسبة تعمل دون مفتاح API.</span></p>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"></use></svg></span>
+            <h3><span class="lang-en">AI assistant</span><span class="lang-ar">المساعد الذكي</span></h3>
+            <p><span class="lang-en">Ask questions in natural language and get figures with charts.</span><span class="lang-ar">اسأل بلغة طبيعية واحصل على أرقام ورسوم بيانية.</span></p>
+            <span class="feature-tag"><span class="lang-en">AI</span><span class="lang-ar">ذكاء</span></span>
+          </article>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-scan"></use></svg></span>
+            <h3><span class="lang-en">OCR invoice capture</span><span class="lang-ar">استخراج الفواتير OCR</span></h3>
+            <p><span class="lang-en">Upload, preview, extract and review supplier invoices.</span><span class="lang-ar">ارفع فواتير الموردين وعاينها واستخرج بياناتها وراجعها.</span></p>
+            <span class="feature-tag"><span class="lang-en">AI</span><span class="lang-ar">ذكاء</span></span>
+          </article>
+          <article class="feature-card reveal" data-tilt>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-globe"></use></svg></span>
+            <h3><span class="lang-en">Arabic &amp; English</span><span class="lang-ar">العربية والإنجليزية</span></h3>
+            <p><span class="lang-en">Full RTL layouts, Arabic invoices and bilingual PDFs.</span><span class="lang-ar">تخطيطات RTL كاملة وفواتير عربية وملفات PDF ثنائية اللغة.</span></p>
+            <span class="feature-tag"><span class="lang-en">MENA</span><span class="lang-ar">الشرق الأوسط</span></span>
           </article>
         </div>
-
-        <div class="also-strip reveal">
-          <span class="also-label"><span class="lang-en">Also included</span><span class="lang-ar">يشمل أيضاً</span></span>
-          <span><span class="lang-en">Multi-company</span><span class="lang-ar">تعدد الشركات</span></span>
-          <span><span class="lang-en">Branches</span><span class="lang-ar">الفروع</span></span>
-          <span><span class="lang-en">Role-based access</span><span class="lang-ar">صلاحيات حسب الدور</span></span>
-          <span><span class="lang-en">Treasury &amp; cheques</span><span class="lang-ar">الخزينة والشيكات</span></span>
-          <span><span class="lang-en">Notifications</span><span class="lang-ar">الإشعارات</span></span>
-          <span><span class="lang-en">Dark mode</span><span class="lang-ar">الوضع الداكن</span></span>
-          <span><span class="lang-en">Swagger API</span><span class="lang-ar">واجهة Swagger</span></span>
-        </div>
       </div>
     </section>
 
-    <section class="section section-ledger" id="ledger">
-      <div class="container ledger-grid">
-        <div class="ledger-copy reveal">
-          <p class="eyebrow eyebrow-light"><span class="lang-en">The architecture</span><span class="lang-ar">البنية</span></p>
-          <h2>
-            <span class="lang-en">One ledger behind every module.</span>
-            <span class="lang-ar">دفتر واحد خلف كل وحدة.</span>
-          </h2>
-          <p>
-            <span class="lang-en">An invoice is not a document with a total. It posts a receivable, revenue and VAT. A payment clears the receivable. A cheque is not cash until it clears. The reports read the same postings, so the trial balance, P&amp;L and project margin cannot quietly disagree.</span>
-            <span class="lang-ar">الفاتورة ليست مستنداً يحمل رقماً. هي تُنشئ مديناً وإيراداً وضريبة. الدفعة تسدد المدين، والشيك ليس نقداً حتى يُحصَّل. التقارير تقرأ نفس القيود، فلا يمكن أن يختلف ميزان المراجعة وقائمة الدخل وربحية المشروع في صمت.</span>
-          </p>
-          <ul class="check-list">
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Every financial event posts a balanced journal entry.</span><span class="lang-ar">كل عملية مالية تُنشئ قيداً متوازناً.</span></li>
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlinked project costs are shown as unallocated, not hidden.</span><span class="lang-ar">التكاليف غير المرتبطة بالمشروع تظهر كغير مخصّصة، ولا تُخفى.</span></li>
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Manual journal entries stay possible for the accountant.</span><span class="lang-ar">يبقى القيد اليدوي متاحاً للمحاسب.</span></li>
-          </ul>
-        </div>
-        <div class="ledger-card reveal">
-          <div class="ledger-card-head">
-            <span><span class="lang-en">Journal entry</span><span class="lang-ar">قيد يومية</span></span>
-            <span class="ledger-date">2026-10-27</span>
-          </div>
-          <table class="ledger-table">
-            <thead>
-              <tr>
-                <th><span class="lang-en">Account</span><span class="lang-ar">الحساب</span></th>
-                <th><span class="lang-en">Debit</span><span class="lang-ar">مدين</span></th>
-                <th><span class="lang-en">Credit</span><span class="lang-ar">دائن</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><span class="lang-en">Accounts receivable</span><span class="lang-ar">مدينون</span></td><td>115,000</td><td>—</td></tr>
-              <tr><td><span class="lang-en">Sales revenue</span><span class="lang-ar">إيرادات</span></td><td>—</td><td>100,000</td></tr>
-              <tr><td><span class="lang-en">VAT output</span><span class="lang-ar">ضريبة مخرجات</span></td><td>—</td><td>15,000</td></tr>
-              <tr class="ledger-total"><td><span class="lang-en">Balanced</span><span class="lang-ar">متوازن</span></td><td>115,000</td><td>115,000</td></tr>
-            </tbody>
-          </table>
-          <p class="ledger-note"><span class="lang-en">Illustrative journal entry. Amounts in EGP.</span><span class="lang-ar">قيد توضيحي. المبالغ بالجنيه المصري.</span></p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-open" id="open-source">
-      <div class="container open-grid">
-        <div class="open-copy reveal">
-          <p class="eyebrow"><span class="lang-en">Open source, honestly</span><span class="lang-ar">مفتوح المصدر بصراحة</span></p>
-          <h2>
-            <span class="lang-en">Audit the code.<br />Own the data.</span>
-            <span class="lang-ar">راجع الكود.<br />وامتلك البيانات.</span>
-          </h2>
-          <p>
-            <span class="lang-en">Fatortak is licensed AGPL-3.0. The community edition includes the modules that make it useful — not a feature-limited trial. Self-host the full stack with Docker Compose, or use managed cloud when you want backups and someone to call.</span>
-            <span class="lang-ar">«فاتورتك» مرخّصة بـ AGPL-3.0. النسخة المجتمعية تشمل الوحدات التي تجعلها مفيدة — وليست نسخة تجريبية ناقصة. استضف الحزمة كاملة عبر Docker Compose، أو استخدم السحابة المُدارة عندما تريد نسخاً احتياطياً وجهة مسؤولة.</span>
-          </p>
-          <ul class="check-list">
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full source under AGPL-3.0 — no open-core feature hostage.</span><span class="lang-ar">الكود الكامل بترخيص AGPL-3.0 — دون احتجاز للمزايا.</span></li>
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Docker Compose: React + .NET 8 + SQL Server.</span><span class="lang-ar">Docker Compose: React + .NET 8 + SQL Server.</span></li>
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Commercial license for closed-source products and hosted services.</span><span class="lang-ar">ترخيص تجاري للمنتجات مغلقة المصدر والخدمات المستضافة.</span></li>
-            <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Managed cloud, migration, training and priority support.</span><span class="lang-ar">سحابة مُدارة وترحيل وتدريب ودعم أولوية.</span></li>
-          </ul>
-          <div class="open-actions">
-            <a class="btn btn-primary" href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener">
-              <svg width="18" height="18" aria-hidden="true"><use href="#i-github"></use></svg>
-              <span class="lang-en">View the repository</span>
-              <span class="lang-ar">زيارة المستودع</span>
-            </a>
-            <a class="btn btn-secondary" href="https://github.com/Fatortak/Fatortak_Software/blob/main/docs/self-hosting.md" target="_blank" rel="noopener">
-              <span class="lang-en">Self-hosting guide</span>
-              <span class="lang-ar">دليل الاستضافة</span>
-            </a>
-          </div>
-          <p class="honest-note">
-            <strong><span class="lang-en">Honest note:</span><span class="lang-ar">ملاحظة صريحة:</span></strong>
-            <span class="lang-en">Fatortak is alpha. There is no independent security audit yet, and ETA/ZATCA e-invoicing is not implemented. Read SECURITY.md before exposing an instance to the internet.</span>
-            <span class="lang-ar">«فاتورتك» في مرحلة ألفا. لا يوجد تدقيق أمني مستقل بعد، ولا تكامل مع ETA أو ZATCA. اقرأ SECURITY.md قبل نشر نسخة على الإنترنت.</span>
-          </p>
-        </div>
-        <div class="terminal reveal" aria-label="Docker quickstart">
-          <div class="terminal-bar"><span></span><span></span><span></span><em>bash</em></div>
-          <pre><code><span class="c-muted"># clone the repository</span>
-git clone https://github.com/Fatortak/Fatortak_Software.git
-cd Fatortak_Software
-
-<span class="c-muted"># configure and run the full stack</span>
-cp .env.docker.example .env
-docker compose up --build
-
-<span class="c-green"># web   → http://localhost:3000</span>
-<span class="c-green"># api   → http://localhost:5000</span>
-<span class="c-green"># swagger → /swagger</span></code></pre>
-          <div class="terminal-foot">
-            <span class="lang-en">SQL Server, API and web app in one compose file.</span>
-            <span class="lang-ar">SQL Server وواجهة API وتطبيق الويب في ملف واحد.</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="pricing">
+    <section class="section gallery" id="screens" aria-labelledby="gallery-title">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow"><span class="lang-en">Pricing</span><span class="lang-ar">الأسعار</span></p>
-          <h2>
-            <span class="lang-en">Start free. Pay for operations, not permission.</span>
-            <span class="lang-ar">ابدأ مجاناً. ادفع مقابل التشغيل، لا مقابل الإذن.</span>
-          </h2>
-          <p class="section-lede">
-            <span class="lang-en">Self-host the community edition for free forever. Managed cloud plans are priced in EGP and include hosting, backups, updates and support.</span>
-            <span class="lang-ar">استضف النسخة المجتمعية مجاناً للأبد. خطط السحابة المُدارة بالجنيه المصري وتشمل الاستضافة والنسخ الاحتياطي والتحديثات والدعم.</span>
-          </p>
-          <div class="billing-toggle" role="group" aria-label="Billing period">
-            <button type="button" class="is-active" data-billing="monthly" aria-pressed="true"><span class="lang-en">Monthly</span><span class="lang-ar">شهري</span></button>
-            <button type="button" data-billing="yearly" aria-pressed="false"><span class="lang-en">Yearly</span><span class="lang-ar">سنوي</span><span class="save-badge">−25%</span></button>
+          <p class="eyebrow"><span class="lang-en">Real screens</span><span class="lang-ar">شاشات حقيقية</span></p>
+          <h2 id="gallery-title"><span class="lang-en">Every screen, no mockups.</span><span class="lang-ar">كل الشاشات، بلا نماذج مرسومة.</span></h2>
+          <p class="section-sub"><span class="lang-en">Open any screen for a closer look. These are captures of the running application with demo data.</span><span class="lang-ar">افتح أي شاشة لمشاهدتها عن قرب. هذه لقطات من التطبيق الفعلي ببيانات تجريبية.</span></p>
+        </div>
+        <div class="gallery-grid">
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="dashboard" aria-label="View dashboard screenshot">
+              <img src="assets/screenshots/dashboard.png" alt="Fatortak dashboard" width="1440" height="900" loading="lazy" data-alt-en="Fatortak dashboard showing revenue, expenses, bank balance and profit chart" data-alt-ar="لوحة تحكم فاتورتك تعرض الإيرادات والمصروفات والرصيد البنكي ورسوم الأرباح" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">01</span>
+            </button>
+            <figcaption><strong><span class="lang-en">Dashboard</span><span class="lang-ar">لوحة التحكم</span></strong><span><span class="lang-en">Revenue, expenses, bank balance, receivables and profit in one view.</span><span class="lang-ar">الإيرادات والمصروفات والرصيد البنكي والمستحقات والأرباح في عرض واحد.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="ai-chat" aria-label="View AI chat screenshot">
+              <img src="assets/screenshots/ai-chat.png" alt="Fatortak AI chat" width="1440" height="900" loading="lazy" data-alt-en="Fatortak AI chat answering a question about October revenue with KPI cards" data-alt-ar="محادثة فاتورتك الذكية تجيب عن سؤال حول إيرادات أكتوبر مع بطاقات مؤشرات" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">02</span>
+            </button>
+            <figcaption><strong><span class="lang-en">AI chat</span><span class="lang-ar">المساعد الذكي</span></strong><span><span class="lang-en">A real conversation with real demo figures and charts.</span><span class="lang-ar">محادثة حقيقية بأرقام ورسوم تجريبية.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="ocr-invoice" aria-label="View OCR invoice screenshot">
+              <img src="assets/screenshots/ocr-invoice.png" alt="Fatortak OCR invoice page" width="1440" height="900" loading="lazy" data-alt-en="Fatortak OCR invoice page with an uploaded supplier invoice preview" data-alt-ar="صفحة OCR لفاتورة المورد مع معاينة الفاتورة المرفوعة" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">03</span>
+            </button>
+            <figcaption><strong><span class="lang-en">OCR invoice</span><span class="lang-ar">فاتورة OCR</span></strong><span><span class="lang-en">Upload, preview and review before creating the invoice.</span><span class="lang-ar">ارفع وعاين وراجع قبل إنشاء الفاتورة.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="sell-invoices" aria-label="View sales invoices screenshot">
+              <img src="assets/screenshots/sell-invoices.png" alt="Fatortak sales invoices" width="1440" height="900" loading="lazy" data-alt-en="Fatortak sales invoices list with VAT, paid and remaining amounts" data-alt-ar="قائمة فواتير البيع في فاتورتك مع الضريبة والمدفوع والمتبقي" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">04</span>
+            </button>
+            <figcaption><strong><span class="lang-en">Sales invoices</span><span class="lang-ar">فواتير البيع</span></strong><span><span class="lang-en">VAT, paid and remaining amounts, statuses and dates.</span><span class="lang-ar">ضريبة القيمة المضافة والمدفوع والمتبقي والحالات والتواريخ.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="clients" aria-label="View clients screenshot">
+              <img src="assets/screenshots/clients.png" alt="Fatortak clients" width="1440" height="900" loading="lazy" data-alt-en="Fatortak clients list with contacts, tax numbers and status" data-alt-ar="قائمة عملاء فاتورتك مع جهات الاتصال والأرقام الضريبية والحالة" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">05</span>
+            </button>
+            <figcaption><strong><span class="lang-en">Clients</span><span class="lang-ar">العملاء</span></strong><span><span class="lang-en">Contacts, tax numbers, balances and activity.</span><span class="lang-ar">جهات الاتصال والأرقام الضريبية والأرصدة والنشاط.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="projects" aria-label="View projects screenshot">
+              <img src="assets/screenshots/projects.png" alt="Fatortak projects" width="1440" height="900" loading="lazy" data-alt-en="Fatortak projects list with contract value and status" data-alt-ar="قائمة مشروعات فاتورتك مع قيمة العقد والحالة" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">06</span>
+            </button>
+            <figcaption><strong><span class="lang-en">Projects</span><span class="lang-ar">المشروعات</span></strong><span><span class="lang-en">Contract value, invoicing and collections.</span><span class="lang-ar">قيمة العقد والفوترة والتحصيل.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="project-profitability" aria-label="View project profitability screenshot">
+              <img src="assets/screenshots/project-profitability.png" alt="Fatortak project profitability report" width="1440" height="900" loading="lazy" data-alt-en="Fatortak project profitability report showing invoiced, expenses and net profit" data-alt-ar="تقرير ربحية المشروعات في فاتورتك يعرض الفوترة والمصروفات وصافي الربح" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">07</span>
+            </button>
+            <figcaption><strong><span class="lang-en">Project profitability</span><span class="lang-ar">ربحية المشروعات</span></strong><span><span class="lang-en">See which projects actually make money.</span><span class="lang-ar">اعرف أي المشروعات تحقق ربحاً فعلياً.</span></span></figcaption>
+          </figure>
+          <figure class="shot-card reveal" data-tilt>
+            <button class="shot-button" type="button" data-open-gallery="income-statement" aria-label="View income statement screenshot">
+              <img src="assets/screenshots/income-statement.png" alt="Fatortak income statement" width="1440" height="900" loading="lazy" data-alt-en="Fatortak income statement showing revenue, expenses and net income" data-alt-ar="قائمة الدخل في فاتورتك تعرض الإيرادات والمصروفات وصافي الدخل" />
+              <span class="shot-overlay"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg><span class="lang-en">View screen</span><span class="lang-ar">عرض الشاشة</span></span>
+              <span class="shot-number">08</span>
+            </button>
+            <figcaption><strong><span class="lang-en">Income statement</span><span class="lang-ar">قائمة الدخل</span></strong><span><span class="lang-en">Revenue, expenses and net income for any period.</span><span class="lang-ar">الإيرادات والمصروفات وصافي الدخل لأي فترة.</span></span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section open-section" id="open-source" aria-labelledby="open-title">
+      <div class="container split-layout">
+        <div class="split-copy reveal">
+          <p class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg><span class="lang-en">Open source</span><span class="lang-ar">مفتوح المصدر</span></p>
+          <h2 id="open-title"><span class="lang-en">Open source at the core. Not as a badge.</span><span class="lang-ar">مفتوح المصدر في الأساس. ليس شعاراً.</span></h2>
+          <p><span class="lang-en">The full application is AGPL-3.0. Self-host it, audit it, and own your data. A commercial license is available when you need different terms.</span><span class="lang-ar">التطبيق بالكامل تحت AGPL-3.0. استضفه ذاتياً، راجع الكود، وامتلك بياناتك. يتوفر ترخيص تجاري عندما تحتاج شروطاً مختلفة.</span></p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener">
+              <svg class="icon" aria-hidden="true"><use href="#i-github"></use></svg>
+              <span class="lang-en">View on GitHub</span><span class="lang-ar">عرض على GitHub</span>
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/Fatortak/Fatortak_Software/blob/main/LICENSE" target="_blank" rel="noopener">
+              <span class="lang-en">Read AGPL-3.0</span><span class="lang-ar">اقرأ AGPL-3.0</span>
+              <svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"></use></svg>
+            </a>
           </div>
+          <div class="license-note"><svg class="icon" aria-hidden="true"><use href="#i-shield"></use></svg><span class="lang-en">Commercial licensing is available for teams that cannot use AGPL-3.0 terms.</span><span class="lang-ar">يتوفر ترخيص تجاري للفرق التي لا يمكنها استخدام شروط AGPL-3.0.</span></div>
+        </div>
+        <div class="terminal-wrap reveal" data-tilt>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span>bash</span>
+              <button type="button" class="terminal-copy" data-copy-command="docker compose up -d" aria-label="Copy command"><svg class="icon" aria-hidden="true"><use href="#i-copy"></use></svg><span class="lang-en">Copy</span><span class="lang-ar">نسخ</span></button>
+            </div>
+            <pre><code><span class="c-muted"># clone the repository</span>
+<span class="c-green">git clone</span> https://github.com/Fatortak/Fatortak_Software
+<span class="c-green">cd</span> Fatortak_Software
+<span class="c-green">cp</span> .env.docker.example .env
+
+<span class="c-muted"># start SQL Server, API and web app</span>
+<span class="c-green">docker compose up -d</span>
+
+<span class="c-muted"># web</span>      http://localhost:3000
+<span class="c-muted"># api</span>      http://localhost:5000
+<span class="c-muted"># swagger</span>  /swagger</code></pre>
+            <div class="terminal-foot"><span class="lang-en">SQL Server, API and web app in one compose file.</span><span class="lang-ar">SQL Server وAPI وتطبيق الويب في ملف Compose واحد.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section pricing" id="pricing" aria-labelledby="pricing-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow"><span class="lang-en">Pricing</span><span class="lang-ar">التسعير</span></p>
+          <h2 id="pricing-title"><span class="lang-en">Simple pricing. Start small.</span><span class="lang-ar">تسعير واضح. ابدأ صغيراً.</span></h2>
+          <p class="section-sub"><span class="lang-en">Self-hosted is free forever. Managed plans are billed monthly in EGP.</span><span class="lang-ar">الاستضافة الذاتية مجانية للأبد. الخطط المُدارة تُفوتر شهرياً بالجنيه المصري.</span></p>
         </div>
 
         <div class="pricing-grid">
-          <article class="price-card reveal">
+          <article class="price-card price-card-community reveal">
             <div class="price-head">
-              <h3><span class="lang-en">Community</span><span class="lang-ar">المجتمعية</span></h3>
-              <p><span class="lang-en">Self-host it. Keep the code.</span><span class="lang-ar">استضفه بنفسك. واحتفظ بالكود.</span></p>
+              <span class="plan-kicker"><span class="lang-en">Community</span><span class="lang-ar">المجتمع</span></span>
+              <h3><span class="lang-en">Self-hosted</span><span class="lang-ar">استضافة ذاتية</span></h3>
+              <p><span class="lang-en">Run the full application on your own infrastructure.</span><span class="lang-ar">شغّل التطبيق بالكامل على بنيتك التحتية.</span></p>
             </div>
-            <div class="price"><span class="amount" data-monthly="0" data-yearly="0">0</span><span class="currency">EGP</span><span class="period"><span class="lang-en">free forever</span><span class="lang-ar">مجاناً للأبد</span></span></div>
-            <a class="btn btn-outline btn-block" href="https://github.com/Fatortak/Fatortak_Software#quickstart" target="_blank" rel="noopener"><span class="lang-en">Self-host now</span><span class="lang-ar">ابدأ الاستضافة</span></a>
+            <div class="price-amount"><span class="currency">EGP</span><span class="amount">0</span><span class="period"><span class="lang-en">forever</span><span class="lang-ar">للأبد</span></span></div>
+            <a class="btn btn-outline btn-block" href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener"><span class="lang-en">View on GitHub</span><span class="lang-ar">عرض على GitHub</span></a>
             <ul class="price-list">
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full product under AGPL-3.0</span><span class="lang-ar">المنتج الكامل بترخيص AGPL-3.0</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited companies and users*</span><span class="lang-ar">شركات ومستخدمون بلا حدود*</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Docker Compose stack</span><span class="lang-ar">حزمة Docker Compose</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Community support</span><span class="lang-ar">دعم المجتمع</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full application under AGPL-3.0</span><span class="lang-ar">التطبيق الكامل تحت AGPL-3.0</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Docker Compose setup</span><span class="lang-ar">إعداد Docker Compose</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Bring your own AI provider keys</span><span class="lang-ar">استخدم مفاتيح مزود الذكاء الخاص بك</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Community support</span><span class="lang-ar">دعم المجتمع</span></li>
             </ul>
-            <p class="price-fine"><span class="lang-en">*Your server, your backup policy, your responsibility.</span><span class="lang-ar">*سيرفرك، وسياسة النسخ الاحتياطي، ومسؤوليتك.</span></p>
           </article>
 
           <article class="price-card reveal">
             <div class="price-head">
-              <h3><span class="lang-en">Starter</span><span class="lang-ar">البداية</span></h3>
-              <p><span class="lang-en">For a small team getting organized.</span><span class="lang-ar">لفريق صغير يريد التنظيم.</span></p>
+              <span class="plan-kicker"><span class="lang-en">Starter</span><span class="lang-ar">البداية</span></span>
+              <h3><span class="lang-en">For a small team</span><span class="lang-ar">لفريق صغير</span></h3>
+              <p><span class="lang-en">Get organized without a heavy rollout.</span><span class="lang-ar">نظّم أعمالك دون تعقيد.</span></p>
             </div>
-            <div class="price"><span class="amount" data-monthly="300" data-yearly="2700">300</span><span class="currency">EGP</span><span class="period"><span class="per-month">/ <span class="lang-en">month</span><span class="lang-ar">شهر</span></span><span class="per-year">/ <span class="lang-en">year</span><span class="lang-ar">سنة</span></span></span></div>
+            <div class="price-amount"><span class="currency">EGP</span><span class="amount">300</span><span class="period"><span class="lang-en">/ month</span><span class="lang-ar">/ شهرياً</span></span></div>
             <a class="btn btn-outline btn-block" href="mailto:info@fatortak.net?subject=Fatortak%20Starter%20plan"><span class="lang-en">Talk to us</span><span class="lang-ar">تحدث معنا</span></a>
             <ul class="price-list">
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">3 users</span><span class="lang-ar">3 مستخدمين</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">100 invoices / month</span><span class="lang-ar">100 فاتورة شهرياً</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">30 AI assistant uses / month</span><span class="lang-ar">30 استخداماً للمساعد الذكي شهرياً</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Basic reports</span><span class="lang-ar">تقارير أساسية</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Limited WhatsApp sending</span><span class="lang-ar">إرسال واتساب محدود</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Email support</span><span class="lang-ar">دعم بالبريد الإلكتروني</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">3 users</span><span class="lang-ar">3 مستخدمين</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">100 invoices / month</span><span class="lang-ar">100 فاتورة شهرياً</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">30 AI actions / month</span><span class="lang-ar">30 إجراء ذكاء اصطناعي شهرياً</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Core reports</span><span class="lang-ar">تقارير أساسية</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Email support</span><span class="lang-ar">دعم بالبريد الإلكتروني</span></li>
             </ul>
           </article>
 
-          <article class="price-card price-popular reveal">
-            <span class="popular-badge"><span class="lang-en">Most popular</span><span class="lang-ar">الأكثر اختياراً</span></span>
+          <article class="price-card is-featured reveal">
+            <span class="popular-badge"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"></use></svg><span class="lang-en">Most popular</span><span class="lang-ar">الأكثر شيوعاً</span></span>
             <div class="price-head">
-              <h3><span class="lang-en">Professional</span><span class="lang-ar">الاحترافية</span></h3>
-              <p><span class="lang-en">For teams that close every month.</span><span class="lang-ar">لفرق تغلق الشهر بانتظام.</span></p>
+              <span class="plan-kicker"><span class="lang-en">Professional</span><span class="lang-ar">الاحترافية</span></span>
+              <h3><span class="lang-en">For teams that close every month</span><span class="lang-ar">للفرق التي تغلق كل شهر</span></h3>
+              <p><span class="lang-en">The full operating picture, including OCR.</span><span class="lang-ar">الصورة الكاملة للعمليات، بما في ذلك OCR.</span></p>
             </div>
-            <div class="price"><span class="amount" data-monthly="600" data-yearly="5400">600</span><span class="currency">EGP</span><span class="period"><span class="per-month">/ <span class="lang-en">month</span><span class="lang-ar">شهر</span></span><span class="per-year">/ <span class="lang-en">year</span><span class="lang-ar">سنة</span></span></span></div>
+            <div class="price-amount"><span class="currency">EGP</span><span class="amount">600</span><span class="period"><span class="lang-en">/ month</span><span class="lang-ar">/ شهرياً</span></span></div>
             <a class="btn btn-primary btn-block" href="mailto:info@fatortak.net?subject=Fatortak%20Professional%20demo"><span class="lang-en">Book a demo</span><span class="lang-ar">احجز عرضاً</span></a>
             <ul class="price-list">
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">5 users</span><span class="lang-ar">5 مستخدمين</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">500 invoices / month</span><span class="lang-ar">500 فاتورة شهرياً</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">150 AI assistant uses / month</span><span class="lang-ar">150 استخداماً للمساعد الذكي شهرياً</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full reports</span><span class="lang-ar">تقارير كاملة</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">WhatsApp sending</span><span class="lang-ar">إرسال واتساب</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Live chat support</span><span class="lang-ar">دعم محادثة مباشر</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">5 users</span><span class="lang-ar">5 مستخدمين</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">500 invoices / month</span><span class="lang-ar">500 فاتورة شهرياً</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">150 AI actions / month</span><span class="lang-ar">150 إجراء ذكاء اصطناعي شهرياً</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full reports</span><span class="lang-ar">تقارير كاملة</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">OCR invoice capture</span><span class="lang-ar">استخراج الفواتير OCR</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Priority support</span><span class="lang-ar">دعم ذو أولوية</span></li>
             </ul>
           </article>
 
           <article class="price-card reveal">
             <div class="price-head">
-              <h3><span class="lang-en">Enterprise</span><span class="lang-ar">المؤسسية</span></h3>
-              <p><span class="lang-en">For unlimited volume and priority help.</span><span class="lang-ar">لحجم غير محدود ودعم أولوية.</span></p>
+              <span class="plan-kicker"><span class="lang-en">Enterprise</span><span class="lang-ar">المؤسسات</span></span>
+              <h3><span class="lang-en">For unlimited volume</span><span class="lang-ar">لحجم غير محدود</span></h3>
+              <p><span class="lang-en">Priority help and room to grow.</span><span class="lang-ar">دعم أولوية ومساحة للنمو.</span></p>
             </div>
-            <div class="price"><span class="amount" data-monthly="900" data-yearly="8100">900</span><span class="currency">EGP</span><span class="period"><span class="per-month">/ <span class="lang-en">month</span><span class="lang-ar">شهر</span></span><span class="per-year">/ <span class="lang-en">year</span><span class="lang-ar">سنة</span></span></span></div>
+            <div class="price-amount"><span class="currency">EGP</span><span class="amount">900</span><span class="period"><span class="lang-en">/ month</span><span class="lang-ar">/ شهرياً</span></span></div>
             <a class="btn btn-outline btn-block" href="mailto:info@fatortak.net?subject=Fatortak%20Enterprise"><span class="lang-en">Talk to sales</span><span class="lang-ar">تحدث مع المبيعات</span></a>
             <ul class="price-list">
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited users</span><span class="lang-ar">مستخدمون بلا حدود</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited invoices</span><span class="lang-ar">فواتير بلا حدود</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited AI assistant</span><span class="lang-ar">مساعد ذكي بلا حدود</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full reports + export</span><span class="lang-ar">تقارير كاملة + تصدير</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited WhatsApp sending</span><span class="lang-ar">إرسال واتساب بلا حدود</span></li>
-              <li><svg aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Priority support</span><span class="lang-ar">دعم أولوية</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited users</span><span class="lang-ar">مستخدمون بلا حدود</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited invoices</span><span class="lang-ar">فواتير بلا حدود</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Unlimited AI actions</span><span class="lang-ar">إجراءات ذكاء بلا حدود</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Full reports + export</span><span class="lang-ar">تقارير كاملة + تصدير</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Priority support</span><span class="lang-ar">دعم ذو أولوية</span></li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="lang-en">Onboarding help</span><span class="lang-ar">مساعدة في الإعداد</span></li>
             </ul>
           </article>
         </div>
-
-        <p class="pricing-fine reveal">
-          <span class="lang-en">Prices in EGP, excluding applicable taxes. Annual billing is shown as 10 months. Community self-hosting is free. Managed cloud, migration, training and commercial licensing are quoted separately. Custom requirements? <a href="mailto:info@fatortak.net?subject=Fatortak%20custom%20requirements">Talk to us.</a></span>
-          <span class="lang-ar">الأسعار بالجنيه المصري، ولا تشمل الضرائب المطبقة. الاشتراك السنوي يعادل 10 أشهر. الاستضافة الذاتية للنسخة المجتمعية مجانية. السحابة المُدارة والترحيل والتدريب والترخيص التجاري تُسعَّر منفصلة. لاحتياجات مخصصة <a href="mailto:info@fatortak.net?subject=Fatortak%20custom%20requirements">تحدث معنا.</a></span>
-        </p>
-
-        <div class="license-strip reveal">
-          <div>
-            <h3><span class="lang-en">Need a commercial license?</span><span class="lang-ar">تحتاج ترخيصاً تجارياً؟</span></h3>
-            <p><span class="lang-en">Use Fatortak inside a closed-source product or a hosted service without AGPL obligations. Custom pricing, written terms, no lock-in.</span><span class="lang-ar">استخدم «فاتورتك» داخل منتج مغلق المصدر أو خدمة مستضافة دون التزامات AGPL. تسعير مخصص وشروط مكتوبة ودون احتكار.</span></p>
-          </div>
-          <a class="btn btn-dark" href="mailto:info@fatortak.net?subject=Fatortak%20commercial%20license"><span class="lang-en">Request terms</span><span class="lang-ar">اطلب الشروط</span></a>
-        </div>
+        <p class="pricing-note"><span class="lang-en">Prices in EGP, billed monthly. Self-hosted edition is free under AGPL-3.0. No ETA or ZATCA certification is claimed.</span><span class="lang-ar">الأسعار بالجنيه المصري وتُفوتر شهرياً. نسخة الاستضافة الذاتية مجانية تحت AGPL-3.0. لا ندعي اعتماد ETA أو ZATCA.</span></p>
       </div>
     </section>
 
-    <section class="section section-faq" id="faq">
-      <div class="container faq-grid">
+    <section class="section faq" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-layout">
         <div class="faq-head reveal">
           <p class="eyebrow"><span class="lang-en">FAQ</span><span class="lang-ar">الأسئلة الشائعة</span></p>
-          <h2>
-            <span class="lang-en">The questions worth asking.</span>
-            <span class="lang-ar">الأسئلة التي تستحق الإجابة.</span>
-          </h2>
-          <p class="section-lede">
-            <span class="lang-en">If something is missing, email <a href="mailto:info@fatortak.net">info@fatortak.net</a>. We will add the answer here.</span>
-            <span class="lang-ar">إن لم تجد إجابتك، راسلنا على <a href="mailto:info@fatortak.net">info@fatortak.net</a> وسنضيف الإجابة هنا.</span>
-          </p>
+          <h2 id="faq-title"><span class="lang-en">The honest answers.</span><span class="lang-ar">إجابات صريحة.</span></h2>
+          <p><span class="lang-en">What Fatortak does, what it does not do, and how to run it yourself.</span><span class="lang-ar">ما يفعله فاتورتك، وما لا يفعله، وكيف تشغله بنفسك.</span></p>
+          <a class="text-link" href="mailto:info@fatortak.net"><span class="lang-en">Ask a different question</span><span class="lang-ar">اسأل سؤالاً آخر</span><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
         </div>
         <div class="faq-list reveal">
-          <details>
-            <summary><span class="lang-en">Is Fatortak really free?</span><span class="lang-ar">هل «فاتورتك» مجانية فعلاً؟</span></summary>
-            <p><span class="lang-en">Yes. The community edition is free forever under AGPL-3.0 and includes invoicing, double-entry accounting, projects, inventory, HR and payroll. You pay for managed cloud, migration, support or a commercial license.</span><span class="lang-ar">نعم. النسخة المجتمعية مجانية للأبد بترخيص AGPL-3.0 وتشمل الفواتير والمحاسبة بالقيد المزدوج والمشروعات والمخزون والموارد البشرية والرواتب. المدفوع هو السحابة المُدارة والترحيل والدعم أو الترخيص التجاري.</span></p>
+          <details class="faq-item" open>
+            <summary><span class="lang-en">Is Fatortak really open source?</span><span class="lang-ar">هل فاتورتك مفتوح المصدر فعلاً؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">Yes. The full application is licensed under AGPL-3.0. A commercial license is available for teams that need different terms.</span><span class="lang-ar">نعم. التطبيق بالكامل تحت AGPL-3.0. يتوفر ترخيص تجاري للفرق التي تحتاج شروطاً مختلفة.</span></p>
           </details>
-          <details>
-            <summary><span class="lang-en">Does it support Arabic and RTL properly?</span><span class="lang-ar">هل تدعم العربية وRTL فعلاً؟</span></summary>
-            <p><span class="lang-en">Yes: full RTL layouts, Arabic invoices, Arabic PDF fonts and a bilingual UI. Arabic is a primary requirement, not a translation layer. Native Arabic review is ongoing.</span><span class="lang-ar">نعم: واجهات RTL كاملة وفواتير عربية وخطوط PDF عربية وواجهة ثنائية اللغة. العربية متطلب أساسي وليست طبقة ترجمة. والمراجعة العربية مستمرة.</span></p>
+          <details class="faq-item">
+            <summary><span class="lang-en">Does it support Arabic and RTL?</span><span class="lang-ar">هل يدعم العربية وRTL؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">Yes. The interface, invoices and PDFs support Arabic and right-to-left layouts. Native Arabic review is ongoing.</span><span class="lang-ar">نعم. الواجهة والفواتير وملفات PDF تدعم العربية والتخطيط من اليمين إلى اليسار. المراجعة العربية الأصلية مستمرة.</span></p>
           </details>
-          <details>
-            <summary><span class="lang-en">Does it handle Egypt ETA or Saudi ZATCA e-invoicing?</span><span class="lang-ar">هل تدعم الفاتورة الإلكترونية المصرية أو زاتكا السعودية؟</span></summary>
-            <p><span class="lang-en">Not yet. ETA and ZATCA clearance are not implemented. We will not claim compliance we do not have. It is on the roadmap; if it is a hard requirement today, use a compliant provider for that function until the integration ships.</span><span class="lang-ar">ليس بعد. لا يوجد تكامل مع ETA أو ZATCA، ولن ندّعي امتثالاً غير موجود. هو على خارطة الطريق؛ وإذا كان إلزامياً اليوم فاستخدم مزوداً متوافقاً لهذه الوظيفة حتى يصدر التكامل.</span></p>
+          <details class="faq-item">
+            <summary><span class="lang-en">Is it ETA or ZATCA certified?</span><span class="lang-ar">هل هو معتمد من مصلحة الضرائب المصرية أو هيئة الزكاة والضريبة والجمارك؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">No. Fatortak prepares VAT-ready invoices and bilingual PDFs, but it is not a certified ETA or ZATCA e-invoicing integration. Confirm your requirements with your accountant.</span><span class="lang-ar">لا. يُعد فاتورتك فواتير جاهزة لضريبة القيمة المضافة وملفات PDF ثنائية اللغة، لكنه ليس تكاملاً معتمداً مع مصلحة الضرائب المصرية أو هيئة الزكاة والضريبة والجمارك. تأكد من متطلباتك مع محاسبك.</span></p>
           </details>
-          <details>
-            <summary><span class="lang-en">Can I self-host it?</span><span class="lang-ar">هل يمكنني استضافته بنفسي؟</span></summary>
-            <p><span class="lang-en">Yes. Docker Compose runs the React web app, the .NET 8 API and SQL Server. The self-hosting guide covers HTTPS, backups, configuration and production notes.</span><span class="lang-ar">نعم. يشغّل Docker Compose واجهة React وواجهة .NET 8 API وSQL Server. ويغطي دليل الاستضافة HTTPS والنسخ الاحتياطي والإعداد وملاحظات الإنتاج.</span></p>
+          <details class="faq-item">
+            <summary><span class="lang-en">Can I self-host it?</span><span class="lang-ar">هل يمكنني استضافته ذاتياً؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">Yes. The repository includes a Docker Compose setup for SQL Server, the API and the web app. You manage backups, upgrades and infrastructure.</span><span class="lang-ar">نعم. يتضمن المستودع إعداد Docker Compose لـ SQL Server وواجهة API وتطبيق الويب. أنت تدير النسخ الاحتياطي والترقيات والبنية التحتية.</span></p>
           </details>
-          <details>
-            <summary><span class="lang-en">What is the stack?</span><span class="lang-ar">ما التقنيات المستخدمة؟</span></summary>
-            <p><span class="lang-en">ASP.NET Core 8, EF Core 8, SQL Server, React 18, TypeScript, Vite, Tailwind CSS and JWT auth. AI is Gemini/OpenRouter for the assistant and OCR; it is optional.</span><span class="lang-ar">ASP.NET Core 8 وEF Core 8 وSQL Server وReact 18 وTypeScript وVite وTailwind CSS ومصادقة JWT. الذكاء الاصطناعي عبر Gemini/OpenRouter للمساعد وOCR، وهو اختياري.</span></p>
+          <details class="faq-item">
+            <summary><span class="lang-en">How does the AI assistant work?</span><span class="lang-ar">كيف يعمل المساعد الذكي؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">It answers questions over your business data and returns figures and charts. It needs a configured AI provider, and important answers should be verified.</span><span class="lang-ar">يجيب على الأسئلة من بيانات عملك ويعيد أرقاماً ورسوماً. يحتاج إلى مزود ذكاء اصطناعي مُعد، ويجب التحقق من الإجابات المهمة.</span></p>
           </details>
-          <details>
-            <summary><span class="lang-en">Is it production-ready?</span><span class="lang-ar">هل هي جاهزة للإنتاج؟</span></summary>
-            <p><span class="lang-en">It is public alpha. There is no independent security audit yet and test coverage is thin. Start with a pilot behind HTTPS, with a strong JWT key and a restricted database user. Do not expose a fresh instance to the public internet without reading SECURITY.md.</span><span class="lang-ar">هي ألفا عامة. لا يوجد تدقيق أمني مستقل بعد، والتغطية الاختبارية محدودة. ابدأ بتجربة محدودة خلف HTTPS بمفتاح JWT قوي ومستخدم قاعدة بيانات مقيّد. لا تنشر نسخة جديدة على الإنترنت قبل قراءة SECURITY.md.</span></p>
+          <details class="faq-item">
+            <summary><span class="lang-en">Does OCR work with Arabic invoices?</span><span class="lang-ar">هل يعمل OCR مع الفواتير العربية؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">It can extract invoice fields from uploaded documents depending on the configured model. Review every field before saving.</span><span class="lang-ar">يمكنه استخراج حقول الفاتورة من المستندات المرفوعة حسب النموذج المُعد. راجع كل حقل قبل الحفظ.</span></p>
           </details>
-          <details>
-            <summary><span class="lang-en">Can I get a commercial license?</span><span class="lang-ar">هل يمكنني الحصول على ترخيص تجاري؟</span></summary>
-            <p><span class="lang-en">Yes. A commercial license is available for companies that cannot accept AGPL-3.0, including closed-source products and hosted services. Email info@fatortak.net for terms.</span><span class="lang-ar">نعم. الترخيص التجاري متاح للشركات التي لا تستطيع الالتزام بـ AGPL-3.0، بما في ذلك المنتجات مغلقة المصدر والخدمات المستضافة. راسل info@fatortak.net للشروط.</span></p>
-          </details>
-          <details>
-            <summary><span class="lang-en">Do you help with migration and training?</span><span class="lang-ar">هل تساعدون في الترحيل والتدريب؟</span></summary>
-            <p><span class="lang-en">Yes, as a paid service. We import customers, suppliers, opening balances and the chart of accounts, and train the team. Migration is quoted after a short data review, not guessed.</span><span class="lang-ar">نعم، كخدمة مدفوعة. نستورد العملاء والموردين والأرصدة الافتتاحية وشجرة الحسابات، وندرّب الفريق. يُسعَّر الترحيل بعد مراجعة قصيرة للبيانات، لا بالتخمين.</span></p>
+          <details class="faq-item">
+            <summary><span class="lang-en">What does it cost?</span><span class="lang-ar">كم التكلفة؟</span><span class="faq-icon" aria-hidden="true"></span></summary>
+            <p><span class="lang-en">Self-hosting is free under AGPL-3.0. Managed plans start at EGP 300 per month and are billed in EGP.</span><span class="lang-ar">الاستضافة الذاتية مجانية تحت AGPL-3.0. تبدأ الخطط المُدارة من 300 جنيه مصري شهرياً وتُفوتر بالجنيه المصري.</span></p>
           </details>
         </div>
       </div>
     </section>
 
-    <section class="section section-cta">
-      <div class="container cta-inner reveal">
-        <p class="eyebrow eyebrow-light"><span class="lang-en">Start with one ledger</span><span class="lang-ar">ابدأ بدفتر واحد</span></p>
-        <h2>
-          <span class="lang-en">Put your invoices, projects and payroll on the same books.</span>
-          <span class="lang-ar">ضع فواتيرك ومشروعاتك ورواتبك في نفس الدفاتر.</span>
-        </h2>
-        <div class="cta-actions">
-          <a class="btn btn-primary" href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener">
-            <svg width="18" height="18" aria-hidden="true"><use href="#i-github"></use></svg>
-            <span class="lang-en">Star on GitHub</span>
-            <span class="lang-ar">ادعمنا على GitHub</span>
-          </a>
-          <a class="btn btn-light" href="mailto:info@fatortak.net?subject=Fatortak%20demo">
-            <span class="lang-en">Book a 20-minute demo</span>
-            <span class="lang-ar">احجز عرضاً في 20 دقيقة</span>
-          </a>
+    <section class="cta-section" aria-labelledby="cta-title">
+      <div class="container">
+        <div class="cta-card reveal">
+          <div class="cta-glow" aria-hidden="true"></div>
+          <div class="cta-copy">
+            <p class="eyebrow"><span class="live-dot"></span><span class="lang-en">Ready when you are</span><span class="lang-ar">جاهز عندما تكون جاهزاً</span></p>
+            <h2 id="cta-title"><span class="lang-en">Put your ledger to work.</span><span class="lang-ar">شغّل دفترك.</span></h2>
+            <p><span class="lang-en">Start with managed cloud or self-host the full application. Your data, your language, your terms.</span><span class="lang-ar">ابدأ بالسحابة المُدارة أو استضف التطبيق بالكامل ذاتياً. بياناتك، لغتك، شروطك.</span></p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary btn-lg" href="https://fatortakEpic.rabbeh.com/register"><span class="lang-en">Start free</span><span class="lang-ar">ابدأ مجاناً</span><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+            <a class="btn btn-ghost btn-lg" href="mailto:info@fatortak.net?subject=Fatortak%20demo"><span class="lang-en">Book a demo</span><span class="lang-ar">احجز عرضاً</span></a>
+          </div>
+          <div class="cta-mark" aria-hidden="true"><img src="assets/favicon.png" alt="" width="512" height="512" loading="lazy" /></div>
         </div>
-        <p class="cta-note"><span class="lang-en">No signup wall. No fake demo data. Start with the free self-hosted edition or talk to us about a pilot.</span><span class="lang-ar">دون تسجيل إجباري. ودون بيانات تجريبية وهمية. ابدأ بالنسخة المجانية ذاتية الاستضافة أو تحدث معنا عن تجربة محدودة.</span></p>
       </div>
     </section>
   </main>
@@ -576,41 +746,55 @@ docker compose up --build
   <footer class="site-footer">
     <div class="container footer-grid">
       <div class="footer-brand">
-        <a class="brand" href="#top">
-          <img src="assets/logo-mark.svg" alt="" width="36" height="36" />
-          <span class="brand-name">Fatortak</span>
-        </a>
-        <p><span class="lang-en">Open-source business software for MENA. Built in Egypt.</span><span class="lang-ar">برمجيات أعمال مفتوحة المصدر للشرق الأوسط. صُنعت في مصر.</span></p>
-        <p class="footer-license"><span class="lang-en">Code licensed AGPL-3.0. Commercial license available.</span><span class="lang-ar">الكود بترخيص AGPL-3.0. والترخيص التجاري متاح.</span></p>
+        <img src="assets/fatortak-logo-white.png" alt="Fatortak" width="205" height="61" loading="lazy" />
+        <p><span class="lang-en">Arabic-first business management. Open source under AGPL-3.0.</span><span class="lang-ar">إدارة أعمال عربية أولاً. مفتوح المصدر تحت AGPL-3.0.</span></p>
+        <a class="footer-mail" href="mailto:info@fatortak.net">info@fatortak.net</a>
       </div>
       <div class="footer-col">
-        <h4><span class="lang-en">Product</span><span class="lang-ar">المنتج</span></h4>
-        <a href="#features"><span class="lang-en">Features</span><span class="lang-ar">المزايا</span></a>
-        <a href="#pricing"><span class="lang-en">Pricing</span><span class="lang-ar">الأسعار</span></a>
-        <a href="#open-source"><span class="lang-en">Open source</span><span class="lang-ar">مفتوح المصدر</span></a>
-        <a href="https://github.com/Fatortak/Fatortak_Software/blob/main/docs/roadmap.md" target="_blank" rel="noopener"><span class="lang-en">Roadmap</span><span class="lang-ar">خارطة الطريق</span></a>
+        <h3><span class="lang-en">Product</span><span class="lang-ar">المنتج</span></h3>
+        <a href="#product"><span class="lang-en">Product tour</span><span class="lang-ar">جولة المنتج</span></a>
+        <a href="#ai"><span class="lang-en">AI assistant</span><span class="lang-ar">المساعد الذكي</span></a>
+        <a href="#ocr"><span class="lang-en">OCR invoice</span><span class="lang-ar">فاتورة OCR</span></a>
+        <a href="#pricing"><span class="lang-en">Pricing</span><span class="lang-ar">التسعير</span></a>
       </div>
       <div class="footer-col">
-        <h4><span class="lang-en">Resources</span><span class="lang-ar">مصادر</span></h4>
-        <a href="https://github.com/Fatortak/Fatortak_Software#quickstart" target="_blank" rel="noopener"><span class="lang-en">Quickstart</span><span class="lang-ar">البدء السريع</span></a>
-        <a href="https://github.com/Fatortak/Fatortak_Software/blob/main/docs/self-hosting.md" target="_blank" rel="noopener"><span class="lang-en">Self-hosting</span><span class="lang-ar">الاستضافة الذاتية</span></a>
-        <a href="https://github.com/Fatortak/Fatortak_Software/blob/main/SECURITY.md" target="_blank" rel="noopener"><span class="lang-en">Security</span><span class="lang-ar">الأمان</span></a>
-        <a href="https://github.com/Fatortak/Fatortak_Software/blob/main/LICENSE" target="_blank" rel="noopener"><span class="lang-en">License</span><span class="lang-ar">الترخيص</span></a>
-      </div>
-      <div class="footer-col">
-        <h4><span class="lang-en">Contact</span><span class="lang-ar">تواصل</span></h4>
-        <a href="mailto:info@fatortak.net">info@fatortak.net</a>
+        <h3><span class="lang-en">Open source</span><span class="lang-ar">مفتوح المصدر</span></h3>
         <a href="https://github.com/Fatortak/Fatortak_Software" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/Fatortak/Fatortak_Software/discussions" target="_blank" rel="noopener"><span class="lang-en">Discussions</span><span class="lang-ar">النقاشات</span></a>
-        <a href="https://fatortak.net" target="_blank" rel="noopener">fatortak.net</a>
+        <a href="https://github.com/Fatortak/Fatortak_Software/blob/main/LICENSE" target="_blank" rel="noopener"><span class="lang-en">AGPL-3.0 license</span><span class="lang-ar">ترخيص AGPL-3.0</span></a>
+        <a href="https://github.com/Fatortak/Fatortak_Software/blob/main/LICENSING.md" target="_blank" rel="noopener"><span class="lang-en">Commercial licensing</span><span class="lang-ar">الترخيص التجاري</span></a>
+      </div>
+      <div class="footer-col">
+        <h3><span class="lang-en">Company</span><span class="lang-ar">الشركة</span></h3>
+        <a href="mailto:info@fatortak.net"><span class="lang-en">Contact</span><span class="lang-ar">اتصل بنا</span></a>
+        <a href="mailto:info@fatortak.net?subject=Fatortak%20demo"><span class="lang-en">Book a demo</span><span class="lang-ar">احجز عرضاً</span></a>
+        <a href="#faq"><span class="lang-en">FAQ</span><span class="lang-ar">الأسئلة</span></a>
+        <a href="https://fatortakEpic.rabbeh.com/" target="_blank" rel="noopener"><span class="lang-en">Sign in</span><span class="lang-ar">تسجيل الدخول</span></a>
       </div>
     </div>
     <div class="container footer-bottom">
-      <p>© <span data-year>2026</span> Fatortak. <span class="lang-en">All rights reserved.</span><span class="lang-ar">جميع الحقوق محفوظة.</span></p>
-      <p><span class="lang-en">Public alpha — no independent security audit yet.</span><span class="lang-ar">ألفا عامة — لا يوجد تدقيق أمني مستقل بعد.</span></p>
+      <p><span class="lang-en">© <span data-year>2026</span> Fatortak. Built in Cairo for MENA.</span><span class="lang-ar">© <span data-year>2026</span> فاتورتك. صُنع في القاهرة للشرق الأوسط.</span></p>
+      <p><span class="lang-en">Open source under AGPL-3.0. Commercial licensing available.</span><span class="lang-ar">مفتوح المصدر تحت AGPL-3.0. يتوفر ترخيص تجاري.</span></p>
     </div>
   </footer>
 
-  <script src="app.js" defer></script>
+  <dialog class="lightbox" id="lightbox" aria-labelledby="lightbox-title">
+    <div class="lightbox-inner">
+      <div class="lightbox-bar">
+        <div class="lightbox-kicker"><span class="live-dot"></span><span class="lang-en">Real product screen</span><span class="lang-ar">شاشة منتج حقيقية</span></div>
+        <button class="lightbox-close" type="button" data-lightbox-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="lightbox-frame"><img data-lightbox-image src="assets/screenshots/dashboard.png" alt="" width="1440" height="900" /></div>
+      <div class="lightbox-caption">
+        <div><h3 id="lightbox-title" data-lightbox-title></h3><p data-lightbox-desc></p></div>
+        <div class="lightbox-nav">
+          <button type="button" data-lightbox-prev aria-label="Previous screen"><svg class="icon" aria-hidden="true"><use href="#i-chevron-left"></use></svg></button>
+          <span data-lightbox-counter>01 / 08</span>
+          <button type="button" data-lightbox-next aria-label="Next screen"><svg class="icon" aria-hidden="true"><use href="#i-chevron-right"></use></svg></button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
 </body>
 </html>

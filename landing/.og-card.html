@@ -2,73 +2,66 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<title>Fatortak OG card</title>
 <style>
-  * { box-sizing: border-box; margin: 0; }
-  html, body { width: 1200px; height: 630px; overflow: hidden; }
-  body {
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    color: #f8fafc;
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1200px; height: 630px; overflow: hidden; font-family: "Segoe UI", Arial, sans-serif; background: #060816; color: #f8fafc; }
+  .card { position: relative; width: 1200px; height: 630px; padding: 54px 58px; overflow: hidden;
     background:
-      radial-gradient(700px 420px at 82% 10%, rgba(56, 189, 248, .22), transparent 65%),
-      radial-gradient(560px 420px at 10% 95%, rgba(99, 102, 241, .26), transparent 65%),
-      linear-gradient(145deg, #070d1b 0%, #0b1a33 58%, #07121f 100%);
-    padding: 64px 72px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
+      radial-gradient(ellipse 55% 70% at 78% 10%, rgba(109,40,217,.55), transparent 65%),
+      radial-gradient(ellipse 45% 50% at 8% 90%, rgba(34,211,238,.14), transparent 65%),
+      #060816;
   }
-  .grid {
-    position: absolute; inset: 0;
-    background-image:
-      linear-gradient(rgba(125,211,252,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(125,211,252,.05) 1px, transparent 1px);
-    background-size: 68px 68px;
-    mask-image: linear-gradient(to bottom, #000, transparent 80%);
+  .grid { position: absolute; inset: -20% -10%; opacity: .35;
+    background-image: linear-gradient(rgba(148,163,184,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.12) 1px, transparent 1px);
+    background-size: 52px 52px; transform: perspective(700px) rotateX(58deg) translateY(-8%); transform-origin: 50% 0;
+    mask-image: radial-gradient(ellipse 60% 60% at 65% 20%, #000, transparent 72%);
   }
-  .top, .middle, .bottom { position: relative; z-index: 1; }
-  .brand { display: flex; align-items: center; gap: 20px; }
-  .brand img { width: 84px; height: 84px; border-radius: 22px; }
-  .wordmark { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; }
-  .arabic { color: #7dd3fc; font-size: 26px; font-weight: 600; margin-left: 8px; }
-  .kicker {
-    display: inline-flex; align-items: center; gap: 10px;
-    color: #7dd3fc; font-size: 17px; font-weight: 700;
-    letter-spacing: 3px; text-transform: uppercase;
-  }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 5px rgba(52,211,153,.16); }
-  h1 { font-size: 66px; line-height: 1.06; letter-spacing: -2.5px; margin-top: 18px; max-width: 950px; }
-  h1 em { font-style: normal; background: linear-gradient(90deg, #7dd3fc, #a5b4fc 55%, #6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; }
-  .tags { display: flex; gap: 10px; flex-wrap: wrap; }
-  .tag { padding: 9px 15px; border: 1px solid rgba(125,211,252,.28); border-radius: 999px; color: #bae6fd; font-size: 16px; font-weight: 600; }
-  .tag.green { color: #6ee7b7; border-color: rgba(52,211,153,.28); }
-  .tag.indigo { color: #c7d2fe; border-color: rgba(129,140,248,.3); }
-  .url { color: #94a3b8; font-size: 16px; text-align: right; line-height: 1.6; }
-  .url strong { display: block; color: #e2e8f0; font-size: 19px; }
+  .glow { position: absolute; width: 500px; height: 500px; right: 80px; top: -160px; border-radius: 999px; background: radial-gradient(circle, rgba(139,92,246,.55), transparent 68%); filter: blur(40px); }
+  .top { position: relative; display: flex; align-items: center; justify-content: space-between; }
+  .logo { height: 34px; width: auto; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid rgba(167,139,250,.35); border-radius: 999px; color: #ddd6fe; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: rgba(124,58,237,.15); }
+  .dot { width: 6px; height: 6px; border-radius: 999px; background: #a3e635; box-shadow: 0 0 12px rgba(163,230,53,.7); }
+  .content { position: relative; display: grid; grid-template-columns: 460px 1fr; gap: 36px; margin-top: 42px; align-items: center; }
+  h1 { margin: 0; font-size: 60px; line-height: 1; letter-spacing: -2.8px; font-weight: 800; font-family: "Segoe UI", Arial, sans-serif; }
+  h1 em { font-style: normal; background: linear-gradient(100deg, #c4b5fd, #a78bfa 42%, #67e8f9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p { margin: 20px 0 0; max-width: 430px; color: #a8b5c9; font-size: 17px; line-height: 1.55; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .chip { padding: 7px 11px; border: 1px solid rgba(148,163,184,.22); border-radius: 999px; background: rgba(255,255,255,.05); color: #cbd5e1; font-size: 12px; font-weight: 600; }
+  .browser { position: relative; width: 588px; border: 1px solid rgba(255,255,255,.2); border-radius: 17px; overflow: hidden; background: #0a0f22; transform: perspective(1400px) rotateY(-8deg) rotateX(3deg); box-shadow: 0 40px 100px rgba(0,0,0,.55); }
+  .bar { display: flex; align-items: center; gap: 10px; height: 33px; padding: 0 12px; background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border-bottom: 1px solid rgba(255,255,255,.08); }
+  .dots { display: flex; gap: 5px; }
+  .dots span { width: 7px; height: 7px; border-radius: 999px; }
+  .dots span:nth-child(1) { background: #f87171; } .dots span:nth-child(2) { background: #fbbf24; } .dots span:nth-child(3) { background: #34d399; }
+  .url { flex: 1; padding: 4px 10px; border-radius: 999px; background: rgba(2,6,23,.55); color: #93a3ba; font-size: 10px; font-weight: 600; }
+  .live { display: flex; align-items: center; gap: 5px; color: #a3e635; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+  .screen { aspect-ratio: 16 / 10; overflow: hidden; background: #eef2f7; }
+  .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+  .tag { position: absolute; left: 24px; bottom: 20px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(6,8,22,.75); color: #e2e8f0; font-size: 11px; font-weight: 700; backdrop-filter: blur(10px); }
+  .foot { position: absolute; left: 58px; right: 58px; bottom: 28px; display: flex; justify-content: space-between; align-items: center; color: #74839b; font-size: 11px; }
+  .foot strong { color: #c4b5fd; font-weight: 700; }
 </style>
 </head>
 <body>
-  <div class="grid"></div>
-  <div class="top brand">
-    <img src="assets/logo-mark.svg" alt="" />
+<div class="card">
+  <div class="grid"></div><div class="glow"></div>
+  <div class="top">
+    <img class="logo" src="assets/fatortak-logo-white.png" alt="Fatortak" />
+    <span class="badge"><span class="dot"></span> Open source · AGPL-3.0</span>
+  </div>
+  <div class="content">
     <div>
-      <div class="wordmark">Fatortak <span class="arabic">فاتورتك</span></div>
-      <div style="color:#94a3b8;font-size:17px;margin-top:4px;">The open-source business OS for MENA</div>
+      <h1>Run the whole business.<br /><em>In one place.</em></h1>
+      <p>Invoicing, accounting, projects, payroll, AI chat and OCR invoice capture. Arabic-first, bilingual, open source.</p>
+      <div class="chips"><span class="chip">Invoices</span><span class="chip">Accounting</span><span class="chip">AI assistant</span><span class="chip">OCR</span><span class="chip">Arabic + English</span></div>
+    </div>
+    <div class="browser">
+      <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">fatortak / dashboard</div><div class="live"><span class="dot"></span> LIVE UI</div></div>
+      <div class="screen"><img src="assets/screenshots/dashboard.png" alt="" /></div>
+      <div class="tag"><span class="dot"></span> Real product screen · Demo data</div>
     </div>
   </div>
-  <div class="middle">
-    <div class="kicker"><span class="dot"></span> Open source · AGPL-3.0 · Self-hostable</div>
-    <h1>Invoicing, accounting, projects<br />and payroll. <em>One ledger.</em></h1>
-  </div>
-  <div class="bottom">
-    <div class="tags">
-      <span class="tag">Arabic-first</span>
-      <span class="tag indigo">Full RTL</span>
-      <span class="tag green">Docker Compose</span>
-      <span class="tag">.NET 8 + React</span>
-    </div>
-    <div class="url"><strong>github.com/Fatortak/Fatortak_Software</strong>Built in Egypt for MENA SMBs</div>
-  </div>
+  <div class="foot"><span><strong>fatortak.rabbeh.com</strong> · Arabic-first business management</span><span>github.com/Fatortak/Fatortak_Software</span></div>
+</div>
 </body>
 </html>
