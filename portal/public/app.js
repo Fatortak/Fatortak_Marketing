@@ -266,13 +266,13 @@
               <div class="pipeline-row"><label>${label}</label><div class="pipeline-track"><div class="pipeline-fill" style="width:${Math.round((count / maxPipeline) * 100)}%"></div></div><strong>${fmtNumber(count)}</strong></div>
             `).join("")}
           </div>
-          <div class="section-head" style="margin-top:20px"><h3>Traffic · 30 days</h3><span>${traffic.configured ? "Plausible" : "not connected"}</span></div>
+          <div class="section-head" style="margin-top:20px"><h3>Traffic · 30 days</h3><span>${traffic.configured ? traffic.provider === "first-party" ? "First-party" : "Plausible" : "not connected"}</span></div>
           ${traffic.configured && !traffic.error ? `
             <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
               <div><div class="kpi-label">Visitors</div><div class="kpi-value" style="font-size:1.25rem">${fmtNumber(traffic.visitors)}</div></div>
               <div><div class="kpi-label">Pageviews</div><div class="kpi-value" style="font-size:1.25rem">${fmtNumber(traffic.pageviews)}</div></div>
               <div><div class="kpi-label">Bounce</div><div class="kpi-value" style="font-size:1.25rem">${traffic.bounceRate ? fmtNumber(traffic.bounceRate) + "%" : "—"}</div></div>
-            </div>` : `<div class="empty" style="padding:18px 0"><strong>${traffic.error ? "Traffic sync failed" : "Connect Plausible"}</strong><span>${esc(traffic.error || "Add PLAUSIBLE_SITE_ID and PLAUSIBLE_API_KEY to ingest landing traffic.")}</span></div>`}
+            </div>` : `<div class="empty" style="padding:18px 0"><strong>${traffic.error ? "Traffic sync failed" : "Connect analytics"}</strong><span>${esc(traffic.error || "Deploy stats.php on the landing page or add PLAUSIBLE_SITE_ID and PLAUSIBLE_API_KEY.")}</span></div>`}
         </div>
         <div class="card card-pad">
           <div class="section-head"><h3>Automation</h3><span>${o.autoPublish ? "scheduler on" : "scheduler off"}</span></div>
@@ -478,7 +478,7 @@ OCR invoice capture is built into Fatortak.
           </div>
         </div>
         <div class="card card-pad">
-          <div class="section-head"><h3>Landing traffic</h3><span>${traffic.configured ? "30 days" : "not connected"}</span></div>
+          <div class="section-head"><h3>Landing traffic</h3><span>${traffic.configured ? traffic.provider === "first-party" ? "First-party · 30 days" : "Plausible · 30 days" : "not connected"}</span></div>
           ${traffic.configured && !traffic.error ? `<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:10px"><div><div class="kpi-label">Visitors</div><div class="kpi-value" style="font-size:1.2rem">${fmtNumber(traffic.visitors)}</div></div><div><div class="kpi-label">Pageviews</div><div class="kpi-value" style="font-size:1.2rem">${fmtNumber(traffic.pageviews)}</div></div><div><div class="kpi-label">Bounce</div><div class="kpi-value" style="font-size:1.2rem">${fmtNumber(traffic.bounceRate)}%</div></div></div>${(traffic.sources || []).length ? `<div class="section-head" style="margin-top:16px"><h3 style="font-size:.8rem">Traffic by source</h3><span>UTM · 30 days</span></div><div class="bar-chart">${traffic.sources.slice(0, 8).map((source) => `<div class="bar-row"><label>${esc(source.source)}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((Number(source.visitors || 0) / maxSource) * 100)}%"></div></div><strong>${fmtNumber(source.visitors)}</strong></div>`).join("")}</div>` : ""}` : `<div class="empty" style="padding:24px 0"><strong>${traffic.error ? "Sync failed" : "Connect Plausible"}</strong><span>${esc(traffic.error || "Set PLAUSIBLE_SITE_ID and PLAUSIBLE_API_KEY on the portal server.")}</span></div>`}
         </div>
       </div>
@@ -501,7 +501,7 @@ OCR invoice capture is built into Fatortak.
         ${kpi("Published · 30d", fmtNumber(posts.published30), `${fmtNumber(posts.published)} total`)}
         ${kpi("Scheduled", fmtNumber(posts.scheduled), `${fmtNumber(posts.total)} in portal`)}
         ${kpi("Followers", fmtNumber(metrics.followers), `${fmtNumber(metrics.engagement)} engagements`)}
-        ${kpi("Landing visitors", traffic.configured ? fmtNumber(traffic.visitors) : "—", traffic.configured ? "30 days" : "connect Plausible")}
+        ${kpi("Landing visitors", traffic.configured ? fmtNumber(traffic.visitors) : "—", traffic.configured ? (traffic.provider === "first-party" ? "First-party · 30 days" : "Plausible · 30 days") : "connect analytics")}
       </div>
       <div class="section report-grid">
         <div class="card card-pad">

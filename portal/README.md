@@ -184,7 +184,8 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 
 ## Metrics and traffic
 
-- Landing traffic: Plausible aggregate and a 30-day source breakdown (UTM source) when `PLAUSIBLE_SITE_ID` and `PLAUSIBLE_API_KEY` are set.
+- Landing traffic: a cookie-less first-party counter (`track.php` + `stats.php`) records aggregate daily pageviews, referrer source and a daily visitor hash in `App_Data/traffic.json`. The portal reads it automatically. Raw IP addresses are not stored in the analytics file.
+- Plausible is optional: set `PLAUSIBLE_SITE_ID` and `PLAUSIBLE_API_KEY` to use Plausible aggregate and a 30-day source breakdown instead.
 - GitHub: stars/forks/open issues from the public API.
 - Bluesky: followers/posts from the public profile.
 - Mastodon: followers/statuses from the instance API.

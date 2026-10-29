@@ -163,7 +163,10 @@ $rootFiles = @(
   "sitemap.xml",
   "privacy.html",
   "demo.mp4",
-  "demo-poster.jpg"
+  "demo-poster.jpg",
+  "analytics.js",
+  "track.php",
+  "stats.php"
 )
 $assetFiles = @(
   "assets/favicon.png",

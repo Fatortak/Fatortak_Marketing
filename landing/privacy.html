@@ -58,7 +58,7 @@
       <ul>
         <li><strong>Website requests:</strong> standard server logs such as IP address, browser type, requested URL, timestamp and response status, used for security and reliability.</li>
         <li><strong>Contact and demo requests:</strong> the name, email address, company and message you choose to send us.</li>
-        <li><strong>Optional analytics:</strong> aggregate page views and referrers if analytics is enabled. We do not use analytics to identify individual visitors.</li>
+        <li><strong>Optional analytics:</strong> aggregate page views, referrer source and a daily visitor hash from a cookie-less first-party counter. We do not store raw IP addresses in the analytics file and do not use analytics to identify individual visitors.</li>
         <li><strong>Public demo:</strong> demo data is sample business data. Do not enter real customer, payroll or financial records into the public demo.</li>
       </ul>
 
@@ -75,7 +75,7 @@
       <p>We do not sell personal information. We do not use contact details for unrelated marketing without permission.</p>
 
       <h2>4. Cookies and local storage</h2>
-      <p>The website may use essential cookies or local storage for language preference and basic functionality. Optional analytics is only enabled when configured, and it records aggregate events rather than identifying you. You can clear cookies and local storage in your browser at any time.</p>
+      <p>The website may use essential cookies or local storage for language preference and basic functionality. The first-party traffic counter does not set cookies; it records aggregate daily counts and a salted daily visitor hash. Optional third-party analytics is only enabled when configured, and it records aggregate events rather than identifying you. You can clear cookies and local storage in your browser at any time.</p>
 
       <h2>5. Third-party services</h2>
       <p>The website links to GitHub, social networks and payment or contact services. Those services have their own privacy policies. When you open a link or complete a payment or booking, the third party processes the information you provide there.</p>
@@ -102,5 +102,6 @@
       </footer>
     </div>
   </main>
+  <script src="analytics.js" defer></script>
 </body>
 </html>

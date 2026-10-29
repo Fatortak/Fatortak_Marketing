@@ -738,10 +738,43 @@ function metricsTotals() {
   return totals;
 }
 
+async function getFirstPartyTraffic() {
+  const base = DATA.settings.siteUrl || CONFIG.links.site;
+  if (!base) return { configured: false, provider: "first-party" };
+  try {
+    const response = await fetch(new URL("stats.php", base), {
+      headers: { "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error(`First-party stats HTTP ${response.status}`);
+    const data = await response.json();
+    return {
+      configured: true,
+      provider: "first-party",
+      period: data.period || "30d",
+      visitors: Number(data.visitors) || 0,
+      pageviews: Number(data.pageviews) || 0,
+      bounceRate: 0,
+      sources: Array.isArray(data.sources) ? data.sources : [],
+      paths: Array.isArray(data.paths) ? data.paths : [],
+      updatedAt: data.updatedAt || null,
+    };
+  } catch (error) {
+    return { configured: false, provider: "first-party", error: error.message };
+  }
+}
+
 async function getTraffic(force = false) {
   const siteId = env("PLAUSIBLE_SITE_ID");
   const apiKey = env("PLAUSIBLE_API_KEY");
-  if (!siteId || !apiKey) return { configured: false };
+  if (!siteId || !apiKey) {
+    if (!force && trafficCache.value && Date.now() - trafficCache.at < 5 * 60_000) {
+      return trafficCache.value;
+    }
+    const value = await getFirstPartyTraffic();
+    trafficCache = { at: Date.now(), value };
+    return value;
+  }
   if (!force && trafficCache.value && Date.now() - trafficCache.at < 5 * 60_000) {
     return trafficCache.value;
   }

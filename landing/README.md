@@ -22,6 +22,9 @@ You can also open `index.html` directly, but a local server is better for testin
 | `index.html` | Page structure, English/Arabic copy and metadata. |
 | `styles.css` | Dark 3D design, responsive layout, RTL rules, reduced-motion support. |
 | `app.js` | Language toggle, 3D screen tour, showcase tabs, AI/OCR demos, lightbox, reveal animations. |
+| `demo.mp4`, `demo-poster.jpg` | 20-second product tour cut from the real screenshots, with a poster frame. |
+| `privacy.html` | Privacy policy used by LinkedIn, X and the footer. |
+| `analytics.js`, `track.php`, `stats.php` | Cookie-less first-party pageview counter and its aggregate JSON endpoint. |
 | `assets/fatortak-logo-white.png` | Real Fatortak wordmark for dark surfaces. |
 | `assets/fatortak-logo.png` | Real Fatortak wordmark on transparent background. |
 | `assets/favicon.png` | Square real F mark on brand purple. |
@@ -117,7 +120,7 @@ Adjust the browser path if Chrome is not installed there.
 - [ ] Confirm the page has no horizontal overflow in English or Arabic.
 - [ ] Run Lighthouse and check accessibility.
 - [ ] Confirm `info@fatortak.net` receives demo and license requests.
-- [ ] Do not add analytics or trackers without a privacy disclosure.
+- [ ] The first-party analytics counter is disclosed in the privacy policy; do not add third-party trackers without updating it.
 - [ ] Keep the honest claims: no ETA/ZATCA certification, no customer logos, no testimonials.
 
 ## Honest-claims policy
