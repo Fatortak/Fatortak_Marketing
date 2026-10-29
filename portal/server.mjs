@@ -661,16 +661,23 @@ async function getSiteLive(force = false) {
   const url = DATA.settings.siteUrl || CONFIG.links.site;
   if (!url) return false;
   const now = Date.now();
-  if (!force && now - siteLiveCache.at < 5 * 60_000) return siteLiveCache.value;
-  try {
-    const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(7000) });
-    const body = await response.text();
-    const isOurPage = /fatortak-logo-white\.png|Arabic-first business management/i.test(body);
-    siteLiveCache = { at: now, value: response.ok && isOurPage };
-  } catch {
-    siteLiveCache = { at: now, value: false };
+  const maxAge = siteLiveCache.value ? 5 * 60_000 : 30_000;
+  if (!force && now - siteLiveCache.at < maxAge) return siteLiveCache.value;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(15_000) });
+      const body = await response.text();
+      const isOurPage = /Fatortak/i.test(body) && /fatortak-logo|Arabic-first business management/i.test(body);
+      if (response.ok && isOurPage) {
+        siteLiveCache = { at: now, value: true };
+        return true;
+      }
+    } catch {
+      // Retry once; a transient timeout should not block Instagram for five minutes.
+    }
   }
-  return siteLiveCache.value;
+  siteLiveCache = { at: now, value: false };
+  return false;
 }
 
 function channelSummary() {
@@ -985,6 +992,28 @@ async function publishPost(post, { dryRun = true, automatic = false } = {}) {
       results.push({ channel, ok: false, skipped: true, reason: "Media is hosted on the landing page, which is not live yet." });
       continue;
     }
+    if (!dryRun) {
+      const state = connectionState(channel);
+      if (!state.configured) {
+        results.push({
+          channel,
+          ok: false,
+          skipped: true,
+          reason: state.mode === "restricted" ? "Channel is blocked or monitoring-only." : `Needs setup: ${state.env.join(", ") || "credentials"}.`,
+        });
+        continue;
+      }
+      const check = DATA.connectionChecks?.[channel];
+      if (automatic && check && !check.ok) {
+        results.push({
+          channel,
+          ok: false,
+          skipped: true,
+          reason: `Automatic publish skipped: last connection test failed (${String(check.detail || "unknown").slice(0, 140)}).`,
+        });
+        continue;
+      }
+    }
     if (dryRun) {
       results.push({ channel, ok: true, dryRun: true, media: media?.kind || null });
       continue;
@@ -1005,6 +1034,9 @@ async function publishPost(post, { dryRun = true, automatic = false } = {}) {
     post.status = "published";
     post.publishedAt = new Date().toISOString();
     addActivity(DATA, "published", `Published “${post.title}” to ${ok} channel${ok === 1 ? "" : "s"}.`, post.id);
+  } else if (failures.length === 0 && skipped.length > 0) {
+    post.status = "blocked";
+    addActivity(DATA, "blocked", `Blocked “${post.title}”: no selected channel is connected yet.`, post.id);
   } else {
     post.status = "failed";
     addActivity(DATA, "failed", `Publish failed for “${post.title}” (${failures.length + skipped.length} channel issues).`, post.id);

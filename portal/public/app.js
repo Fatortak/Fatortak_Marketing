@@ -88,11 +88,19 @@
   }
 
   function channelStatusChip(channel) {
-    if (channel.configured && channel.verified?.ok) return `<span class="chip lime">verified</span>`;
+    if (channel.configured && verifiedFresh(channel)) return `<span class="chip lime">verified</span>`;
+    if (channel.configured && channel.verified?.ok) return `<span class="chip amber">test stale</span>`;
+    if (channel.configured && channel.verified && !channel.verified.ok) return `<span class="chip rose">test failed</span>`;
     if (channel.configured) return `<span class="chip cyan">configured</span>`;
     if (channel.mode === "monitoring") return `<span class="chip cyan">monitoring</span>`;
     if (channel.mode === "restricted") return `<span class="chip muted">blocked by platform</span>`;
     return `<span class="chip amber">needs setup</span>`;
+  }
+
+  function verifiedFresh(channel) {
+    const check = channel.verified;
+    if (!check?.ok || !check.at) return false;
+    return Date.now() - new Date(check.at).getTime() < 24 * 60 * 60 * 1000;
   }
 
   function mediaSupportLabel(value) {
@@ -156,6 +164,19 @@
     renderMode();
     renderView();
     renderSitePill();
+  }
+
+  async function refreshConnections() {
+    const configured = state.connections.filter((channel) => channel.configured);
+    const outcomes = await Promise.allSettled(
+      configured.map((channel) => api(`/api/connections/${channel.key}/test`, { method: "POST", body: "{}" }))
+    );
+    await refreshAll();
+    const failed = outcomes.filter((outcome) => outcome.status === "rejected" || !outcome.value?.result?.ok).length;
+    toast(
+      failed ? `${failed} connection test${failed === 1 ? "" : "s"} failed.` : `Tested ${configured.length} connected channel${configured.length === 1 ? "" : "s"}.`,
+      failed ? "error" : "success"
+    );
   }
 
   function renderMode() {
@@ -406,9 +427,9 @@ OCR invoice capture is built into Fatortak.
   function renderConnections() {
     const channels = state.connections;
     const connected = channels.filter((c) => c.configured).length;
-    const verified = channels.filter((c) => c.verified?.ok).length;
+    const verified = channels.filter(verifiedFresh).length;
     $("#view").innerHTML = `
-      <div class="page-head"><div><span class="eyebrow">Connections</span><h2>${connected} connected · ${verified} verified · ${channels.length} channels</h2><p>Save credentials once, test them, then the scheduler posts without you. Platform account creation and app review still happen in the platform's own console.</p></div><div class="page-head-actions"><button class="btn btn-ghost" data-refresh-connections>Refresh status</button><button class="btn btn-primary" data-view="queue">Open content</button></div></div>
+      <div class="page-head"><div><span class="eyebrow">Connections</span><h2>${connected} configured · ${verified} verified · ${channels.length} channels</h2><p>Save credentials once, test them, then the scheduler posts without you. Platform account creation and app review still happen in the platform's own console.</p></div><div class="page-head-actions"><button class="btn btn-ghost" data-refresh-connections>Test all</button><button class="btn btn-primary" data-view="queue">Open content</button></div></div>
       <div class="card card-pad section" style="margin-top:0">
         <div class="section-head"><h3>How connection works</h3><span>one-time</span></div>
         <p style="color:var(--muted);font-size:.78rem;line-height:1.7;margin-bottom:8px">Click <strong>Connect</strong> on a channel, open its official console, paste the token or ID, and hit <strong>Save &amp; test</strong>. The portal writes the values to its private <code>.env</code>, verifies the connection and never returns the secret. It cannot create social accounts, accept platform terms, pass app review or enter an OTP for you — those steps need the account owner.</p>
@@ -419,8 +440,8 @@ OCR invoice capture is built into Fatortak.
           <div class="card channel-card">
             <div class="channel-head"><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div>${channelStatusChip(channel)}</div>
             <p>${esc(channel.requirements)}</p>
-            <div class="chips" style="margin-bottom:2px"><span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>${channel.verified ? `<span class="chip ${channel.verified.ok ? "lime" : "rose"}">${channel.verified.ok ? "test ok" : "test failed"}</span>` : ""}</div>
-            ${channel.verified?.detail ? `<p style="min-height:0;color:var(--muted-2);font-size:.64rem">${esc(channel.verified.detail)}</p>` : ""}
+            <div class="chips" style="margin-bottom:2px"><span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>${channel.verified ? `<span class="chip ${verifiedFresh(channel) ? "lime" : channel.verified.ok ? "amber" : "rose"}">${verifiedFresh(channel) ? "test ok" : channel.verified.ok ? "test stale" : "test failed"}</span>` : ""}</div>
+            ${channel.verified?.detail ? `<p class="channel-verify-detail">${esc(channel.verified.detail)}</p>` : ""}
             <div class="env-list">${(channel.env || []).map((name) => `<code>${esc(name)}</code>`).join("") || `<code>no API credentials</code>`}</div>
             <div class="channel-metrics"><div><span>Followers</span><strong>${fmtNumber(channel.metrics?.followers)}</strong></div><div><span>Engagement</span><strong>${fmtNumber(channel.metrics?.engagement)}</strong></div><div><span>Clicks</span><strong>${fmtNumber(channel.metrics?.clicks)}</strong></div></div>
             <div class="channel-actions">
@@ -1042,7 +1063,8 @@ OCR invoice capture is built into Fatortak.
       if (target.dataset.publish) return publish(target.dataset.publish, false);
       if (target.dataset.delete) return deletePost(target.dataset.delete);
       if (target.dataset.importQueue !== undefined) return importQueue();
-      if (target.dataset.refresh !== undefined || target.dataset.refreshConnections !== undefined) return refreshAll();
+      if (target.dataset.refreshConnections !== undefined) return refreshConnections();
+      if (target.dataset.refresh !== undefined) return refreshAll();
       if (target.dataset.syncMetrics !== undefined) return syncMetrics();
       if (target.dataset.saveSettings !== undefined) return saveSettings();
       if (target.dataset.connect) return openChannelSetup(target.dataset.connect);
