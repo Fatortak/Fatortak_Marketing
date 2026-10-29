@@ -83,8 +83,8 @@
     return `<div class="chips">${(channels || []).map((channel) => `<span class="chip">${esc(channelLabel(channel))}</span>`).join("")}</div>`;
   }
 
-  function channelIcon(label) {
-    return `<span class="channel-icon">${esc(label.slice(0, 2).toUpperCase())}</span>`;
+  function channelIcon(key, label) {
+    return `<span class="channel-icon"><img src="icons/${esc(key)}.svg" alt="" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${esc((label || key).slice(0, 2).toUpperCase())}'" /></span>`;
   }
 
   function channelStatusChip(channel) {
@@ -266,7 +266,7 @@
         <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Mode</th><th>Status</th><th>Followers</th><th>Engagement</th><th>Clicks</th><th>Last sync</th><th></th></tr></thead><tbody>
           ${channels.map((channel) => `
             <tr>
-              <td><div class="channel-name">${channelIcon(channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.profile || "No profile URL")}</span></div></div></td>
+              <td><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.profile || "No profile URL")}</span></div></div></td>
               <td><span class="chip ${channel.mode === "api" ? "purple" : channel.mode === "monitoring" ? "cyan" : "muted"}">${esc(channel.mode)}</span></td>
               <td>${channelStatusChip(channel)}</td>
               <td>${fmtNumber(channel.metrics?.followers)}</td>
@@ -417,7 +417,7 @@ OCR invoice capture is built into Fatortak.
       <div class="channel-grid section">
         ${channels.map((channel) => `
           <div class="card channel-card">
-            <div class="channel-head"><div class="channel-name">${channelIcon(channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div>${channelStatusChip(channel)}</div>
+            <div class="channel-head"><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div>${channelStatusChip(channel)}</div>
             <p>${esc(channel.requirements)}</p>
             <div class="chips" style="margin-bottom:2px"><span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>${channel.verified ? `<span class="chip ${channel.verified.ok ? "lime" : "rose"}">${channel.verified.ok ? "test ok" : "test failed"}</span>` : ""}</div>
             ${channel.verified?.detail ? `<p style="min-height:0;color:var(--muted-2);font-size:.64rem">${esc(channel.verified.detail)}</p>` : ""}
@@ -462,7 +462,7 @@ OCR invoice capture is built into Fatortak.
         </div>
       </div>
       <div class="card section"><div class="table-wrap"><table><thead><tr><th>Channel</th><th>Status</th><th>Followers</th><th>Reach</th><th>Engagement</th><th>Clicks</th><th>Posts</th><th>Last sync</th></tr></thead><tbody>
-        ${channels.map((channel) => `<tr><td><div class="channel-name">${channelIcon(channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div></td><td><span class="chip ${channel.configured ? "lime" : channel.mode === "restricted" ? "muted" : "amber"}">${channel.configured ? "API" : channel.mode}</span></td><td>${fmtNumber(metrics[channel.key]?.followers)}</td><td>${fmtNumber(metrics[channel.key]?.reach)}</td><td>${fmtNumber(metrics[channel.key]?.engagement)}</td><td>${fmtNumber(metrics[channel.key]?.clicks)}</td><td>${fmtNumber(metrics[channel.key]?.posts)}</td><td>${metrics[channel.key]?.lastUpdated ? fmtDate(metrics[channel.key].lastUpdated, false) : "—"}</td></tr>`).join("")}
+        ${channels.map((channel) => `<tr><td><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div></td><td><span class="chip ${channel.configured ? "lime" : channel.mode === "restricted" ? "muted" : "amber"}">${channel.configured ? "API" : channel.mode}</span></td><td>${fmtNumber(metrics[channel.key]?.followers)}</td><td>${fmtNumber(metrics[channel.key]?.reach)}</td><td>${fmtNumber(metrics[channel.key]?.engagement)}</td><td>${fmtNumber(metrics[channel.key]?.clicks)}</td><td>${fmtNumber(metrics[channel.key]?.posts)}</td><td>${metrics[channel.key]?.lastUpdated ? fmtDate(metrics[channel.key].lastUpdated, false) : "—"}</td></tr>`).join("")}
       </tbody></table></div></div>
     `;
   }

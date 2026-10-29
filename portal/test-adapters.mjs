@@ -2,7 +2,7 @@
 // without calling a real social platform. Run with `npm test`.
 
 import assert from "node:assert/strict";
-import { publishToChannel } from "./adapters.mjs";
+import { publishToChannel, setHttpTransport } from "./adapters.mjs";
 
 const json = (data, status = 200, headers = {}) => ({
   ok: status < 400,
@@ -47,6 +47,11 @@ globalThis.fetch = async (url, init = {}) => {
   if (target.includes("discord.example")) return json({ id: "discord-1" });
   return json({ ok: true });
 };
+
+setHttpTransport(async (url, init = {}) => {
+  const response = await fetch(url, init);
+  return response.json();
+});
 
 const env = {
   FACEBOOK_PAGE_ID: "page-1",

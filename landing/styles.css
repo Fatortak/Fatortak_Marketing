@@ -1170,6 +1170,37 @@ html[lang="ar"] .tour-progress span {
   line-height: 1.75;
 }
 
+/* Product video ------------------------------------------------------ */
+.demo-video {
+  padding-top: 0;
+}
+
+.video-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #020617;
+  box-shadow: var(--shadow-lg), 0 0 80px rgba(34, 211, 238, 0.08);
+}
+
+.video-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.video-frame video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #020617;
+}
+
 /* Showcase ----------------------------------------------------------- */
 .showcase {
   background:

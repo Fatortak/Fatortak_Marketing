@@ -46,7 +46,7 @@ These have adapters in the portal. They publish when the corresponding API crede
 
 | Channel | Posting | Media | Monitoring | Credentials |
 | --- | --- | --- | --- | --- |
-| X | API v2 | Image upload (OAuth 1.0a media keys) | Partial (elevated access may be required) | `X_ACCESS_TOKEN`; image posts also `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN_SECRET` |
+| X | API v2 | Text via OAuth 1.0a; image upload | Partial (elevated access may be required) | `X_API_KEY`, `X_API_SECRET`, `X_OAUTH1_ACCESS_TOKEN`, `X_OAUTH1_ACCESS_TOKEN_SECRET`; optional `X_ACCESS_TOKEN` for OAuth 2.0 text |
 | LinkedIn company page | API | Image upload | Organization statistics need app review | `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN` |
 | Facebook Page | Graph API | Image and video upload | Page Insights need app review | `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN` |
 | Instagram Business | Graph API | Public image URL; video as Reels | Insights need app review | `INSTAGRAM_USER_ID`, `INSTAGRAM_ACCESS_TOKEN` |
@@ -144,10 +144,11 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 
 ### X
 
-1. Create an X developer app with OAuth 2.0 user context.
-2. Request `tweet.write` and `users.read`; elevated access is needed for some metrics.
-3. Set `X_ACCESS_TOKEN`.
-4. For image posts, also create OAuth 1.0a consumer/token keys: `X_API_KEY`, `X_API_SECRET`, `X_OAUTH1_ACCESS_TOKEN`, `X_OAUTH1_ACCESS_TOKEN_SECRET`.
+1. Create an X developer app and set **Read and write** permissions.
+2. Generate the **OAuth 1.0a** consumer key/secret and access token/secret for the Fatortak account.
+3. Set `X_API_KEY`, `X_API_SECRET`, `X_OAUTH1_ACCESS_TOKEN` and `X_OAUTH1_ACCESS_TOKEN_SECRET`.
+4. `X_ACCESS_TOKEN` is optional and only used for OAuth 2.0 text posts.
+5. Add X API credits before enabling live posting; the API is pay-per-use.
 
 ### Bluesky
 

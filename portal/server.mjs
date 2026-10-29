@@ -108,7 +108,7 @@ const CHANNEL_SETUP = {
     docs: "https://docs.x.com/x-api/posts/create-post",
     console: "https://developer.x.com/en/portal/dashboard",
     media: "image",
-    note: "Create an X app with OAuth 2.0 user context and tweet.write. Image posts also need the OAuth 1.0a consumer/token secrets.",
+    note: "Create an X app with Read and write, then paste the OAuth 1.0a consumer key/secret and access token/secret. An OAuth 2.0 user token also works for text posts. Add API credits before live posting.",
   },
   facebook: {
     docs: "https://developers.facebook.com/docs/pages-api/posts",

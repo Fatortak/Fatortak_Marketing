@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import https from "node:https";
 import { postToChannel } from "../automation/src/channels.mjs";
 import { env } from "../automation/src/config.mjs";
 
@@ -51,6 +52,40 @@ async function multipartPost(url, form, headers = {}) {
 async function fetchJson(url, headers = {}) {
   const response = await fetch(url, { headers, signal: AbortSignal.timeout(20_000) });
   return expectOk(response);
+}
+
+let httpTransport = null;
+
+export function setHttpTransport(transport) {
+  httpTransport = transport;
+}
+
+function httpsRequest(url, { method = "GET", headers = {}, body } = {}) {
+  if (httpTransport) return httpTransport(url, { method, headers, body });
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, { method, headers, timeout: 20_000 }, (res) => {
+      const chunks = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        let data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { raw: text };
+        }
+        if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${JSON.stringify(data).slice(0, 400)}`));
+          return;
+        }
+        resolve(data);
+      });
+    });
+    req.on("timeout", () => req.destroy(new Error("X request timed out")));
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
 }
 
 export const LIMITS = {
@@ -315,15 +350,20 @@ function oauth1Header(method, url) {
 
 async function postX(text, media) {
   const token = env("X_ACCESS_TOKEN");
-  if (!token) return missing("X_ACCESS_TOKEN not set");
+  const oauth1Ready = Boolean(
+    env("X_API_KEY") &&
+    env("X_API_SECRET") &&
+    (env("X_OAUTH1_ACCESS_TOKEN") || (env("X_ACCESS_TOKEN") && env("X_ACCESS_TOKEN_SECRET"))) &&
+    (env("X_OAUTH1_ACCESS_TOKEN_SECRET") || env("X_ACCESS_TOKEN_SECRET"))
+  );
+  if (!token && !oauth1Ready) return missing("X_ACCESS_TOKEN or OAuth 1.0a keys not set");
 
   if (!media) {
-    const response = await fetch("https://api.x.com/2/tweets", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    const data = await expectOk(response);
+    const url = "https://api.x.com/2/tweets";
+    const headers = token
+      ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+      : { Authorization: oauth1Header("POST", url), "Content-Type": "application/json" };
+    const data = await httpsRequest(url, { method: "POST", headers, body: JSON.stringify({ text }) });
     return { ok: true, id: data?.data?.id, url: data?.data?.id ? `https://x.com/i/web/status/${data.data.id}` : undefined };
   }
 
@@ -334,24 +374,35 @@ async function postX(text, media) {
   }
 
   const uploadUrl = "https://upload.twitter.com/1.1/media/upload.json";
-  const form = new FormData();
-  form.append("media", await mediaBlob(media), mediaName(media, "image.png"));
-  const upload = await fetch(uploadUrl, {
+  const buffer = await mediaBuffer(media);
+  if (!buffer) throw new Error("Media file is missing");
+  const boundary = `----fatortak${crypto.randomBytes(12).toString("hex")}`;
+  const mediaType = media.contentType || "image/png";
+  const multipart = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${mediaName(media, "image.png")}"\r\nContent-Type: ${mediaType}\r\n\r\n`
+    ),
+    buffer,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const uploaded = await httpsRequest(uploadUrl, {
     method: "POST",
-    headers: { Authorization: oauth1Header("POST", uploadUrl) },
-    body: form,
+    headers: {
+      Authorization: oauth1Header("POST", uploadUrl),
+      "Content-Type": `multipart/form-data; boundary=${boundary}`,
+      "Content-Length": String(multipart.length),
+    },
+    body: multipart,
   });
-  const uploaded = await expectOk(upload);
   const mediaId = uploaded.media_id_string || uploaded.media_id;
   if (!mediaId) throw new Error("X did not return a media id");
 
   const tweetUrl = "https://api.x.com/2/tweets";
-  const tweet = await fetch(tweetUrl, {
+  const data = await httpsRequest(tweetUrl, {
     method: "POST",
     headers: { Authorization: oauth1Header("POST", tweetUrl), "Content-Type": "application/json" },
     body: JSON.stringify({ text, media: { media_ids: [String(mediaId)] } }),
   });
-  const data = await expectOk(tweet);
   return { ok: true, id: data?.data?.id, url: data?.data?.id ? `https://x.com/i/web/status/${data.data.id}` : undefined };
 }
 
@@ -532,7 +583,7 @@ export async function publishToChannel(channel, text, { config, media } = {}) {
 
 export function connectionState(channel) {
   const checks = {
-    x: ["X_ACCESS_TOKEN"],
+    x: ["X_API_KEY", "X_API_SECRET", "X_OAUTH1_ACCESS_TOKEN", "X_OAUTH1_ACCESS_TOKEN_SECRET"],
     linkedin: ["LINKEDIN_ACCESS_TOKEN", "LINKEDIN_AUTHOR_URN"],
     bluesky: ["BLUESKY_HANDLE", "BLUESKY_APP_PASSWORD"],
     mastodon: ["MASTODON_ACCESS_TOKEN"],
@@ -545,9 +596,13 @@ export function connectionState(channel) {
   };
   const keys = checks[channel];
   if (!keys) return { mode: "restricted", configured: false, env: [] };
+  let configured = keys.every((key) => Boolean(env(key)));
+  if (channel === "x") {
+    configured = configured || Boolean(env("X_ACCESS_TOKEN"));
+  }
   return {
     mode: "api",
-    configured: keys.every((key) => Boolean(env(key))),
+    configured,
     env: keys,
   };
 }
@@ -585,8 +640,11 @@ export async function testConnection(channel) {
     }
     if (channel === "x") {
       const token = env("X_ACCESS_TOKEN");
-      if (!token) return { ok: false, detail: "X access token is required." };
-      const data = await fetchJson("https://api.x.com/2/users/me", { Authorization: `Bearer ${token}` });
+      const oauth1Ready = Boolean(env("X_API_KEY") && env("X_API_SECRET") && env("X_OAUTH1_ACCESS_TOKEN") && env("X_OAUTH1_ACCESS_TOKEN_SECRET"));
+      if (!token && !oauth1Ready) return { ok: false, detail: "X access token or OAuth 1.0a keys are required." };
+      const url = "https://api.x.com/2/users/me";
+      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: oauth1Header("GET", url) };
+      const data = await httpsRequest(url, { headers });
       return { ok: true, detail: `@${data.data?.username || "connected"}` };
     }
     if (channel === "bluesky") {
