@@ -21,7 +21,8 @@ param(
   [string]$Source = "",
   [string]$PublicUrl = "https://fatortak.rabbeh.com/",
   [switch]$Live,
-  [switch]$NoSsl
+  [switch]$NoSsl,
+  [switch]$Insecure
 )
 
 $ErrorActionPreference = "Stop"
@@ -159,7 +160,10 @@ $rootFiles = @(
   "app.js",
   "site.webmanifest",
   "robots.txt",
-  "sitemap.xml"
+  "sitemap.xml",
+  "privacy.html",
+  "demo.mp4",
+  "demo-poster.jpg"
 )
 $assetFiles = @(
   "assets/favicon.png",
@@ -236,6 +240,10 @@ if ($ftpHost -match "fatortak\.net$") {
 }
 
 $credential = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
+if ($Insecure) {
+  Write-Warning "TLS certificate validation is disabled for this deployment (self-signed Plesk certificate)."
+  [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+}
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $backupRoot = Join-Path $HOME ".config\fatortak\backups\$stamp"
 New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
