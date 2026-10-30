@@ -10,6 +10,22 @@
 
 The landing page has the real product screenshots, the 20-second demo video, full English/Arabic RTL, the current pricing, the privacy link and the cookie-less first-party pageview counter.
 
+## New assets created 30 October 2026
+
+- Facebook Page: **Fatortak Software**, ID `61596081359719`, Software Company category.
+- Instagram: **@fatortak.software**, converted to a professional (Business) profile.
+- Threads: **@fatortak.software**, bio set.
+- Mastodon: `fatortaksoftware@mastodon.social` signup submitted, pending email confirmation.
+- X `@Fatortakk` and Bluesky `@fatortak.bsky.social` profile images were updated through their APIs.
+
+Prepared upload assets:
+
+- `marketing/landing/assets/social/avatar.png`
+- `marketing/landing/assets/social/facebook-cover.png`
+- `marketing/landing/assets/social/youtube-banner.png`
+
+The new Facebook Page and Instagram account are not linked to the portal yet. Meta's desktop file picker and Instagram link flow repeatedly opened the Reels composer or returned a CSRF/nonce error in the automation browser, so the final profile images, cover photo and Page–Instagram link need one manual click from the account owner. The old Page and Instagram credentials remain untouched in the portal until the new assets are linked and a fresh token is generated.
+
 ## Channels
 
 | Channel | Account | State |

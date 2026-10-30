@@ -30,6 +30,7 @@ You can also open `index.html` directly, but a local server is better for testin
 | `assets/favicon.png` | Square real F mark on brand purple. |
 | `assets/og.png` | 1200×630 social preview image. |
 | `assets/screenshots/` | Real application screenshots captured from the local demo tenant. |
+| `assets/social/` | Square avatar, Facebook cover and YouTube banner for manual profile setup. |
 | `site.webmanifest`, `robots.txt`, `sitemap.xml` | Basic PWA/SEO files. |
 
 ## Interaction
