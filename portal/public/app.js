@@ -588,7 +588,8 @@ OCR invoice capture is built into Fatortak.
   }
 
   function defaultMediaForPillar(pillar) {
-    const item = state.mediaLibrary.find((entry) => (entry.pillars || []).includes(pillar)) || state.mediaLibrary[0];
+    const matches = state.mediaLibrary.filter((entry) => (entry.pillars || []).includes(pillar));
+    const item = matches.find((entry) => String(entry.id).startsWith("social-")) || matches[0] || state.mediaLibrary[0];
     return item ? { ...item } : null;
   }
 
