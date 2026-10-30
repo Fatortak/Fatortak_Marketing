@@ -233,17 +233,26 @@ const MEDIA_LIBRARY = [
   { id: "ai-chart", label: "AI chart", file: "ai-chat-chart.png", kind: "image", pillars: ["ai-ocr", "insight"], alt: "Fatortak AI assistant returning a chart and KPI cards." },
   { id: "ai-receivables", label: "AI receivables", file: "ai-chat-receivables.png", kind: "image", pillars: ["ai-ocr", "insight"], alt: "Fatortak AI assistant listing overdue receivables." },
   { id: "ocr", label: "OCR invoice", file: "ocr-invoice.png", kind: "image", pillars: ["ai-ocr", "product", "use-case"], alt: "Fatortak OCR invoice capture with extracted fields." },
+  { id: "social-run", label: "Social card — run the business", file: "social-run.png", kind: "image", pillars: ["product", "tip", "commercial"], alt: "Fatortak social card: run the whole business in one place." },
+  { id: "social-ai", label: "Social card — AI assistant", file: "social-ai.png", kind: "image", pillars: ["ai-ocr", "insight", "product"], alt: "Fatortak social card: ask your business anything." },
+  { id: "social-ocr", label: "Social card — OCR invoice", file: "social-ocr.png", kind: "image", pillars: ["ai-ocr", "product", "use-case"], alt: "Fatortak social card: snap a supplier invoice, review and post." },
+  { id: "social-profit", label: "Social card — project profit", file: "social-profit.png", kind: "image", pillars: ["insight", "commercial"], alt: "Fatortak social card: know profit per project." },
+  { id: "social-vat", label: "Social card — VAT invoicing", file: "social-vat.png", kind: "image", pillars: ["commercial", "product", "use-case"], alt: "Fatortak social card: VAT-ready invoices that post to the same ledger." },
+  { id: "social-open", label: "Social card — open source", file: "social-open.png", kind: "image", pillars: ["open-source"], alt: "Fatortak social card: open source AGPL-3.0." },
+  { id: "social-payroll", label: "Social card — payroll and inventory", file: "social-payroll.png", kind: "image", pillars: ["use-case", "product", "commercial"], alt: "Fatortak social card: payroll, inventory and cheques in one ledger." },
+  { id: "social-receivables", label: "Social card — receivables", file: "social-receivables.png", kind: "image", pillars: ["insight", "ai-ocr", "tip"], alt: "Fatortak social card: know who owes you before it hurts." },
+  { id: "social-arabic", label: "Social card — Arabic", file: "social-arabic.png", kind: "image", pillars: ["arabic"], alt: "Fatortak Arabic social card: run the whole business in one place." },
 ];
 
 const PILLAR_MEDIA = {
-  product: "dashboard",
-  insight: "income",
-  "open-source": "ai-chart",
-  "use-case": "projects",
-  arabic: "dashboard",
-  "ai-ocr": "ocr",
-  commercial: "profitability",
-  tip: "dashboard",
+  product: "social-run",
+  insight: "social-profit",
+  "open-source": "social-open",
+  "use-case": "social-payroll",
+  arabic: "social-arabic",
+  "ai-ocr": "social-ocr",
+  commercial: "social-vat",
+  tip: "social-receivables",
 };
 
 function siteBase() {

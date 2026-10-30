@@ -92,7 +92,7 @@ This removes the manual file editing, but it cannot remove the platform's one-ti
 
 Text-only publishing is disabled by default (`mediaRequired: true`). The composer will not schedule or publish a post without an image or video.
 
-- **Media library**: ten real Fatortak screenshots (dashboard, invoices, clients, projects, profitability, income statement, AI chat, AI chart, AI receivables, OCR). Queue posts are automatically matched to a relevant screenshot by pillar.
+- **Media library**: ten real Fatortak screenshots plus nine branded 1200×630 social cards generated from them. Queue posts are automatically matched to a relevant card or screenshot by pillar and language.
 - **Upload**: images and videos up to 100 MB are stored in `marketing/portal/data/media/` (gitignored) and served from `/media/...`.
 - **Native upload**: Facebook, LinkedIn, Mastodon, Telegram, Discord and Bluesky accept the file directly.
 - **Image only**: X (OAuth 1.0a media keys) and Bluesky.

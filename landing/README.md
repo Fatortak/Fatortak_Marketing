@@ -56,6 +56,8 @@ To refresh a screenshot:
 
 The AI chat scenes were seeded with a local-only SQL script (`marketing/scripts/seed-demo-chat.sql`) so the conversation shows accurate demo figures. The OCR screenshot uses a generated demo supplier invoice, not a real customer document.
 
+The nine `assets/screenshots/social-*.png` files are branded 1200×630 social cards generated from these screenshots for the portal media library. The Arabic card is RTL and uses the same live product data.
+
 ## Pricing
 
 The page uses the current in-app monthly pricing:

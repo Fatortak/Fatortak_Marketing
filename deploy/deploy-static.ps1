@@ -184,7 +184,16 @@ $screenshotFiles = @(
   "assets/screenshots/clients.png",
   "assets/screenshots/projects.png",
   "assets/screenshots/project-profitability.png",
-  "assets/screenshots/income-statement.png"
+  "assets/screenshots/income-statement.png",
+  "assets/screenshots/social-run.png",
+  "assets/screenshots/social-ai.png",
+  "assets/screenshots/social-ocr.png",
+  "assets/screenshots/social-profit.png",
+  "assets/screenshots/social-vat.png",
+  "assets/screenshots/social-open.png",
+  "assets/screenshots/social-payroll.png",
+  "assets/screenshots/social-receivables.png",
+  "assets/screenshots/social-arabic.png"
 )
 $relativeFiles = @($rootFiles + $assetFiles + $screenshotFiles)
 
