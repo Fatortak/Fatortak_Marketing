@@ -380,7 +380,7 @@
         ${posts.length ? `<div class="table-wrap"><table><thead><tr><th>Post</th><th>Channels</th><th>Schedule</th><th>Status</th><th></th></tr></thead><tbody>
           ${posts.map((post) => `
             <tr>
-              <td><div class="cell-title"><strong>${esc(post.title)}</strong><span>${esc(post.language.toUpperCase())} · ${esc(post.pillar)}${post.source === "queue" ? " · queue" : ""} · ${post.mediaUrl ? "media" : "no media"}</span></div></td>
+              <td><div class="post-title-wrap">${post.mediaUrl ? `<div class="post-thumb"><img src="${esc(post.mediaUrl)}" alt="${esc(post.mediaAlt || "")}" loading="lazy" /></div>` : `<div class="post-thumb is-empty"></div>`}<div class="cell-title"><strong>${esc(post.title)}</strong><span>${esc(post.language.toUpperCase())} · ${esc(post.pillar)}${post.source === "queue" ? " · queue" : ""} · ${post.mediaUrl ? esc(post.mediaKind || "media") : "no media"}</span></div></div></td>
               <td>${channelChips(post.channels)}</td>
               <td>${fmtDate(post.scheduledAt)}</td>
               <td>${statusChip(post.status)}</td>

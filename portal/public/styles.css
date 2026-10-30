@@ -190,6 +190,10 @@ tbody tr { transition: background 0.15s; }
 tbody tr:hover { background: rgba(255,255,255,0.025); }
 tbody tr:last-child td { border-bottom: 0; }
 .cell-title { display: flex; flex-direction: column; gap: 2px; max-width: 360px; }
+.post-title-wrap { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.post-thumb { width: 62px; height: 42px; flex: none; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #020617; }
+.post-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.post-thumb.is-empty { background: linear-gradient(135deg, rgba(139,92,246,.18), rgba(34,211,238,.08)); }
 .cell-title strong { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell-title span { color: var(--muted-2); font-size: 0.66rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chips { display: flex; gap: 4px; flex-wrap: wrap; }
