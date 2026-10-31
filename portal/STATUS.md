@@ -24,7 +24,7 @@ Prepared upload assets:
 - `marketing/landing/assets/social/facebook-cover.png`
 - `marketing/landing/assets/social/youtube-banner.png`
 
-The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, and the Page cover is set. Facebook's Page token was short-lived and has now expired, and the automation browser's Meta session was logged out, so the Facebook channel needs one re-login before it can post again. The Page avatar is still the default green “F”; upload `avatar.png` from the mobile app to replace it.
+The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, and the Page cover is set. Facebook's Page token was refreshed on 1 November 2026 and is short-lived (expires 00:00 UTC); it works for posting but needs a fresh mint before a long unattended run. The Page avatar is still the default green "F"; upload `avatar.png` from the mobile app to replace it.
 
 ## Channels
 
@@ -32,7 +32,7 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | --- | --- | --- |
 | X | @Fatortakk | Connected and verified through OAuth 1.0a. Posting needs X API credits. |
 | Bluesky | @fatortak.bsky.social | Connected and verified with an app password. |
-| Facebook Page | Fatortak Software Solutions | Page token expired; the automation browser session was logged out. Sign in to Facebook with the account phone number (private notes) and password, then mint a fresh Page token. |
+| Facebook Page | Fatortak Software Solutions | Connected and verified again with a fresh short-lived Page token (expires 1 Nov 2026 00:00 UTC). Re-mint or extend with the account password before a long run. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
 | Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
@@ -55,17 +55,18 @@ screen. Then run `GET /me/accounts?fields=id,name,access_token` and store the re
 Page token as `FACEBOOK_PAGE_ACCESS_TOKEN` (`FACEBOOK_PAGE_ID=1338665946004849`).
 The token is valid for roughly an hour; refresh it before a long unattended run.
 
-### Current blocker — Facebook
+### Facebook token status
 
-The automation browser's Meta session was reset during the long pause. `facebook.com`,
-`business.facebook.com` and `developers.facebook.com` all show a logged-out state. The login
-identifier is the account phone number (stored in the private notes); the stored Instagram
-password is not the Facebook password, and no Facebook password is available in the private
-notes. Facebook also requires the account password to reveal the app secret or extend a token.
+The developer session is active again and a fresh Page token was saved on 1 Nov 2026. It
+works for posting, but it expires at **00:00 UTC on 1 Nov 2026** and cannot be extended to a
+long-lived token without re-entering the Facebook account password: the Access Token
+Debugger's Extend action and the App Secret reveal both ask for it. `www.facebook.com` itself
+still shows a logged-out state in the automation browser, so Page profile editing and the
+duplicate-Page cleanup remain manual.
 
-To restore publishing: sign in to Facebook once with the phone number and password, then
-repeat the Graph API Explorer steps above. Instagram is unaffected because it uses the
-durable Fatortak Automation system-user token.
+To make the token durable, sign in to `facebook.com` in the automation browser with the
+account phone number and password, then use **Access Token Debugger → Extend Access Token**.
+Until then, re-mint the Page token from Graph API Explorer before each long run.
 
 ### Meta Pages and the Instagram link
 
