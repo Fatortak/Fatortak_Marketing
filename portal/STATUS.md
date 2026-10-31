@@ -1,4 +1,4 @@
-# Fatortak marketing status — 30 October 2026
+# Fatortak marketing status — 31 October 2026
 
 ## Live
 
@@ -10,12 +10,12 @@
 
 The landing page has the real product screenshots, the 20-second demo video, full English/Arabic RTL, the current pricing, the privacy link and the cookie-less first-party pageview counter.
 
-## New assets created 30 October 2026
+## New assets created 31 October 2026
 
-- Facebook Page: **Fatortak Software**, ID `61596081359719`, Software Company category.
-- Instagram: **@fatortak.software**, converted to a professional (Business) profile.
-- Threads: **@fatortak.software**, bio set.
-- Mastodon: `fatortaksoftware@mastodon.social` signup submitted, pending email confirmation.
+- Facebook Page: **Fatortak Software Solutions**, ID `1338665946004849` (public profile id `61596116458880`), Software Company category, owned by the Fatortak business portfolio.
+- Instagram: **@fatortak.software**, ID `17841429322066567`, professional (Business) profile, profile image live.
+- Threads: **@fatortak.software**, bio and profile image live.
+- Mastodon: `fatortaksoftware@mastodon.social`, signup email changed to a temporary mailbox so the confirmation can be automated; final confirmation pending.
 - X `@Fatortakk` and Bluesky `@fatortak.bsky.social` profile images were updated through their APIs.
 
 Prepared upload assets:
@@ -24,7 +24,7 @@ Prepared upload assets:
 - `marketing/landing/assets/social/facebook-cover.png`
 - `marketing/landing/assets/social/youtube-banner.png`
 
-The new Facebook Page and Instagram account are not linked to the portal yet. Meta's desktop file picker and Instagram link flow repeatedly opened the Reels composer or returned a CSRF/nonce error in the automation browser, so the final profile images, cover photo and Page–Instagram link need one manual click from the account owner. The old Page and Instagram credentials remain untouched in the portal until the new assets are linked and a fresh token is generated.
+The new Facebook Page and Instagram account are both connected to the portal and pass their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). The Facebook Page uses a Page access token minted through Graph API Explorer; the token is short-lived, so refresh it before long unattended runs. The Instagram account is connected through the durable Fatortak Automation system-user token, so it does not depend on the Page link. Meta's desktop file picker still routes profile/cover uploads into the Reels composer, and the profile-picture endpoint rejects `pages_manage_metadata` as an invalid scope in the current API version; the Page profile picture and cover photo still need one manual upload from Business Suite or the mobile app.
 
 ## Channels
 
@@ -32,17 +32,28 @@ The new Facebook Page and Instagram account are not linked to the portal yet. Me
 | --- | --- | --- |
 | X | @Fatortakk | Connected and verified through OAuth 1.0a. Posting needs X API credits. |
 | Bluesky | @fatortak.bsky.social | Connected and verified with an app password. |
-| Facebook Page | Fatortak-فاتورتك | Credentials saved, but the Meta token expired on 28 Oct 2026. Regenerate a long-lived Page token. |
-| Instagram | @fatortak.app | Credentials saved, but the Meta token expired on 28 Oct 2026. Regenerate with the Facebook Page token. |
+| Facebook Page | Fatortak Software Solutions | Connected and verified. Page token works for posting; refresh the short-lived user/Page token before long unattended runs. |
+| Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
-| Threads | — | Needs a Threads app secret, HTTPS redirect URI and access token. |
-| Mastodon, Telegram, Discord, Dev.to | — | Need one-time tokens/webhooks. |
+| Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
+| Mastodon | @fatortaksoftware@mastodon.social | Confirmation email redirected to a temporary mailbox; account confirmation pending. |
+| Telegram, Discord, Dev.to | — | Need one-time tokens/webhooks. |
 | TikTok, YouTube | — | Need platform audit/OAuth and video assets. |
 | Reddit, Hacker News, Product Hunt | — | Monitoring only; unattended posting violates their rules. |
 
 ## Publishing safety
 
-The portal is deliberately still in **dry run** with live publishing locked and the scheduler off. This prevents partial posts while the Facebook/Instagram tokens are expired and X has no credits.
+The portal is deliberately still in **dry run** with live publishing locked and the scheduler off. This prevents partial posts while the Facebook Page token is short-lived and X has no credits.
+
+### Facebook Page token refresh
+
+The Page token came from **Graph API Explorer → Fatortak → Generate Access Token** with
+`pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `read_insights`,
+`business_management`, `instagram_basic`, `instagram_content_publish` and
+`instagram_manage_insights`. Select only **Fatortak Software Solutions** on the asset
+screen. Then run `GET /me/accounts?fields=id,name,access_token` and store the returned
+Page token as `FACEBOOK_PAGE_ACCESS_TOKEN` (`FACEBOOK_PAGE_ID=1338665946004849`).
+The token is valid for roughly an hour; refresh it before a long unattended run.
 
 To enable live automatic publishing after fixing the connections:
 
