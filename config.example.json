@@ -25,7 +25,7 @@
     "x": { "enabled": true },
     "linkedin": { "enabled": true },
     "bluesky": { "enabled": true },
-    "mastodon": { "enabled": false, "instance": "https://mastodon.social" },
+    "mastodon": { "enabled": true, "instance": "https://mastodon.social" },
     "telegram": { "enabled": false },
     "discord": { "enabled": false }
   },

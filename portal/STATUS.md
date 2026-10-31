@@ -15,7 +15,7 @@ The landing page has the real product screenshots, the 20-second demo video, ful
 - Facebook Page: **Fatortak Software Solutions**, ID `1338665946004849` (public profile id `61596116458880`), Software Company category, owned by the Fatortak business portfolio.
 - Instagram: **@fatortak.software**, ID `17841429322066567`, professional (Business) profile, profile image live.
 - Threads: **@fatortak.software**, bio and profile image live.
-- Mastodon: `fatortaksoftware@mastodon.social`, signup email changed to a temporary mailbox so the confirmation can be automated; final confirmation pending.
+- Mastodon: **@fatortaksoftware@mastodon.social**, confirmed and branded; avatar, header and bio set; connected to the portal.
 - X `@Fatortakk` and Bluesky `@fatortak.bsky.social` profile images were updated through their APIs.
 
 Prepared upload assets:
@@ -36,7 +36,7 @@ The new Facebook Page and Instagram account were both connected to the portal an
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
 | Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
-| Mastodon | @fatortaksoftware@mastodon.social | Confirmation email redirected to a temporary mailbox; account confirmation pending. |
+| Mastodon | @fatortaksoftware@mastodon.social | Connected and verified. Avatar, header and bio set. |
 | Telegram, Discord, Dev.to | — | Need one-time tokens/webhooks. |
 | TikTok, YouTube | — | Need platform audit/OAuth and video assets. |
 | Reddit, Hacker News, Product Hunt | — | Monitoring only; unattended posting violates their rules. |
@@ -66,6 +66,18 @@ notes. Facebook also requires the account password to reveal the app secret or e
 To restore publishing: sign in to Facebook once with the phone number and password, then
 repeat the Graph API Explorer steps above. Instagram is unaffected because it uses the
 durable Fatortak Automation system-user token.
+
+### Meta Pages and the Instagram link
+
+- The new Page is owned by the Fatortak portfolio; `GET /1256906939088063/owned_pages`
+  returns `1338665946004849`. The three Pages in the personal Page switcher are older
+  personal Pages — business-owned Pages do not appear there.
+- `@fatortak.software` is in the portfolio but is not linked to the Page. The Instagram-side
+  "Connect Facebook Page" wizard was opened through Instagram SSO, but its Next step needs
+  Settings access for the IG profile.
+- A Business Suite access request was sent on 31 Oct 2026. After the full-control Facebook
+  admin approves it, rerun the Instagram-side wizard or use
+  Page → Connected assets → Connect assets → Instagram account.
 
 To enable live automatic publishing after fixing the connections:
 
