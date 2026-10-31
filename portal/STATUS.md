@@ -24,7 +24,7 @@ Prepared upload assets:
 - `marketing/landing/assets/social/facebook-cover.png`
 - `marketing/landing/assets/social/youtube-banner.png`
 
-The new Facebook Page and Instagram account are both connected to the portal and pass their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). The Facebook Page uses a Page access token minted through Graph API Explorer; the token is short-lived, so refresh it before long unattended runs. The Instagram account is connected through the durable Fatortak Automation system-user token, so it does not depend on the Page link. Meta's desktop file picker still routes profile/cover uploads into the Reels composer, and the profile-picture endpoint rejects `pages_manage_metadata` as an invalid scope in the current API version; the Page profile picture and cover photo still need one manual upload from Business Suite or the mobile app.
+The new Facebook Page and Instagram account were both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. Facebook's Page token was short-lived and has now expired, and the automation browser's Meta session was logged out, so the Facebook channel needs one re-login before it can post again. Meta's desktop file picker still routes profile/cover uploads into the Reels composer, and the profile-picture endpoint rejects `pages_manage_metadata` as an invalid scope in the current API version; the Page profile picture and cover photo still need one manual upload from Business Suite or the mobile app.
 
 ## Channels
 
@@ -32,7 +32,7 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | --- | --- | --- |
 | X | @Fatortakk | Connected and verified through OAuth 1.0a. Posting needs X API credits. |
 | Bluesky | @fatortak.bsky.social | Connected and verified with an app password. |
-| Facebook Page | Fatortak Software Solutions | Connected and verified. Page token works for posting; refresh the short-lived user/Page token before long unattended runs. |
+| Facebook Page | Fatortak Software Solutions | Page token expired; the automation browser session was logged out. Sign in to Facebook with the account phone number (private notes) and password, then mint a fresh Page token. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
 | Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
@@ -54,6 +54,18 @@ The Page token came from **Graph API Explorer → Fatortak → Generate Access T
 screen. Then run `GET /me/accounts?fields=id,name,access_token` and store the returned
 Page token as `FACEBOOK_PAGE_ACCESS_TOKEN` (`FACEBOOK_PAGE_ID=1338665946004849`).
 The token is valid for roughly an hour; refresh it before a long unattended run.
+
+### Current blocker — Facebook
+
+The automation browser's Meta session was reset during the long pause. `facebook.com`,
+`business.facebook.com` and `developers.facebook.com` all show a logged-out state. The login
+identifier is the account phone number (stored in the private notes); the stored Instagram
+password is not the Facebook password, and no Facebook password is available in the private
+notes. Facebook also requires the account password to reveal the app secret or extend a token.
+
+To restore publishing: sign in to Facebook once with the phone number and password, then
+repeat the Graph API Explorer steps above. Instagram is unaffected because it uses the
+durable Fatortak Automation system-user token.
 
 To enable live automatic publishing after fixing the connections:
 
