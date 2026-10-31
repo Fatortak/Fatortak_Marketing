@@ -24,7 +24,7 @@ Prepared upload assets:
 - `marketing/landing/assets/social/facebook-cover.png`
 - `marketing/landing/assets/social/youtube-banner.png`
 
-The new Facebook Page and Instagram account were both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. Facebook's Page token was short-lived and has now expired, and the automation browser's Meta session was logged out, so the Facebook channel needs one re-login before it can post again. Meta's desktop file picker still routes profile/cover uploads into the Reels composer, and the profile-picture endpoint rejects `pages_manage_metadata` as an invalid scope in the current API version; the Page profile picture and cover photo still need one manual upload from Business Suite or the mobile app.
+The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, and the Page cover is set. Facebook's Page token was short-lived and has now expired, and the automation browser's Meta session was logged out, so the Facebook channel needs one re-login before it can post again. The Page avatar is still the default green “F”; upload `avatar.png` from the mobile app to replace it.
 
 ## Channels
 
@@ -72,12 +72,18 @@ durable Fatortak Automation system-user token.
 - The new Page is owned by the Fatortak portfolio; `GET /1256906939088063/owned_pages`
   returns `1338665946004849`. The three Pages in the personal Page switcher are older
   personal Pages — business-owned Pages do not appear there.
-- `@fatortak.software` is in the portfolio but is not linked to the Page. The Instagram-side
-  "Connect Facebook Page" wizard was opened through Instagram SSO, but its Next step needs
-  Settings access for the IG profile.
-- A Business Suite access request was sent on 31 Oct 2026. After the full-control Facebook
-  admin approves it, rerun the Instagram-side wizard or use
-  Page → Connected assets → Connect assets → Instagram account.
+- The Instagram profile was given Page access, then connected successfully. The Page Home
+  now shows **Edit Instagram profile** and **Instagram followers** instead of
+  **Connect Instagram**, which confirms the Page–Instagram link.
+- The Page cover photo was set from Business Suite. The Page avatar is still the default
+  green “F”; upload `marketing/landing/assets/social/avatar.png` from the mobile app or
+  Page editor to replace it.
+- The duplicate **Fatortak Software** Page (orange “F”, 0 followers) is under
+  **Your Account**, not the Fatortak portfolio. Delete or unpublish it manually; do not
+  delete the green **Fatortak Software Solutions** Page.
+- The Instagram profile’s Business Suite tool-access request is separate from the Page
+  role. The Page-side management works; the IG-side Business Suite home may still ask for
+  access. This does not affect the link or API publishing.
 
 To enable live automatic publishing after fixing the connections:
 
