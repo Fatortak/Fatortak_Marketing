@@ -24,7 +24,7 @@ Prepared upload assets:
 - `marketing/landing/assets/social/facebook-cover.png`
 - `marketing/landing/assets/social/youtube-banner.png`
 
-The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, and the Page cover is set. Facebook's Page token was refreshed on 1 November 2026 and is short-lived (expires 00:00 UTC); it works for posting but needs a fresh mint before a long unattended run. The Page avatar is still the default green "F"; upload `avatar.png` from the mobile app to replace it.
+The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, the cover is set, and the Page avatar is the real Fatortak logo. Facebook's Page token is short-lived (about an hour); it works for posting but needs a fresh mint before a long unattended run. The duplicate orange **Fatortak Software** Page still needs manual unpublish/delete.
 
 ## Channels
 
@@ -32,7 +32,7 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | --- | --- | --- |
 | X | @Fatortakk | Connected and verified through OAuth 1.0a. Posting needs X API credits. |
 | Bluesky | @fatortak.bsky.social | Connected and verified with an app password. |
-| Facebook Page | Fatortak Software Solutions | Connected and verified again with a fresh short-lived Page token (expires 1 Nov 2026 00:00 UTC). Re-mint or extend with the account password before a long run. |
+| Facebook Page | Fatortak Software Solutions | Connected and verified with a fresh short-lived Page token. Re-mint before a long run; the Extend/App Secret actions currently need the account password. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
 | Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
@@ -57,16 +57,18 @@ The token is valid for roughly an hour; refresh it before a long unattended run.
 
 ### Facebook token status
 
-The developer session is active again and a fresh Page token was saved on 1 Nov 2026. It
-works for posting, but it expires at **00:00 UTC on 1 Nov 2026** and cannot be extended to a
-long-lived token without re-entering the Facebook account password: the Access Token
-Debugger's Extend action and the App Secret reveal both ask for it. `www.facebook.com` itself
-still shows a logged-out state in the automation browser, so Page profile editing and the
-duplicate-Page cleanup remain manual.
+The developer session is active and a fresh Page token was saved on 1 Nov 2026. It works for
+posting, but it expires in about an hour and could not be extended to a long-lived token:
+the Access Token Debugger disables **Extend Access Token**, and the App Secret reveal opens
+a **"Confirm with password"** dialog that never renders its password field. The account
+password was provided, but Meta's re-auth UI did not accept it or show an error.
+`www.facebook.com` is logged in and the Page avatar/cover are set; the duplicate orange
+**Fatortak Software** Page still needs manual unpublish/delete.
 
-To make the token durable, sign in to `facebook.com` in the automation browser with the
-account phone number and password, then use **Access Token Debugger → Extend Access Token**.
-Until then, re-mint the Page token from Graph API Explorer before each long run.
+To make the token durable, sign in to `facebook.com` in the automation browser and use
+**Access Token Debugger → Extend Access Token** from a normal browser session, or provide a
+long-lived user token. Until then, re-mint the Page token from Graph API Explorer before
+each long run.
 
 ### Meta Pages and the Instagram link
 
