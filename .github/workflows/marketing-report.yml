@@ -1,0 +1,41 @@
+name: Marketing growth report
+
+on:
+  schedule:
+    # Monday 07:00 UTC / 09:00 Cairo.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: marketing-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Build weekly report
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automation
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
+      PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+      - name: Restore posting state
+        uses: actions/cache/restore@v6
+        with:
+          path: automation/.state
+          key: marketing-state-report-${{ github.run_id }}
+          restore-keys: |
+            marketing-state-
+      - name: Build report and open an issue
+        run: node src/cli.mjs report --issue
