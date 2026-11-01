@@ -109,12 +109,12 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 ## Deployment
 
 - Production URL: <https://fatortak.rabbeh.com/portal/>
-- The portal is a PHP front controller (`marketing/portal/deploy/index.php`) in `/portal/` plus the Node service in `App_Data/portal-app/`.
+- The portal is a PHP front controller (`portal/deploy/index.php`) in `/portal/` plus the Node service in `App_Data/portal-app/`.
 - PHP handles the password login, signed HttpOnly session cookie, rate limiting, security headers, Node process supervision and the HTTPS-only reverse proxy.
 - The Node service binds `127.0.0.1:4318` and requires a private bearer token (`App_Data/portal-app/node.token`) that PHP injects on every proxied request.
 - State, `.env`, uploaded media and backups live under `App_Data/portal-app/`, which IIS does not serve (verified `403`).
 - Node restarts automatically from the PHP supervisor. Authenticated operators can restart it with `/portal/?restart=1`.
-- Deploy with `marketing/portal/scripts/build-production.ps1` and `marketing/portal/scripts/deploy-production.ps1`. Re-deploys keep the remote data and `.env` unless `-ForceData` / `-ForceEnv` is used.
+- Deploy with `portal/scripts/build-production.ps1` and `portal/scripts/deploy-production.ps1`. Re-deploys keep the remote data and `.env` unless `-ForceData` / `-ForceEnv` is used.
 - Production credentials live in `%USERPROFILE%\.config\fatortak\portal-production.txt` (outside the repo). Plesk admin is not required for this deployment path.
 - Static landing deployment still uses the scoped FTPS account in `%USERPROFILE%\.config\fatortak\plesk.env`.
 - Portal `.env` and runtime data are gitignored. A private backup lives in `%USERPROFILE%\.config\fatortak\portal-backup`; the server also rotates 40 snapshots in `App_Data/portal-app/data/backups`.
@@ -127,8 +127,32 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 - X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access. The scheduler records those results per channel and continues with the channels that are ready.
 - Keep the Node service warm. The GitHub Actions keepalive pings `/portal/?ping=1` every 10 minutes; if IIS recycles the app pool, the next ping restarts Node and the scheduler catches overdue posts on startup.
 
+## Brand rollout — 1 November 2026
+
+New professional covers with the Fatortak logo and the live dashboard are in
+`landing/assets/brand/` and on the landing at
+`https://fatortak.rabbeh.com/assets/brand/`.
+
+| Surface | Status |
+| --- | --- |
+| Landing Open Graph / Twitter image | Updated to `cover-og.png` |
+| README (product + marketing repo) | Updated to `cover-readme.png` |
+| X header | Updated via OAuth 1.0a (`201`) |
+| Mastodon header | Updated via API (`200`) |
+| Bluesky banner | Updated via AT Protocol (`200`, validation `valid`) |
+| Facebook Page cover | Pending: the Page token lacks `pages_manage_metadata`; upload `cover-facebook.png` manually or re-authorise the app with that permission |
+| GitHub social preview | Pending: needs a signed-in browser upload in repository settings |
+| LinkedIn company banner | Asset ready (`cover-linkedin.png`); needs Community Management API access or a browser session |
+| YouTube channel art | Asset ready (`cover-youtube.png`); needs YouTube OAuth or a browser session |
+
+The portal password was rotated on 1 November 2026 and is stored outside the
+repository in `%USERPROFILE%\.config\fatortak\portal-production.txt`.
+
 ## Repository
 
-- Branch: `marketing/social-plan-clean`
-- Latest work: branded social cards and first-party analytics.
-- The main `D:\Courses\fatortakProject_Version` worktree has unrelated uncommitted UI changes and was not modified.
+- Marketing repository: <https://github.com/Fatortak/Fatortak_Marketing> (`main`)
+- Product repository: <https://github.com/Fatortak/Fatortak_Software>
+- Marketing was removed from the product repository in PR #37; `marketing/`, the
+  marketing workflows, the GitHub Pages landing mirror and the `Marketing assets`
+  required check were removed. Marketing now lives only here.
+- The product README uses the new cover and product screenshots from this repository.
