@@ -35,6 +35,10 @@ InterServer Windows/Plesk subscription. No Plesk admin or SSH access is needed.
    API is not reachable directly.
 5. Node publishes due posts when `PORTAL_AUTO_PUBLISH=true`,
    `MARKETING_LIVE=true`, and **dry run is off** in Settings.
+6. IIS/WAF blocks raw `PUT`/`DELETE` and the common
+   `X-HTTP-Method-Override` header. The UI sends `POST` with
+   `X-Portal-Method: PUT|DELETE`; `index.php` translates it before proxying.
+   `web.config` disables WebDAV and allows unlisted verbs as a second layer.
 
 The `?ping=1` endpoint is unauthenticated. It returns only
 `{ ok, service, at }`, starts Node if needed, and is used by the GitHub Actions

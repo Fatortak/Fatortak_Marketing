@@ -128,7 +128,13 @@
     const headers = { ...(options.headers || {}) };
     if (state.token) headers.Authorization = `Bearer ${state.token}`;
     if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
-    const response = await fetch(API_BASE + path, { ...options, headers });
+    const requestedMethod = (options.method || "GET").toUpperCase();
+    const fetchOptions = { ...options };
+    if (requestedMethod === "PUT" || requestedMethod === "DELETE") {
+      fetchOptions.method = "POST";
+      headers["X-Portal-Method"] = requestedMethod;
+    }
+    const response = await fetch(API_BASE + path, { ...fetchOptions, headers });
     if (response.status === 401) {
       if (location.pathname.startsWith("/portal")) {
         location.href = "/portal/";

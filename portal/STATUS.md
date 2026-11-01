@@ -123,9 +123,9 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 
 - The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 November to 1 December 2026.
 - Every post has an image; the library has **37 unique visuals** — 30 new `social-v2` cards plus the original social cards.
-- The production portal is still in **dry run**. Live publishing and the scheduler are armed, but nothing posts until dry run is turned off in **Settings**.
-- X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access.
-- Keep the Node service warm. If the site is idle long enough for IIS to recycle the app pool, the next portal or `/portal/?ping=1` request restarts Node and the scheduler catches overdue posts on startup.
+- The production portal is **live and armed**: dry run is off, `MARKETING_LIVE=true` and `PORTAL_AUTO_PUBLISH=true`. The first scheduled post is **2 November 2026 at 09:00 Cairo**.
+- X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access. The scheduler records those results per channel and continues with the channels that are ready.
+- Keep the Node service warm. The GitHub Actions keepalive pings `/portal/?ping=1` every 10 minutes; if IIS recycles the app pool, the next ping restarts Node and the scheduler catches overdue posts on startup.
 
 ## Repository
 

@@ -382,6 +382,10 @@ if (isset($_GET['logout'])) {
 }
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$override = strtoupper((string)($_SERVER['HTTP_X_PORTAL_METHOD'] ?? ''));
+if (in_array($override, ['PUT', 'PATCH', 'DELETE'], true)) {
+    $method = $override;
+}
 $pathInfo = (string)($_SERVER['PATH_INFO'] ?? '');
 $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? PORTAL_PATH), PHP_URL_PATH) ?: PORTAL_PATH);
 if ($requestPath === '/portal' && $pathInfo === '') {

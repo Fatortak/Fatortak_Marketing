@@ -48,6 +48,7 @@ foreach ($dir in @($webDir, $portalApp, $automationDir, $publicDir, $dataDir)) {
 }
 
 Copy-Item (Join-Path $portalRoot "deploy\index.php") (Join-Path $webDir "index.php")
+Copy-Item (Join-Path $portalRoot "deploy\web.config") (Join-Path $webDir "web.config")
 Copy-Item (Join-Path $portalRoot "public\app.js") (Join-Path $webDir "app.js")
 Copy-Item (Join-Path $portalRoot "public\styles.css") (Join-Path $webDir "styles.css")
 Copy-Item (Join-Path $portalRoot "public\favicon.png") (Join-Path $webDir "favicon.png")
