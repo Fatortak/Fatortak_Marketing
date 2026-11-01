@@ -1,0 +1,10 @@
+# Secrets and runtime data — never commit
+.env
+.env.*
+!.env.example
+**/.env
+*.log
+portal/data/
+portal/deploy/build/
+portal/deploy/secrets/
+portal/App_Data/

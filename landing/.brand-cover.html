@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Fatortak brand cover</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #060816;
+    --ink: #f8fafc;
+    --muted: #a8b5c9;
+    --line: rgba(148, 163, 184, .22);
+    --a1: #c4b5fd;
+    --a2: #a78bfa;
+    --a3: #67e8f9;
+  }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; }
+  .cover { position: relative; width: 100vw; height: 100vh; overflow: hidden; padding: 5.2vh 5vw;
+    background:
+      radial-gradient(ellipse 55% 70% at 82% 2%, rgba(109, 40, 217, .55), transparent 64%),
+      radial-gradient(ellipse 45% 55% at 4% 100%, rgba(34, 211, 238, .16), transparent 65%),
+      var(--bg);
+  }
+  .grid { position: absolute; inset: -20% -10%; opacity: .34;
+    background-image: linear-gradient(rgba(148,163,184,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.12) 1px, transparent 1px);
+    background-size: 54px 54px; transform: perspective(760px) rotateX(58deg) translateY(-7%); transform-origin: 50% 0;
+    mask-image: radial-gradient(ellipse 62% 62% at 62% 18%, #000, transparent 72%);
+  }
+  .glow { position: absolute; width: 48vw; height: 48vw; right: -6vw; top: -18vw; border-radius: 999px;
+    background: radial-gradient(circle, rgba(167, 139, 250, .55), transparent 66%); filter: blur(46px); }
+  .top { position: relative; display: flex; align-items: center; justify-content: space-between; }
+  .logo { height: 4.2vh; min-height: 28px; width: auto; }
+  .tag { color: #8b9ab1; font-size: 1.15vh; min-font-size: 10px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
+  .content { position: relative; display: grid; grid-template-columns: 1.02fr .98fr; gap: 4vw; align-items: center; height: calc(100% - 15vh); margin-top: 2vh; }
+  .badge { display: inline-flex; align-items: center; gap: .9vh; padding: 1vh 1.35vw; border: 1px solid rgba(196, 181, 253, .36); border-radius: 999px;
+    color: var(--a1); font-size: 1.25vh; min-font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    background: rgba(167, 139, 250, .13); }
+  .dot { width: .8vh; height: .8vh; min-width: 6px; min-height: 6px; border-radius: 999px; background: #a3e635; box-shadow: 0 0 12px rgba(163, 230, 53, .8); }
+  h1 { margin: 3vh 0 0; font-size: min(6.4vw, 8.4vh); line-height: 1.02; letter-spacing: -.045em; font-weight: 800; }
+  h1 em { font-style: normal; background: linear-gradient(100deg, var(--a1), var(--a2) 48%, var(--a3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p { margin: 2.2vh 0 0; max-width: 38vw; color: var(--muted); font-size: min(1.55vw, 2.2vh); line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: .8vh .7vw; margin-top: 2.6vh; }
+  .chip { padding: .9vh 1vw; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.05); color: #cbd5e1; font-size: 1.15vh; font-weight: 600; }
+  .shot { position: relative; border: 1px solid rgba(255,255,255,.2); border-radius: 1.4vh; overflow: hidden; background: #0a0f22;
+    box-shadow: 0 3vh 7vh rgba(0,0,0,.55); transform: perspective(1400px) rotateY(-9deg) rotateX(2deg); }
+  .bar { display: flex; align-items: center; gap: 1vh; height: 4.2vh; padding: 0 1.2vw; background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border-bottom: 1px solid rgba(255,255,255,.08); }
+  .dots { display: flex; gap: .6vh; }
+  .dots span { width: .9vh; height: .9vh; min-width: 7px; min-height: 7px; border-radius: 999px; }
+  .dots span:nth-child(1) { background: #f87171; } .dots span:nth-child(2) { background: #fbbf24; } .dots span:nth-child(3) { background: #34d399; }
+  .url { flex: 1; padding: .5vh 1vw; border-radius: 999px; background: rgba(2,6,23,.55); color: #93a3ba; font-size: 1.05vh; font-weight: 600; }
+  .live { display: flex; align-items: center; gap: .6vh; color: #a3e635; font-size: .95vh; font-weight: 800; letter-spacing: .12em; }
+  .screen { overflow: hidden; background: #eef2f7; }
+  .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; }
+  .foot { position: absolute; left: 5vw; right: 5vw; bottom: 3.6vh; display: flex; justify-content: space-between; align-items: center; color: #74839b; font-size: 1.15vh; }
+  .foot strong { color: var(--a1); font-weight: 800; }
+
+  /* Wide 1500x500 / readme 1600x500 */
+  body.wide .cover { padding: 4.4vh 4.6vw; }
+  body.wide .content { grid-template-columns: 1.08fr .92fr; height: calc(100% - 14vh); }
+  body.wide h1 { font-size: min(4.4vw, 8vh); }
+  body.wide p { font-size: min(1.05vw, 2vh); max-width: 38vw; margin-top: 1.8vh; }
+  body.wide .chips { margin-top: 1.8vh; }
+  body.wide .top .tag { display: none; }
+  body.wide .shot { height: 78%; align-self: center; }
+  body.wide .screen { height: calc(100% - 4.2vh); }
+  body.wide .shot { transform: perspective(1400px) rotateY(-10deg) rotateX(2deg); }
+
+  /* YouTube 2560x1440: everything important in the 1546x423 safe area */
+  body.youtube .cover { display: grid; place-items: center; padding: 0; }
+  body.youtube .top, body.youtube .foot { display: none; }
+  body.youtube .grid, body.youtube .glow { opacity: .5; }
+  body.youtube .safe { position: relative; width: 1546px; max-width: 92vw; max-height: 423px; text-align: center; }
+  body.youtube .logo { height: 48px; margin: 0 auto 18px; display: block; }
+  body.youtube .badge { margin: 0 auto; }
+  body.youtube h1 { margin: 18px 0 0; font-size: 64px; }
+  body.youtube p { margin: 14px auto 0; max-width: 980px; font-size: 22px; }
+  body.youtube .chips { justify-content: center; margin-top: 16px; }
+  body.youtube .safe-url { margin-top: 16px; color: #c4b5fd; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+  body.youtube .foot { left: 0; right: 0; bottom: 7vh; justify-content: center; gap: 32px; font-size: 18px; }
+  body.youtube .shot { display: none; }
+
+  /* Facebook 1640x856 */
+  body.facebook h1 { font-size: min(7vw, 9.4vh); }
+
+  /* Avatar 400x400 */
+  body.avatar .cover { display: grid; place-items: center; padding: 0; }
+  body.avatar .grid, body.avatar .glow { opacity: .55; }
+  body.avatar .avatar-box { position: relative; text-align: center; }
+  body.avatar .avatar-box img { width: 150px; height: 150px; display: block; margin: 0 auto 18px; border-radius: 32px; border: 1px solid rgba(255,255,255,.18); box-shadow: 0 18px 40px rgba(0,0,0,.42); }
+  body.avatar .avatar-box strong { display: block; font-size: 38px; letter-spacing: -.03em; }
+  body.avatar .avatar-box span { display: block; margin-top: 6px; color: #8b9ab1; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; }
+  body.avatar .top, body.avatar .foot, body.avatar .content { display: none; }
+
+  /* LinkedIn 1128x191 */
+  body.linkedin .cover { display: grid; place-items: center; padding: 0; }
+  body.linkedin .grid, body.linkedin .glow { opacity: .5; }
+  body.linkedin .banner { position: relative; text-align: center; }
+  body.linkedin .banner .logo { height: 28px; margin: 0 auto 8px; display: block; }
+  body.linkedin .banner h1 { margin: 0; font-size: 30px; letter-spacing: -.03em; }
+  body.linkedin .banner p { margin: 5px auto 0; max-width: none; font-size: 12px; color: #a8b5c9; }
+  body.linkedin .banner .tag { display: block; margin-top: 6px; font-size: 9px; color: #8b9ab1; letter-spacing: .18em; }
+  body.linkedin .top, body.linkedin .foot, body.linkedin .content { display: none; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="grid"></div><div class="glow"></div>
+  <div class="top">
+    <img class="logo" src="assets/fatortak-logo-white.png" alt="Fatortak" />
+    <span class="tag">Open source · Arabic-first · AGPL-3.0</span>
+  </div>
+  <div class="content">
+    <div>
+      <span class="badge"><span class="dot"></span> Business OS for MENA</span>
+      <h1>Run the whole business.<br /><em>In one place.</em></h1>
+      <p>Invoicing, accounting, projects, inventory, payroll, AI and OCR — one ledger, bilingual, open source.</p>
+      <div class="chips">
+        <span class="chip">Invoices</span><span class="chip">Accounting</span><span class="chip">Projects</span>
+        <span class="chip">Payroll</span><span class="chip">AI</span><span class="chip">OCR</span>
+      </div>
+    </div>
+    <div class="shot">
+      <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">fatortak.rabbeh.com / dashboard</div><div class="live"><span class="dot"></span> LIVE</div></div>
+      <div class="screen"><img src="assets/screenshots/dashboard.png" alt="" /></div>
+    </div>
+  </div>
+  <div class="safe" style="display:none">
+    <img class="logo" src="assets/fatortak-logo-white.png" alt="Fatortak" />
+    <span class="badge"><span class="dot"></span> Business OS for MENA</span>
+    <h1>Run the whole business. <em>In one place.</em></h1>
+    <p>Invoicing, accounting, projects, inventory, payroll, AI and OCR — one ledger, bilingual, open source.</p>
+    <div class="chips"><span class="chip">Invoices</span><span class="chip">Accounting</span><span class="chip">Projects</span><span class="chip">Payroll</span><span class="chip">AI</span><span class="chip">OCR</span></div>
+    <div class="safe-url">fatortak.rabbeh.com</div>
+  </div>
+  <div class="foot"><span><strong>fatortak.rabbeh.com</strong> · Arabic-first business management</span><span>github.com/Fatortak/Fatortak_Software</span></div>
+  <div class="avatar-box" style="display:none">
+    <img src="assets/brand/avatar-source.png" alt="Fatortak" />
+    <strong>Fatortak</strong>
+    <span>Business OS</span>
+  </div>
+  <div class="banner" style="display:none">
+    <img class="logo" src="assets/fatortak-logo-white.png" alt="Fatortak" />
+    <h1>Run the whole business. <em>In one place.</em></h1>
+    <p>Invoicing · Accounting · Projects · Payroll · AI · OCR</p>
+    <span class="tag">fatortak.rabbeh.com</span>
+  </div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const variant = q.get("variant") || "og";
+  document.body.className = variant;
+  if (variant === "youtube") {
+    document.querySelector(".safe").style.display = "block";
+    document.querySelector(".content").style.display = "none";
+  }
+  if (variant === "avatar") {
+    document.querySelector(".avatar-box").style.display = "block";
+  }
+  if (variant === "linkedin") {
+    document.querySelector(".banner").style.display = "block";
+  }
+</script>
+</body>
+</html>

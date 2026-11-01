@@ -1,0 +1,31 @@
+name: Portal keepalive
+
+# Keeps the InterServer IIS application pool warm so the Node portal
+# scheduler can publish at 09:00, 13:00 and 19:00 Cairo. The ping also
+# starts the Node service if IIS recycled the worker process.
+#
+# GitHub may delay scheduled jobs by a few minutes. The portal publishes
+# overdue posts on startup, so a late ping still catches up.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portal-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping portal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the production portal
+        run: |
+          curl -fsS --max-time 30 --retry 2 --retry-delay 5 \
+            "https://fatortak.rabbeh.com/portal/?ping=1" \
+            -o /dev/null -w "portal ping: %{http_code}\n"
