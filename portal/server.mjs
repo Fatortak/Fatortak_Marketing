@@ -1101,7 +1101,12 @@ async function publishPost(post, { dryRun = true, automatic = false } = {}) {
       results.push({ channel, ok: true, dryRun: true, media: media?.kind || null });
       continue;
     }
-    const result = await publishToChannel(channel, rendered, { config: CONFIG, media });
+    let result;
+    try {
+      result = await publishToChannel(channel, rendered, { config: CONFIG, media });
+    } catch (error) {
+      result = { ok: false, error: error.message };
+    }
     results.push({ channel, ...result });
   }
 
@@ -1633,7 +1638,15 @@ async function schedulerTick() {
     for (const post of due) {
       post.status = "publishing";
       saveData();
-      await publishPost(post, { dryRun: false, automatic: true });
+      try {
+        await publishPost(post, { dryRun: false, automatic: true });
+      } catch (error) {
+        post.status = "failed";
+        post.lastAttemptAt = new Date().toISOString();
+        post.results = [{ ok: false, error: error.message }];
+        addActivity(DATA, "failed", `Publish crashed for “${post.title}”: ${error.message}`, post.id);
+        saveData();
+      }
     }
   } finally {
     schedulerBusy = false;
