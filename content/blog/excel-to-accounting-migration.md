@@ -173,7 +173,7 @@ Fatortak does **not** implement ETA or ZATCA clearance today. If that is a hard 
 
 ## Download the checklist
 
-The migration checklist is in the repository under `marketing/content/seo/` and can be copied into your own project. No email gate.
+The migration checklist is in the repository under `content/seo/` and can be copied into your own project. No email gate.
 
 If you want to see how Fatortak handles opening balances, multi-company scoping and project costs, the community edition is free under AGPL-3.0:
 

@@ -39,7 +39,7 @@ Review the deployed API configuration for plaintext production secrets. Move dat
 
 ## What can be hosted here
 
-- **Static landing page** (`marketing/landing/`) - yes. Plain HTML/CSS/JS, no build step.
+- **Static landing page** (`landing/`) - yes. Plain HTML/CSS/JS, no build step.
 - **Full Fatortak app** - yes, if the subscription provides the **ASP.NET Core 8** runtime and a **Microsoft SQL Server** database. Both are advertised for InterServer Windows hosting, but confirm them in Plesk before deploying.
 - Docker is **not** required here. Plesk on Windows uses IIS and the ASP.NET Core Module.
 
@@ -100,7 +100,7 @@ Proposed for the new marketing site:
 
 | Hostname | Content |
 | --- | --- |
-| `fatortak.rabbeh.com` | New static landing page (`marketing/landing/`) - subdomain and SSL created; upload pending |
+| `fatortak.rabbeh.com` | New static landing page (`landing/`) - subdomain and SSL created; upload pending |
 | `fatortakEpic.rabbeh.com` | Keep the existing app live during the landing page launch |
 | `apiFatortakEpic.rabbeh.com` | Keep the existing API live |
 
@@ -250,7 +250,7 @@ The landing page has a concrete, opt-in workflow:
 - Secrets: `INTERSERVER_FTP_HOST`, `INTERSERVER_FTP_PORT` (optional), `INTERSERVER_FTP_USER`, `INTERSERVER_FTP_PASSWORD`, `INTERSERVER_FTP_DIR`
 - Variable: `INTERSERVER_AUTODEPLOY=true` enables push deployments; without it, pushes skip and manual runs still work.
 
-Use `workflow_dispatch` with `dry_run: true` first, then run live once, then enable the variable. The workflow backs up the live root files as an artifact, deploys only `marketing/landing/`, and smoke-tests `https://fatortak.rabbeh.com/`.
+Use `workflow_dispatch` with `dry_run: true` first, then run live once, then enable the variable. The workflow backs up the live root files as an artifact, deploys only `landing/`, and smoke-tests `https://fatortak.rabbeh.com/`.
 
 ### Option D - Plesk Git
 
@@ -273,7 +273,7 @@ npm run build --prefix fatortak_frontend
 No build step is required:
 
 ```powershell
-# Upload the contents of marketing/landing/ to the fatortak.rabbeh.com domain root
+# Upload the contents of landing/ to the fatortak.rabbeh.com domain root
 ```
 
 Files: `index.html`, `styles.css`, `app.js`, `assets/`, `site.webmanifest`, `robots.txt`, `sitemap.xml`.
@@ -295,7 +295,7 @@ Files: `index.html`, `styles.css`, `app.js`, `assets/`, `site.webmanifest`, `rob
 - [x] Confirm the subscription, primary domain, and docroot.
 - [x] Confirm ASP.NET Core 8 and Microsoft SQL Server are available.
 - [x] Confirm the existing frontend, API, and database are live.
-- [x] Finish the new `marketing/landing/` page (3D design, real screenshots, AI chat and OCR sections).
+- [x] Finish the new `landing/` page (3D design, real screenshots, AI chat and OCR sections).
 - [x] Create `fatortak.rabbeh.com` and issue a Let's Encrypt certificate.
 - [ ] Upload the landing page to `fatortak.rabbeh.com`.
 - [ ] Create a dedicated FTPS account scoped to `fatortak.rabbeh.com` for repeatable deployments.

@@ -218,7 +218,7 @@ Do not track vanity metrics in the weekly report without a decision attached.
 
 ## CRM
 
-A CSV is enough to start: `marketing/crm/pipeline.csv`. Move to a real CRM when you have more than 50 active opportunities or two people touching the pipeline.
+A CSV is enough to start: `crm/pipeline.csv`. Move to a real CRM when you have more than 50 active opportunities or two people touching the pipeline.
 
 Columns: company, contact, role, segment, country, source, stage, next step, next date, estimated value, notes, owner.
 

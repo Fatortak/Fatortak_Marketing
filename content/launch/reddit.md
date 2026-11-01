@@ -120,7 +120,7 @@ If you build a genuinely useful checklist or template, share it without a gate. 
 
 ## Arabic Facebook and WhatsApp groups
 
-These are often higher-intent than Reddit for Egyptian SMBs, but they are moderated and allergic to links. Join, answer questions for two weeks, then ask the admin for permission to share a free tool. Use the Arabic copy in `marketing/content/launch/arabic.md`.
+These are often higher-intent than Reddit for Egyptian SMBs, but they are moderated and allergic to links. Join, answer questions for two weeks, then ask the admin for permission to share a free tool. Use the Arabic copy in `content/launch/arabic.md`.
 
 ## Posting schedule
 

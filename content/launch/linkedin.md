@@ -86,7 +86,7 @@ If you have run an open-source business before, I would like to compare notes on
 
 ## Arabic versions
 
-Use the Arabic launch copy in `marketing/content/launch/arabic.md`. For LinkedIn, publish the Arabic version first if your audience is primarily Egyptian/Saudi, then the English version 48 hours later — not simultaneously in the same feed.
+Use the Arabic launch copy in `content/launch/arabic.md`. For LinkedIn, publish the Arabic version first if your audience is primarily Egyptian/Saudi, then the English version 48 hours later — not simultaneously in the same feed.
 
 ## Cadence after launch
 

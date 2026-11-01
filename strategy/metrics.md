@@ -64,7 +64,7 @@ The automation adds these automatically to owned domains. Never tag links to Git
 
 ## Weekly dashboard
 
-The `growth-report` workflow writes `marketing/reports/YYYY-MM-DD.md` and opens an issue every Monday.
+The `growth-report` workflow writes `reports/YYYY-MM-DD.md` and opens an issue every Monday.
 
 | Section | Metrics |
 | --- | --- |

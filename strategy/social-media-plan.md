@@ -1,13 +1,13 @@
 # Social media strategy and 90-day plan
 
 **Status:** active plan for **2026-11-02 → 2027-01-30** (13 weeks).
-**Daily copy:** `marketing/content/queue.json` (90 items, generated and validated).
+**Daily copy:** `content/queue.json` (90 items, generated and validated).
 **Launch prerequisite:** the landing page must be live at `https://fatortak.rabbeh.com/` before any post links to it. If hosting slips, start with GitHub/README content and shift the launch sequence; never link to a dead page.
 
 **Current hosting decision:** InterServer deployment is deferred. Run **Nov 2–8 as a GitHub-first soft launch** (the first week's queue links to the repo or has no link). Move the AI/OCR sprint and any `{{site}}` posts to the day `fatortak.rabbeh.com` is live.
-**Positioning:** `marketing/strategy/positioning.md`.
-**Launch playbook:** `marketing/strategy/launch-90-days.md`.
-**Metrics:** `marketing/strategy/metrics.md`.
+**Positioning:** `strategy/positioning.md`.
+**Launch playbook:** `strategy/launch-90-days.md`.
+**Metrics:** `strategy/metrics.md`.
 
 This document is the operating plan for **all social and community channels**. It is deliberately tiered: a small team cannot run every platform well at the same time. Start with the channels that match the product and the buyer, then add visual channels when the video assets exist.
 
@@ -656,11 +656,11 @@ Every Monday, end the review with **one** decision:
 ### Existing
 
 - Landing page at `https://fatortak.rabbeh.com/` (after deployment).
-- 10 real product screenshots in `marketing/landing/assets/screenshots/`.
+- 10 real product screenshots in `landing/assets/screenshots/`.
 - Real logo, favicon and 1200×630 OG image.
 - 90-day queue and content bank.
 - Automation for X, LinkedIn, Bluesky, Mastodon, Telegram and Discord.
-- Launch copy in `marketing/content/launch/`.
+- Launch copy in `content/launch/`.
 - Email sequences, SEO keyword map and blog drafts.
 
 ### Needed
@@ -706,13 +706,13 @@ Every Monday, end the review with **one** decision:
 
 ## 16. References
 
-- `marketing/strategy/positioning.md` — positioning, ICP, objections, messaging.
-- `marketing/strategy/launch-90-days.md` — launch phases and channel playbooks.
-- `marketing/strategy/metrics.md` — funnel, events, UTM, dashboard.
-- `marketing/strategy/commercial-funnel.md` — demos, proposals, partners.
-- `marketing/strategy/contributor-growth.md` — GitHub and contributor plan.
-- `marketing/content/queue.json` — 90-day daily copy.
-- `marketing/content/launch/` — launch posts for HN, Reddit, Product Hunt, LinkedIn, X, Dev.to, Arabic.
-- `marketing/landing/` — landing page and real screenshots.
+- `strategy/positioning.md` — positioning, ICP, objections, messaging.
+- `strategy/launch-90-days.md` — launch phases and channel playbooks.
+- `strategy/metrics.md` — funnel, events, UTM, dashboard.
+- `strategy/commercial-funnel.md` — demos, proposals, partners.
+- `strategy/contributor-growth.md` — GitHub and contributor plan.
+- `content/queue.json` — 90-day daily copy.
+- `content/launch/` — launch posts for HN, Reddit, Product Hunt, LinkedIn, X, Dev.to, Arabic.
+- `landing/` — landing page and real screenshots.
 - `marketing/deploy/INTERSERVER-AUTODEPLOY.md` — hosting and automatic deployment.
 - `marketing/README.md` — automation setup and commands.

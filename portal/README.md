@@ -27,7 +27,7 @@ npm start
 
 Open <http://127.0.0.1:4180>.
 
-The portal seeds itself from `marketing/content/queue.json` on first run. State is stored in `marketing/portal/data/portal.json`, which is gitignored.
+The portal seeds itself from `content/queue.json` on first run. State is stored in `portal/data/portal.json`, which is gitignored.
 
 ## What the portal does
 
@@ -88,7 +88,7 @@ These have adapters in the portal. They publish when the corresponding API crede
 2. Click **Connect** on a channel.
 3. Click **Open developer console** and create the app/token there.
 4. Paste the values into the form and click **Save & test**.
-5. The portal writes the values to `marketing/portal/.env`, reloads them in memory and verifies the connection. It never returns the secret.
+5. The portal writes the values to `portal/.env`, reloads them in memory and verifies the connection. It never returns the secret.
 
 This removes the manual file editing, but it cannot remove the platform's one-time identity step. Creating accounts, accepting terms, app review and OTP verification cannot be performed by the portal.
 
@@ -97,7 +97,7 @@ This removes the manual file editing, but it cannot remove the platform's one-ti
 Text-only publishing is disabled by default (`mediaRequired: true`). The composer will not schedule or publish a post without an image or video.
 
 - **Media library**: ten real Fatortak screenshots plus nine branded 1200×630 social cards generated from them. Queue posts are automatically matched to a relevant card or screenshot by pillar and language.
-- **Upload**: images and videos up to 100 MB are stored in `marketing/portal/data/media/` (gitignored) and served from `/media/...`.
+- **Upload**: images and videos up to 100 MB are stored in `portal/data/media/` (gitignored) and served from `/media/...`.
 - **Native upload**: Facebook, LinkedIn, Mastodon, Telegram, Discord and Bluesky accept the file directly.
 - **Image only**: X (OAuth 1.0a media keys) and Bluesky.
 - **Public URL required**: Instagram, Threads and Dev.to. Set **Public media host** in Settings or `PORTAL_PUBLIC_URL` to the public address of the portal, or attach a CDN URL. Local `127.0.0.1` URLs cannot be fetched by Meta.
@@ -228,15 +228,15 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 - Binds to `127.0.0.1` by default.
 - Set `PORTAL_ADMIN_TOKEN` before exposing it behind a reverse proxy. The API requires `Authorization: Bearer <token>`.
 - Mutating API calls reject cross-origin requests (`Origin` must match the host), which blocks drive-by CSRF against localhost.
-- Tokens are read from `marketing/automation/.env` and `marketing/portal/.env`; existing environment variables win.
-- The Connections wizard writes only whitelisted keys to `marketing/portal/.env` (mode `0600`) and updates the running process without a restart.
+- Tokens are read from `automation/.env` and `portal/.env`; existing environment variables win.
+- The Connections wizard writes only whitelisted keys to `portal/.env` (mode `0600`) and updates the running process without a restart.
 - The portal never stores tokens in `portal.json` and never returns them from an API.
 - Media uploads are stored in `data/media/` (gitignored) and served with `nosniff`, `SAMEORIGIN` and path-traversal protection.
 - `data/`, `.env`, `export/` and `backups/` are gitignored.
 
 ## Extending
 
-Add a channel adapter in `marketing/portal/adapters.mjs`:
+Add a channel adapter in `portal/adapters.mjs`:
 
 1. Add a `post<Channel>` function.
 2. Add the channel to `LIMITS`.

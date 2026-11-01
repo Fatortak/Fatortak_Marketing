@@ -21,9 +21,9 @@ The landing page has the real product screenshots, the 20-second demo video, ful
 
 Prepared upload assets:
 
-- `marketing/landing/assets/social/avatar.png`
-- `marketing/landing/assets/social/facebook-cover.png`
-- `marketing/landing/assets/social/youtube-banner.png`
+- `landing/assets/social/avatar.png`
+- `landing/assets/social/facebook-cover.png`
+- `landing/assets/social/youtube-banner.png`
 
 The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, the cover is set, and the Page avatar is the real Fatortak logo. Facebook now uses a **non-expiring Page token** (`expires_at: 0`), so no refresh schedule is needed unless it is revoked. The duplicate orange **Fatortak Software** Page still needs manual unpublish/delete.
 

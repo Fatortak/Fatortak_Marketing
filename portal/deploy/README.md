@@ -14,8 +14,8 @@ InterServer Windows/Plesk subscription. No Plesk admin or SSH access is needed.
 /App_Data/portal-app/                 private, not served by IIS
   auth.json                           login hash + session secret
   node.token                          bearer token for the local Node API
-  marketing/portal/                   server.mjs, adapters.mjs, .env, public/
-  marketing/automation/src/           channel adapters and render helpers
+  portal/                   server.mjs, adapters.mjs, .env, public/
+  automation/src/           channel adapters and render helpers
   marketing/config.example.json       public link/profile config
   data/portal.json                    live queue and settings
   data/media/                         uploaded media
@@ -47,7 +47,7 @@ keepalive workflow every 10 minutes.
 ## Build and deploy
 
 ```powershell
-cd marketing/portal
+cd portal
 powershell -ExecutionPolicy Bypass -File scripts/build-production.ps1
 powershell -ExecutionPolicy Bypass -File scripts/deploy-production.ps1 -SkipProvision -Restart
 ```

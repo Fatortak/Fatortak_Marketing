@@ -8,12 +8,12 @@ This is the reference for automatically deploying the Fatortak landing page to I
 
 ```text
 push to main
-  └─ marketing/landing/** changed
+  └─ landing/** changed
        └─ GitHub Actions: .github/workflows/deploy-interserver.yml
             ├─ validates the static files
             ├─ checks the FTP secrets
             ├─ backs up the live root files as an artifact
-            ├─ uploads marketing/landing/ over FTPS
+            ├─ uploads landing/ over FTPS
             └─ smoke-tests https://fatortak.rabbeh.com/
 ```
 
@@ -77,7 +77,7 @@ Only after the manual live run succeeds should you set `INTERSERVER_AUTODEPLOY=t
 
 | Event | Deploy? | Dry run? |
 | --- | --- | --- |
-| Push to `main` touching `marketing/landing/**` | Only when `INTERSERVER_AUTODEPLOY=true` | No |
+| Push to `main` touching `landing/**` | Only when `INTERSERVER_AUTODEPLOY=true` | No |
 | Manual `workflow_dispatch` | Yes, even when auto-deploy is disabled | Default **true**; uncheck to upload |
 | Push to any other path | No | — |
 | Pull request | No | — |
@@ -177,4 +177,4 @@ Plesk has a Git extension, but it deploys repository contents and does not build
 | `.github/workflows/deploy-interserver.yml` | Automatic/manual FTPS deployment |
 | `marketing/deploy/deploy-static.ps1` | Manual dry-run-first deployment |
 | `marketing/deploy/INTERSERVER-PLESK.md` | Host, DNS, SSL, app and database reference |
-| `marketing/landing/` | Static landing page |
+| `landing/` | Static landing page |
