@@ -421,6 +421,13 @@ if ($method === 'POST' && isset($_POST['user'], $_POST['pass'])) {
 }
 
 if (!$authenticated) {
+    if (str_starts_with($pathInfo, '/api/') || str_starts_with($pathInfo, '/media/')) {
+        http_response_code(401);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        echo json_encode(['error' => 'Session expired. Reload the page to sign in.'], JSON_UNESCAPED_SLASHES);
+        exit;
+    }
     $csrf = bin2hex(random_bytes(24));
     set_cookie(CSRF_COOKIE, $csrf, time() + 3600);
     render_login('', $csrf, false);

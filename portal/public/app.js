@@ -130,6 +130,10 @@
     if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
     const response = await fetch(API_BASE + path, { ...options, headers });
     if (response.status === 401) {
+      if (location.pathname.startsWith("/portal")) {
+        location.href = "/portal/";
+        throw new Error("Session expired");
+      }
       const token = window.prompt("Portal access token");
       if (token) {
         state.token = token;
