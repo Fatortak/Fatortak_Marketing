@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Fatortak social card v2</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --accent1: #c4b5fd; --accent2: #a78bfa; --accent3: #67e8f9; --h1: 56px; }
+  body { margin: 0; width: 1200px; height: 630px; overflow: hidden; font-family: "Segoe UI", Arial, sans-serif; background: #060816; color: #f8fafc; }
+  .card { position: relative; width: 1200px; height: 630px; padding: 48px 56px; overflow: hidden;
+    background:
+      radial-gradient(ellipse 55% 70% at 80% 6%, color-mix(in srgb, var(--accent2) 52%, transparent), transparent 65%),
+      radial-gradient(ellipse 45% 50% at 6% 94%, color-mix(in srgb, var(--accent3) 16%, transparent), transparent 65%),
+      #060816;
+  }
+  .grid { position: absolute; inset: -20% -10%; opacity: .32;
+    background-image: linear-gradient(rgba(148,163,184,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.12) 1px, transparent 1px);
+    background-size: 52px 52px; transform: perspective(700px) rotateX(58deg) translateY(-8%); transform-origin: 50% 0;
+    mask-image: radial-gradient(ellipse 60% 60% at 65% 20%, #000, transparent 72%);
+  }
+  .glow { position: absolute; width: 500px; height: 500px; right: 70px; top: -180px; border-radius: 999px; background: radial-gradient(circle, color-mix(in srgb, var(--accent2) 58%, transparent), transparent 68%); filter: blur(40px); }
+  .top { position: relative; display: flex; align-items: center; justify-content: space-between; }
+  .logo { height: 32px; width: auto; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid color-mix(in srgb, var(--accent1) 38%, transparent); border-radius: 999px; color: var(--accent1); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: color-mix(in srgb, var(--accent2) 15%, transparent); }
+  .dot { width: 6px; height: 6px; border-radius: 999px; background: #a3e635; box-shadow: 0 0 12px rgba(163,230,53,.7); }
+  .content { position: relative; display: grid; grid-template-columns: 470px 1fr; gap: 30px; margin-top: 36px; align-items: center; }
+  h1 { margin: 0; font-size: var(--h1); line-height: 1.04; letter-spacing: -2.2px; font-weight: 800; }
+  h1 em { font-style: normal; background: linear-gradient(100deg, var(--accent1), var(--accent2) 48%, var(--accent3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p { margin: 18px 0 0; max-width: 440px; color: #a8b5c9; font-size: 17px; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip { padding: 7px 11px; border: 1px solid rgba(148,163,184,.22); border-radius: 999px; background: rgba(255,255,255,.05); color: #cbd5e1; font-size: 12px; font-weight: 600; }
+  .browser { position: relative; width: 590px; border: 1px solid rgba(255,255,255,.2); border-radius: 17px; overflow: hidden; background: #0a0f22; transform: perspective(1400px) rotateY(-8deg) rotateX(3deg); box-shadow: 0 40px 100px rgba(0,0,0,.55); }
+  .bar { display: flex; align-items: center; gap: 10px; height: 33px; padding: 0 12px; background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border-bottom: 1px solid rgba(255,255,255,.08); }
+  .dots { display: flex; gap: 5px; }
+  .dots span { width: 7px; height: 7px; border-radius: 999px; }
+  .dots span:nth-child(1) { background: #f87171; } .dots span:nth-child(2) { background: #fbbf24; } .dots span:nth-child(3) { background: #34d399; }
+  .url { flex: 1; padding: 4px 10px; border-radius: 999px; background: rgba(2,6,23,.55); color: #93a3ba; font-size: 10px; font-weight: 600; }
+  .live { display: flex; align-items: center; gap: 5px; color: #a3e635; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+  .screen { aspect-ratio: 16 / 10; overflow: hidden; background: #eef2f7; }
+  .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+  .tag { position: absolute; left: 24px; bottom: 20px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(6,8,22,.75); color: #e2e8f0; font-size: 11px; font-weight: 700; backdrop-filter: blur(10px); }
+  .foot { position: absolute; left: 56px; right: 56px; bottom: 24px; display: flex; justify-content: space-between; align-items: center; color: #74839b; font-size: 11px; }
+  .foot strong { color: var(--accent1); font-weight: 700; }
+  .ar { direction: rtl; text-align: right; }
+  .ar h1 { letter-spacing: 0; font-size: calc(var(--h1) * .86); }
+  .ar p { margin-left: auto; }
+  .ar .chips { justify-content: flex-start; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grid"></div><div class="glow"></div>
+  <div class="top">
+    <img class="logo" src="assets/fatortak-logo-white.png" alt="Fatortak" />
+    <span class="badge"><span class="dot"></span> <span id="badge">Product</span></span>
+  </div>
+  <div class="content" id="content">
+    <div>
+      <h1><span id="l1"></span><br /><em id="l2"></em></h1>
+      <p id="sub"></p>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="browser">
+      <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url" id="url">fatortak / dashboard</div><div class="live"><span class="dot"></span> LIVE UI</div></div>
+      <div class="screen"><img id="screen" src="assets/screenshots/dashboard.png" alt="" /></div>
+      <div class="tag"><span class="dot"></span> Real product screen · Demo data</div>
+    </div>
+  </div>
+  <div class="foot"><span><strong>fatortak.rabbeh.com</strong> · Arabic-first business management</span><span>github.com/Fatortak/Fatortak_Software</span></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const get = (k, d = "") => q.get(k) || d;
+  const theme = get("theme", "purple");
+  const themes = {
+    purple: ["#c4b5fd", "#a78bfa", "#67e8f9"],
+    cyan: ["#a5f3fc", "#22d3ee", "#a78bfa"],
+    amber: ["#fde68a", "#f59e0b", "#67e8f9"],
+    green: ["#d9f99d", "#84cc16", "#67e8f9"]
+  };
+  const t = themes[theme] || themes.purple;
+  document.documentElement.style.setProperty("--accent1", t[0]);
+  document.documentElement.style.setProperty("--accent2", t[1]);
+  document.documentElement.style.setProperty("--accent3", t[2]);
+  const lang = get("lang", "en");
+  if (lang === "ar") {
+    document.body.classList.add("ar");
+    document.getElementById("content").classList.add("ar");
+    document.documentElement.lang = "ar";
+    document.documentElement.dir = "rtl";
+  }
+  document.getElementById("badge").textContent = get("badge", "Product");
+  const l1 = get("l1", "Run the whole business.");
+  const l2 = get("l2", "In one place.");
+  document.getElementById("l1").textContent = l1;
+  document.getElementById("l2").textContent = l2;
+  const longest = Math.max(l1.length, l2.length);
+  const size = longest > 30 ? 42 : longest > 24 ? 48 : longest > 18 ? 54 : 60;
+  document.documentElement.style.setProperty("--h1", size + "px");
+  document.getElementById("sub").textContent = get("sub", "Invoicing, accounting, projects, payroll, AI and OCR.");
+  const chips = get("chips", "").split("|").filter(Boolean);
+  document.getElementById("chips").innerHTML = chips.map(c => `<span class="chip">${c.replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</span>`).join("");
+  const screen = get("screen", "dashboard.png");
+  document.getElementById("screen").src = `assets/screenshots/${screen}`;
+  document.getElementById("url").textContent = get("url", "fatortak / " + screen.replace(/\.png$/, ""));
+</script>
+</body>
+</html>

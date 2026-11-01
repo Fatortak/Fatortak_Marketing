@@ -103,7 +103,7 @@ npm start
 
 Then turn off dry run in **Settings**. The scheduler will publish due posts, skip channels that are unconfigured or whose last connection test failed, and record per-channel results.
 
-The 90-day queue is scheduled from 2 November 2026. Every post has an image, including nine branded 1200×630 social cards and one Arabic RTL card.
+The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 November to 1 December 2026. Every post has an image; the library now has **37 unique visuals** — 30 new `social-v2` cards plus the original social cards. Repeated hooks were varied and the queue includes a full pricing post (Starter 300 / Professional 600 / Enterprise 900 EGP/month).
 
 ## Deployment
 
