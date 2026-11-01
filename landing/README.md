@@ -1,13 +1,17 @@
 # Fatortak landing page
 
+![Fatortak landing](assets/brand/cover-readme.png)
+
 A static, bilingual landing page for Fatortak with an interactive 3D product showcase. It uses real screenshots of the running application, not mockups.
+
+The production page is **<https://fatortak.rabbeh.com>**.
 
 The page is plain HTML, CSS and JavaScript. There is no build step. Google Fonts is the only external request; the page falls back to system fonts if it is unavailable.
 
 ## Preview locally
 
 ```powershell
-cd marketing/landing
+cd landing
 py -m http.server 4173
 ```
 
@@ -28,7 +32,8 @@ You can also open `index.html` directly, but a local server is better for testin
 | `assets/fatortak-logo-white.png` | Real Fatortak wordmark for dark surfaces. |
 | `assets/fatortak-logo.png` | Real Fatortak wordmark on transparent background. |
 | `assets/favicon.png` | Square real F mark on brand purple. |
-| `assets/og.png` | 1200×630 social preview image. |
+| `assets/og.png` | Legacy 1200x630 social preview; production metadata now uses `assets/brand/cover-og.png`. |
+| `assets/brand/` | Professional covers with the Fatortak logo: OG, README, X, Facebook, LinkedIn, YouTube and avatar. |
 | `assets/screenshots/` | Real application screenshots captured from the local demo tenant. |
 | `assets/social/` | Square avatar, Facebook cover and YouTube banner for manual profile setup. |
 | `site.webmanifest`, `robots.txt`, `sitemap.xml` | Basic PWA/SEO files. |
@@ -102,18 +107,13 @@ The existing `.github/workflows/pages.yml` can still publish this folder to GitH
 
 ## Regenerate the social image
 
-The source card is `.og-card.html`. Render it at 1200×630 with headless Chrome or Edge:
+The current social and Open Graph covers are generated from `.brand-cover.html`:
 
 ```powershell
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" `
-  --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 `
-  --run-all-compositor-stages-before-draw --virtual-time-budget=5000 `
-  --window-size=1200,630 `
-  --screenshot="assets/og.png" `
-  "file:///$((Resolve-Path .og-card.html).Path -replace '\\','/')"
+node scripts/generate-brand-covers.mjs
 ```
 
-Adjust the browser path if Chrome is not installed there.
+The legacy `.og-card.html` remains for the older 1200×630 card.
 
 ## Before publishing
 

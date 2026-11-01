@@ -1,6 +1,10 @@
 # Fatortak marketing portal
 
-A local-first control room for scheduling, publishing, monitoring and reporting across Fatortak's social channels.
+![Fatortak marketing portal](../landing/assets/brand/cover-og.png)
+
+Production: **<https://fatortak.rabbeh.com/portal/>**
+
+A control room for scheduling, publishing, monitoring and reporting across Fatortak's social channels.
 
 It is intentionally one service with no build step:
 
@@ -16,7 +20,7 @@ It is intentionally one service with no build step:
 ## Run it
 
 ```powershell
-cd marketing/portal
+cd portal
 Copy-Item .env.example .env   # optional; fill only the channels you have
 npm start
 ```
