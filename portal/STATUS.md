@@ -24,7 +24,7 @@ Prepared upload assets:
 - `marketing/landing/assets/social/facebook-cover.png`
 - `marketing/landing/assets/social/youtube-banner.png`
 
-The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, the cover is set, and the Page avatar is the real Fatortak logo. Facebook's Page token is short-lived (about an hour); it works for posting but needs a fresh mint before a long unattended run. The duplicate orange **Fatortak Software** Page still needs manual unpublish/delete.
+The new Facebook Page and Instagram account are both connected to the portal and passed their connection tests (`Page: Fatortak Software Solutions`, `@fatortak.software`). Instagram remains verified through the durable Fatortak Automation system-user token, so it does not depend on the Page link. The Page and Instagram profile are now linked in Meta: the Page Home shows **Edit Instagram profile** instead of **Connect Instagram**, the cover is set, and the Page avatar is the real Fatortak logo. Facebook now uses a **non-expiring Page token** (`expires_at: 0`), so no refresh schedule is needed unless it is revoked. The duplicate orange **Fatortak Software** Page still needs manual unpublish/delete.
 
 ## Channels
 
@@ -32,7 +32,7 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | --- | --- | --- |
 | X | @Fatortakk | Connected and verified through OAuth 1.0a. Posting needs X API credits. |
 | Bluesky | @fatortak.bsky.social | Connected and verified with an app password. |
-| Facebook Page | Fatortak Software Solutions | Connected and verified with a fresh short-lived Page token. Re-mint before a long run; the Extend/App Secret actions currently need the account password. |
+| Facebook Page | Fatortak Software Solutions | Connected and verified with a **non-expiring Page token**. App secret and long-lived user token stored privately. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
 | Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
@@ -53,22 +53,19 @@ The Page token came from **Graph API Explorer → Fatortak → Generate Access T
 `instagram_manage_insights`. Select only **Fatortak Software Solutions** on the asset
 screen. Then run `GET /me/accounts?fields=id,name,access_token` and store the returned
 Page token as `FACEBOOK_PAGE_ACCESS_TOKEN` (`FACEBOOK_PAGE_ID=1338665946004849`).
-The token is valid for roughly an hour; refresh it before a long unattended run.
+The Page token is non-expiring; repeat these steps only if it is revoked.
 
-### Facebook token status
+### Facebook token
 
-The developer session is active and a fresh Page token was saved on 1 Nov 2026. It works for
-posting, but it expires in about an hour and could not be extended to a long-lived token:
-the Access Token Debugger disables **Extend Access Token**, and the App Secret reveal opens
-a **"Confirm with password"** dialog that never renders its password field. The account
-password was provided, but Meta's re-auth UI did not accept it or show an error.
-`www.facebook.com` is logged in and the Page avatar/cover are set; the duplicate orange
-**Fatortak Software** Page still needs manual unpublish/delete.
+Facebook now uses a **non-expiring Page token**: `debug_token` reports `expires_at: 0`.
+It was created by exchanging a fresh user token with the app secret, then reading the Page
+token from `/me/accounts`. The app secret and long-lived user token are stored in the
+private `%USERPROFILE%\.config\fatortak\meta.md`, never in the repository. The portal test
+passes: `Page: Fatortak Software Solutions`.
 
-To make the token durable, sign in to `facebook.com` in the automation browser and use
-**Access Token Debugger → Extend Access Token** from a normal browser session, or provide a
-long-lived user token. Until then, re-mint the Page token from Graph API Explorer before
-each long run.
+No scheduled refresh is required. If the token is ever revoked, re-run the Graph API
+Explorer flow above, exchange the fresh user token with the stored app secret, and save the
+new Page token.
 
 ### Meta Pages and the Instagram link
 
@@ -78,9 +75,8 @@ each long run.
 - The Instagram profile was given Page access, then connected successfully. The Page Home
   now shows **Edit Instagram profile** and **Instagram followers** instead of
   **Connect Instagram**, which confirms the Page–Instagram link.
-- The Page cover photo was set from Business Suite. The Page avatar is still the default
-  green “F”; upload `marketing/landing/assets/social/avatar.png` from the mobile app or
-  Page editor to replace it.
+- The Page cover photo and avatar are both set: the cover is the branded gradient artwork
+  and the avatar is the real Fatortak logo.
 - The duplicate **Fatortak Software** Page (orange “F”, 0 followers) is under
   **Your Account**, not the Fatortak portfolio. Delete or unpublish it manually; do not
   delete the green **Fatortak Software Solutions** Page.
