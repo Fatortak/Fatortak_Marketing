@@ -35,7 +35,7 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | Facebook Page | Fatortak Software Solutions | Connected and verified with a **non-expiring Page token**. App secret and long-lived user token stored privately. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
-| Threads | @fatortak.software | Profile and bio set. Needs a Threads access token before the portal can publish. |
+| Threads | @fatortak.software | OAuth token generated and saved, but the Threads API is blocked pending App Review or a Threads Tester. Portal test currently fails. |
 | Mastodon | @fatortaksoftware@mastodon.social | Connected and verified. Avatar, header and bio set. |
 | Telegram, Discord, Dev.to | — | Need one-time tokens/webhooks. |
 | TikTok, YouTube | — | Need platform audit/OAuth and video assets. |
@@ -66,6 +66,15 @@ passes: `Page: Fatortak Software Solutions`.
 No scheduled refresh is required. If the token is ever revoked, re-run the Graph API
 Explorer flow above, exchange the fresh user token with the stored app secret, and save the
 new Page token.
+
+### Threads blocker
+
+The Threads OAuth flow completed and the token was saved, but `graph.threads.net` returns:
+“This action requires the threads_basic permission. You must submit for app review, or your
+user must be in the list of Threads testers.” Adding the Threads profile as a tester failed
+because it has no Facebook Developer Account; the app roles input expects a valid Facebook
+user ID. Next: submit the Threads API use case for App Review, or add a Threads account
+backed by a Facebook Developer Account as a tester.
 
 ### Meta Pages and the Instagram link
 
