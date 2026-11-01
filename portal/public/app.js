@@ -122,11 +122,13 @@
     setTimeout(() => node.remove(), 4200);
   }
 
+  const API_BASE = location.pathname.startsWith("/portal") ? "/portal/index.php" : "";
+
   async function api(path, options = {}) {
     const headers = { ...(options.headers || {}) };
     if (state.token) headers.Authorization = `Bearer ${state.token}`;
     if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
-    const response = await fetch(path, { ...options, headers });
+    const response = await fetch(API_BASE + path, { ...options, headers });
     if (response.status === 401) {
       const token = window.prompt("Portal access token");
       if (token) {
@@ -463,7 +465,7 @@ OCR invoice capture is built into Fatortak.
     const maxFollowers = Math.max(1, ...Object.values(metrics).map((item) => Number(item.followers || 0)));
     const maxSource = Math.max(1, ...(traffic.sources || []).map((item) => Number(item.visitors || 0)));
     $("#view").innerHTML = `
-      <div class="page-head"><div><span class="eyebrow">Analytics</span><h2>Channel performance</h2><p>Metrics are ingestion-only. No manual counters: missing data means the API is not connected.</p></div><div class="page-head-actions"><button class="btn btn-primary" data-sync-metrics><svg><use href="#i-refresh"></use></svg>Sync metrics</button><a class="btn btn-ghost" href="/api/reports/export?format=csv">Export CSV</a></div></div>
+      <div class="page-head"><div><span class="eyebrow">Analytics</span><h2>Channel performance</h2><p>Metrics are ingestion-only. No manual counters: missing data means the API is not connected.</p></div><div class="page-head-actions"><button class="btn btn-primary" data-sync-metrics><svg><use href="#i-refresh"></use></svg>Sync metrics</button><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=csv">Export CSV</a></div></div>
       <div class="grid metric-grid">
         <div class="card metric-card"><span>Followers</span><strong>${fmtNumber(totals.followers)}</strong></div>
         <div class="card metric-card"><span>Reach</span><strong>${fmtNumber(totals.reach)}</strong></div>
@@ -496,7 +498,7 @@ OCR invoice capture is built into Fatortak.
     const channelCounts = report.channelCounts || {};
     const maxChannel = Math.max(1, ...Object.values(channelCounts));
     $("#view").innerHTML = `
-      <div class="page-head"><div><span class="eyebrow">Reports</span><h2>What changed this period</h2><p>Generated from the portal queue, metrics and traffic. Export for the weekly review.</p></div><div class="page-head-actions"><a class="btn btn-ghost" href="/api/reports/export?format=csv">CSV</a><a class="btn btn-ghost" href="/api/reports/export?format=json">JSON</a><button class="btn btn-primary" data-refresh>Refresh</button></div></div>
+      <div class="page-head"><div><span class="eyebrow">Reports</span><h2>What changed this period</h2><p>Generated from the portal queue, metrics and traffic. Export for the weekly review.</p></div><div class="page-head-actions"><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=csv">CSV</a><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=json">JSON</a><button class="btn btn-primary" data-refresh>Refresh</button></div></div>
       <div class="grid kpis">
         ${kpi("Published · 30d", fmtNumber(posts.published30), `${fmtNumber(posts.published)} total`)}
         ${kpi("Scheduled", fmtNumber(posts.scheduled), `${fmtNumber(posts.total)} in portal`)}
@@ -546,7 +548,7 @@ OCR invoice capture is built into Fatortak.
       </div>
       <div class="card card-pad section">
         <div class="section-head"><h3>Queue and data</h3><span>local JSON store</span></div>
-        <div class="form-actions"><button class="btn btn-outline" data-import-queue>Import 90-day queue</button><a class="btn btn-ghost" href="/api/reports/export?format=json">Export portal JSON</a></div>
+        <div class="form-actions"><button class="btn btn-outline" data-import-queue>Import 90-day queue</button><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=json">Export portal JSON</a></div>
         <p style="color:var(--muted-2);font-size:.7rem;margin-top:10px">Portal state is stored in <code>marketing/portal/data/portal.json</code> (gitignored). The existing automation queue is separate and remains the GitHub Actions source.</p>
       </div>
       <div class="card card-pad section">
@@ -642,7 +644,7 @@ OCR invoice capture is built into Fatortak.
     if (state.token) headers.Authorization = `Bearer ${state.token}`;
     toast("Uploading media…");
     try {
-      const response = await fetch("/api/media", { method: "POST", headers, body: file });
+      const response = await fetch(`${API_BASE}/api/media`, { method: "POST", headers, body: file });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
       setPostMedia({ ...data.media, source: "upload" });

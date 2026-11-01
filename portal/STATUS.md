@@ -1,4 +1,4 @@
-# Fatortak marketing status — 31 October 2026
+# Fatortak marketing status — 1 November 2026
 
 ## Live
 
@@ -6,7 +6,8 @@
 - Privacy policy: <https://fatortak.rabbeh.com/privacy.html>
 - Product demo: <https://fatortak.rabbeh.com/demo.mp4>
 - First-party traffic stats: <https://fatortak.rabbeh.com/stats.php>
-- Portal: <http://127.0.0.1:4180> (local-first, not exposed publicly)
+- **Production portal: <https://fatortak.rabbeh.com/portal/>** (password login, HTTPS only)
+- Local portal (development): <http://127.0.0.1:4180>
 
 The landing page has the real product screenshots, the 20-second demo video, full English/Arabic RTL, the current pricing, the privacy link and the cookie-less first-party pageview counter.
 
@@ -107,10 +108,24 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 
 ## Deployment
 
-- Static deployment works with the scoped FTPS account in `%USERPROFILE%\.config\fatortak\plesk.env`.
-- Plesk presents a self-signed certificate, so use the deployment script with `-Insecure` or `curl -k`.
-- GitHub Actions deployment still needs repository secrets/variables and GitHub sign-in.
-- Portal `.env` and runtime data are gitignored. A private backup lives in `%USERPROFILE%\.config\fatortak\portal-backup`.
+- Production URL: <https://fatortak.rabbeh.com/portal/>
+- The portal is a PHP front controller (`marketing/portal/deploy/index.php`) in `/portal/` plus the Node service in `App_Data/portal-app/`.
+- PHP handles the password login, signed HttpOnly session cookie, rate limiting, security headers, Node process supervision and the HTTPS-only reverse proxy.
+- The Node service binds `127.0.0.1:4318` and requires a private bearer token (`App_Data/portal-app/node.token`) that PHP injects on every proxied request.
+- State, `.env`, uploaded media and backups live under `App_Data/portal-app/`, which IIS does not serve (verified `403`).
+- Node restarts automatically from the PHP supervisor. Authenticated operators can restart it with `/portal/?restart=1`.
+- Deploy with `marketing/portal/scripts/build-production.ps1` and `marketing/portal/scripts/deploy-production.ps1`. Re-deploys keep the remote data and `.env` unless `-ForceData` / `-ForceEnv` is used.
+- Production credentials live in `%USERPROFILE%\.config\fatortak\portal-production.txt` (outside the repo). Plesk admin is not required for this deployment path.
+- Static landing deployment still uses the scoped FTPS account in `%USERPROFILE%\.config\fatortak\plesk.env`.
+- Portal `.env` and runtime data are gitignored. A private backup lives in `%USERPROFILE%\.config\fatortak\portal-backup`; the server also rotates 40 snapshots in `App_Data/portal-app/data/backups`.
+
+## Current publishing state
+
+- The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 November to 1 December 2026.
+- Every post has an image; the library has **37 unique visuals** — 30 new `social-v2` cards plus the original social cards.
+- The production portal is still in **dry run**. Live publishing and the scheduler are armed, but nothing posts until dry run is turned off in **Settings**.
+- X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access.
+- Keep the Node service warm. If the site is idle long enough for IIS to recycle the app pool, the next portal or `/portal/?ping=1` request restarts Node and the scheduler catches overdue posts on startup.
 
 ## Repository
 

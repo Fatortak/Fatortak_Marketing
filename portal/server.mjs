@@ -22,12 +22,15 @@ import {
 } from "./adapters.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(HERE, "data");
+const DATA_DIR = process.env.PORTAL_DATA_DIR ? path.resolve(process.env.PORTAL_DATA_DIR) : path.join(HERE, "data");
 const DATA_FILE = path.join(DATA_DIR, "portal.json");
-const PUBLIC_DIR = path.join(HERE, "public");
+const BACKUP_DIR = path.join(DATA_DIR, "backups");
+const PUBLIC_DIR = process.env.PORTAL_PUBLIC_DIR ? path.resolve(process.env.PORTAL_PUBLIC_DIR) : path.join(HERE, "public");
 const MEDIA_DIR = path.join(DATA_DIR, "media");
 const LANDING_ASSETS = path.join(MARKETING_ROOT, "landing", "assets");
-const SCREENSHOTS_DIR = path.join(LANDING_ASSETS, "screenshots");
+const SCREENSHOTS_DIR = process.env.PORTAL_SCREENSHOTS_DIR
+  ? path.resolve(process.env.PORTAL_SCREENSHOTS_DIR)
+  : path.join(LANDING_ASSETS, "screenshots");
 const QUEUE_FILE = path.join(MARKETING_ROOT, "content", "queue.json");
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 function loadDotEnv(file) {
@@ -44,7 +47,7 @@ function loadDotEnv(file) {
 }
 
 loadDotEnv(path.join(MARKETING_ROOT, "automation", ".env"));
-loadDotEnv(path.join(HERE, ".env"));
+loadDotEnv(process.env.PORTAL_ENV_FILE ? path.resolve(process.env.PORTAL_ENV_FILE) : path.join(HERE, ".env"));
 
 const HOST = process.env.PORTAL_HOST || "127.0.0.1";
 const PORT = Number(process.env.PORTAL_PORT || 4180);
@@ -259,6 +262,8 @@ function siteBase() {
   return String(CONFIG?.links?.site || "").replace(/\/$/, "");
 }
 
+const PUBLIC_BASE = String(process.env.PORTAL_PUBLIC_BASE || "").replace(/\/$/, "");
+
 function libraryItem(id) {
   return MEDIA_LIBRARY.find((item) => item.id === id) || null;
 }
@@ -267,7 +272,7 @@ function mediaFromLibrary(id) {
   const item = libraryItem(id) || libraryItem("dashboard");
   if (!item) return {};
   return {
-    mediaUrl: `/media/landing/${item.file}`,
+    mediaUrl: `${PUBLIC_BASE}/media/landing/${item.file}`,
     mediaPublicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file}` : "",
     mediaKind: item.kind,
     mediaAlt: item.alt,
@@ -446,6 +451,9 @@ function ensureDataShape(data) {
     if (!post.mediaUrl) {
       Object.assign(post, defaultMediaForPillar(post.pillar || "product"));
     }
+    if (PUBLIC_BASE && post.mediaUrl && post.mediaUrl.startsWith("/media/")) {
+      post.mediaUrl = `${PUBLIC_BASE}${post.mediaUrl}`;
+    }
     if (!post.mediaKind && post.mediaUrl) {
       post.mediaKind = mediaTypeFromName(post.mediaName || post.mediaUrl, "image");
     }
@@ -480,10 +488,39 @@ let siteLiveCache = { at: 0, value: false };
 let trafficCache = { at: 0, value: null };
 let publicBaseOverride = DATA.settings.publicUrl || process.env.PORTAL_PUBLIC_URL || "";
 
+let lastBackupAt = 0;
+
 function saveData() {
   DATA.updatedAt = new Date().toISOString();
-  writeJson(DATA_FILE, DATA);
+  backupData();
+  const tmp = `${DATA_FILE}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(DATA, null, 2)}\n`, "utf8");
+  fs.renameSync(tmp, DATA_FILE);
 }
+
+function backupData(force = false) {
+  if (!fs.existsSync(DATA_FILE)) return null;
+  const now = Date.now();
+  if (!force && now - lastBackupAt < 10 * 60 * 1000) return null;
+  try {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const stamp = new Date(now).toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "-");
+    const target = path.join(BACKUP_DIR, `portal-${stamp}.json`);
+    fs.copyFileSync(DATA_FILE, target);
+    lastBackupAt = now;
+    const files = fs
+      .readdirSync(BACKUP_DIR)
+      .filter((file) => /^portal-\d{8}-\d{6}\.json$/.test(file))
+      .sort();
+    while (files.length > 40) fs.unlinkSync(path.join(BACKUP_DIR, files.shift()));
+    return target;
+  } catch (error) {
+    console.error(`Backup failed: ${error.message}`);
+    return null;
+  }
+}
+
+backupData(true);
 
 function json(res, status, body) {
   const payload = JSON.stringify(body);
@@ -651,7 +688,7 @@ function listUploadedMedia() {
     .map((name) => {
       const file = path.join(MEDIA_DIR, name);
       const stat = fs.statSync(file);
-      const url = `/media/${encodeURIComponent(name)}`;
+      const url = `${PUBLIC_BASE}/media/${encodeURIComponent(name)}`;
       return {
         id: name,
         name,
@@ -735,6 +772,9 @@ function queueSnapshot() {
       .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))[0];
     return { ...stats, next: next ? { id: next.id, date: next.date, time: next.time } : null };
   } catch (error) {
+    if (error.code === "ENOENT") {
+      return { total: 0, posted: 0, upcoming: 0, overdue: 0, remaining: 0, next: null, available: false };
+    }
     return { total: 0, posted: 0, upcoming: 0, overdue: 0, remaining: 0, next: null, error: error.message };
   }
 }
@@ -961,7 +1001,8 @@ function validatePostInput(body, existing = null) {
 
 async function resolvePostMedia(post) {
   if (!post.mediaUrl) return null;
-  const url = String(post.mediaUrl);
+  const rawUrl = String(post.mediaUrl);
+  const url = PUBLIC_BASE && rawUrl.startsWith(PUBLIC_BASE) ? rawUrl.slice(PUBLIC_BASE.length) : rawUrl;
   let file = null;
   if (url.startsWith("/media/landing/")) {
     file = path.join(SCREENSHOTS_DIR, path.basename(url));
@@ -970,7 +1011,7 @@ async function resolvePostMedia(post) {
   }
   const exists = Boolean(file && fs.existsSync(file));
   const name = post.mediaName || (file ? path.basename(file) : path.basename(url));
-  const publicUrl = post.mediaPublicUrl || (/^https?:\/\//i.test(url) ? url : absoluteMediaUrl(url));
+  const publicUrl = post.mediaPublicUrl || (/^https?:\/\//i.test(rawUrl) ? rawUrl : absoluteMediaUrl(url));
   return {
     url,
     publicUrl: /^https?:\/\//i.test(publicUrl) ? publicUrl : "",
@@ -1211,7 +1252,24 @@ async function handleApi(req, res, url) {
   const method = req.method || "GET";
   const pathname = url.pathname;
 
-  if (pathname === "/api/health") return json(res, 200, { ok: true, name: "fatortak-marketing-portal" });
+  if (pathname === "/api/health") {
+    const now = Date.now();
+    const upcoming = DATA.posts
+      .filter((post) => post.status === "scheduled" && new Date(post.scheduledAt).getTime() >= now)
+      .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
+    return json(res, 200, {
+      ok: true,
+      name: "fatortak-marketing-portal",
+      version: 2,
+      uptime: Math.round(process.uptime()),
+      posts: DATA.posts.length,
+      nextPostAt: upcoming?.scheduledAt || null,
+      dryRun: Boolean(DATA.settings.dryRun),
+      live: LIVE,
+      autoPublish: AUTO_PUBLISH,
+      schedulerLastTick: lastSchedulerTick,
+    });
+  }
   if (!isSameOrigin(req)) return json(res, 403, { error: "Cross-origin request blocked." });
   if (!isAuthorized(req, url)) return json(res, 401, { error: "Unauthorized. Set the portal token." });
 
@@ -1219,7 +1277,7 @@ async function handleApi(req, res, url) {
     return json(res, 200, {
       library: MEDIA_LIBRARY.map((item) => ({
         ...item,
-        url: `/media/landing/${item.file}`,
+        url: `${PUBLIC_BASE}/media/landing/${item.file}`,
         publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file}` : "",
       })),
     });
@@ -1228,7 +1286,7 @@ async function handleApi(req, res, url) {
   if (method === "GET" && pathname === "/api/media") {
     return json(res, 200, { media: listUploadedMedia(), library: MEDIA_LIBRARY.map((item) => ({
       ...item,
-      url: `/media/landing/${item.file}`,
+      url: `${PUBLIC_BASE}/media/landing/${item.file}`,
       publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file}` : "",
     })) });
   }
@@ -1256,7 +1314,7 @@ async function handleApi(req, res, url) {
       const media = {
         id: filename,
         name: original,
-        url: `/media/${encodeURIComponent(filename)}`,
+        url: `${PUBLIC_BASE}/media/${encodeURIComponent(filename)}`,
         publicUrl: absoluteMediaUrl(`/media/${encodeURIComponent(filename)}`),
         kind,
         contentType: headerType || mediaContentType(filename),
@@ -1546,7 +1604,9 @@ const server = http.createServer(async (req, res) => {
 });
 
 let schedulerBusy = false;
+let lastSchedulerTick = null;
 async function schedulerTick() {
+  lastSchedulerTick = new Date().toISOString();
   if (schedulerBusy || !AUTO_PUBLISH || !LIVE || DATA.settings.dryRun) return;
   schedulerBusy = true;
   try {
@@ -1564,9 +1624,21 @@ async function schedulerTick() {
 }
 
 setInterval(schedulerTick, 60_000);
+setTimeout(schedulerTick, 5_000);
+
+process.on("uncaughtException", (error) => {
+  console.error(`Uncaught exception: ${error?.stack || error}`);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error(`Unhandled rejection: ${reason?.stack || reason}`);
+});
 
 server.listen(PORT, HOST, () => {
   console.log(`Fatortak marketing portal: http://${HOST}:${PORT}`);
+  console.log(`Data: ${DATA_FILE}`);
+  console.log(`Media: ${MEDIA_DIR}`);
+  console.log(`Screenshots: ${SCREENSHOTS_DIR}`);
   console.log(`Live publishing: ${LIVE ? "enabled" : "locked (set MARKETING_LIVE=true)"}`);
   console.log(`Auto-publish scheduler: ${AUTO_PUBLISH ? "enabled" : "disabled (set PORTAL_AUTO_PUBLISH=true)"}`);
   console.log(`Dry run: ${DATA.settings.dryRun ? "on" : "off"}`);
