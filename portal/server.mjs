@@ -1253,10 +1253,10 @@ async function handleApi(req, res, url) {
   const pathname = url.pathname;
 
   if (pathname === "/api/health") {
-    const now = Date.now();
+    const now = nowInTimezone(DATA.settings.timezone || "Africa/Cairo");
     const upcoming = DATA.posts
-      .filter((post) => post.status === "scheduled" && new Date(post.scheduledAt).getTime() >= now)
-      .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
+      .filter((post) => post.status === "scheduled" && String(post.scheduledAt) >= now)
+      .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))[0];
     return json(res, 200, {
       ok: true,
       name: "fatortak-marketing-portal",
@@ -1605,14 +1605,31 @@ const server = http.createServer(async (req, res) => {
 
 let schedulerBusy = false;
 let lastSchedulerTick = null;
+
+function nowInTimezone(timeZone = "Africa/Cairo") {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timeZone || "Africa/Cairo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const pick = (type) => parts.find((part) => part.type === type)?.value || "00";
+  return `${pick("year")}-${pick("month")}-${pick("day")}T${pick("hour")}:${pick("minute")}:${pick("second")}`;
+}
+
 async function schedulerTick() {
   lastSchedulerTick = new Date().toISOString();
   if (schedulerBusy || !AUTO_PUBLISH || !LIVE || DATA.settings.dryRun) return;
   schedulerBusy = true;
   try {
+    const now = nowInTimezone(DATA.settings.timezone || "Africa/Cairo");
     const due = DATA.posts
-      .filter((post) => post.status === "scheduled" && new Date(post.scheduledAt) <= new Date())
-      .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+      .filter((post) => post.status === "scheduled" && String(post.scheduledAt) <= now)
+      .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)));
     for (const post of due) {
       post.status = "publishing";
       saveData();
