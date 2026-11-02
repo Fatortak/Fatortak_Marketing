@@ -815,6 +815,7 @@ OCR invoice capture is built into Fatortak.
     }).join("");
     const published = results.filter((result) => result.ok && !result.dryRun).length;
     const failed = results.filter((result) => !result.ok && !result.skipped);
+    const skipped = results.filter((result) => result.skipped);
     const summary = results.length
       ? `${published} of ${channels.length} channels published${failed.length ? ` · ${failed.length} failed` : ""}.`
       : "This post has not been published yet.";
@@ -827,6 +828,13 @@ OCR invoice capture is built into Fatortak.
         label: `Retry failed (${failed.length})`,
         className: "btn-primary",
         onClick: () => retryChannels(id, failed.map((result) => result.channel)),
+      });
+    }
+    if (skipped.length) {
+      actions.push({
+        label: `Retry skipped (${skipped.length})`,
+        className: "btn-outline",
+        onClick: () => retryChannels(id, skipped.map((result) => result.channel)),
       });
     }
     actions.push({ label: "Close", className: "btn-ghost" });

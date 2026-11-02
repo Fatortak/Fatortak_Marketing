@@ -132,7 +132,7 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 
 - Every post row has a **Channel status** button. It opens a per-channel table with
   published / failed / skipped, API details, post URLs or media IDs, and a
-  **Retry failed** action.
+  **Retry failed** / **Retry skipped** actions.
 - Instagram accepts JPEG only. Public publish URLs now use
   `assets/screenshots/<name>.jpg`; the portal preview keeps the PNG. The 49 JPEG
   variants are committed under `landing/assets/screenshots/` and on the production

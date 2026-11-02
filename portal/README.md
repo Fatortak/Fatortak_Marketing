@@ -35,7 +35,7 @@ The portal seeds itself from `content/queue.json` on first run. State is stored 
 | --- | --- |
 | **Overview** | Publishing pipeline, followers, traffic, channel health, upcoming posts and activity |
 | **Calendar** | Month view of scheduled and published posts |
-| **Content** | Search/filter every post; edit, dry-run, publish, delete, per-channel status and retry failed |
+| **Content** | Search/filter every post; edit, dry-run, publish, delete, per-channel status and retry failed/skipped |
 | **Composer** | Create a post, attach an image/video from the library or upload, select channels, see per-channel character limits, schedule |
 | **Connections** | Click Connect, open the official console, paste credentials, save and test; see which channels are API-ready, need review, or are monitoring-only |
 | **Analytics** | Traffic, traffic by source, followers, reach, engagement, clicks and last sync |
