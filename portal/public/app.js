@@ -397,6 +397,7 @@
               <td>${fmtDate(post.scheduledAt)}</td>
               <td>${statusChip(post.status)}</td>
               <td class="row-actions">
+                <button class="icon-btn" data-channels="${esc(post.id)}" title="Channel status"><svg><use href="#i-report"></use></svg></button>
                 <button class="icon-btn" data-edit="${esc(post.id)}" title="Edit"><svg><use href="#i-pen"></use></svg></button>
                 <button class="icon-btn" data-dry="${esc(post.id)}" title="Dry-run publish"><svg><use href="#i-send"></use></svg></button>
                 <button class="icon-btn" data-publish="${esc(post.id)}" title="Publish live"><svg><use href="#i-check"></use></svg></button>
@@ -689,6 +690,7 @@ OCR invoice capture is built into Fatortak.
 
   function openDrawer(post = null, prefill = null) {
     state.editing = post;
+    $("#post-channels").hidden = !(post?.results?.length);
     $("#drawer-title").textContent = post?.id ? "Edit post" : "New post";
     $("#post-id").value = post?.id || "";
     $("#post-title").value = prefill?.title || post?.title || "";
@@ -780,6 +782,71 @@ OCR invoice capture is built into Fatortak.
           ? "Dry run complete."
           : `Published to ${result.result?.published || 0} channel${result.result?.published === 1 ? "" : "s"}.`;
       toast(summary, result.result?.blocked ? "error" : "success");
+      await refreshAll();
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  function channelResultDetail(result) {
+    if (!result) return { label: "Not attempted", className: "blocked", detail: "No publish attempt recorded yet." };
+    if (result.dryRun) return { label: "Dry run", className: "dry_run", detail: "Simulated only; nothing was sent." };
+    if (result.ok) {
+      const link = result.url || (result.id ? `id: ${result.id}` : "");
+      return { label: "Published", className: "published", detail: link || "Published successfully." };
+    }
+    if (result.skipped) return { label: "Skipped", className: "blocked", detail: result.reason || "Skipped" };
+    return { label: "Failed", className: "failed", detail: result.reason || result.error || "Unknown error" };
+  }
+
+  function showChannelStatus(id) {
+    const post = state.posts.find((item) => item.id === id);
+    if (!post) return;
+    const results = Array.isArray(post.results) ? post.results : [];
+    const channels = [...new Set([...(post.channels || []), ...results.map((result) => result.channel)])];
+    const rows = channels.map((channel) => {
+      const result = results.find((item) => item.channel === channel);
+      const detail = channelResultDetail(result);
+      return `<tr>
+        <td>${channelIcon(channel, channelLabel(channel))} ${esc(channelLabel(channel))}</td>
+        <td><span class="status ${detail.className}">${detail.label}</span></td>
+        <td style="color:var(--muted);font-size:.72rem;line-height:1.5">${esc(String(detail.detail).slice(0, 500))}</td>
+      </tr>`;
+    }).join("");
+    const published = results.filter((result) => result.ok && !result.dryRun).length;
+    const failed = results.filter((result) => !result.ok && !result.skipped);
+    const summary = results.length
+      ? `${published} of ${channels.length} channels published${failed.length ? ` · ${failed.length} failed` : ""}.`
+      : "This post has not been published yet.";
+    const body = `<p style="color:var(--muted);font-size:.78rem;line-height:1.6;margin-bottom:12px">${esc(summary)}</p>
+      <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Status</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p style="color:var(--muted-2);font-size:.7rem;line-height:1.6;margin-top:12px">Skipped means the channel was not attempted (missing setup or a failed connection test). Failed means the platform API returned an error.</p>`;
+    const actions = [];
+    if (failed.length) {
+      actions.push({
+        label: `Retry failed (${failed.length})`,
+        className: "btn-primary",
+        onClick: () => retryChannels(id, failed.map((result) => result.channel)),
+      });
+    }
+    actions.push({ label: "Close", className: "btn-ghost" });
+    modal(`Channel status · ${post.title}`, body, actions);
+  }
+
+  async function retryChannels(id, channels) {
+    const post = state.posts.find((item) => item.id === id);
+    if (!post || !channels.length) return;
+    const label = channels.map(channelLabel).join(", ");
+    if (!window.confirm(`Retry ${label} for “${post.title}”?\n\nOnly these channels will be called.`)) return;
+    try {
+      const response = await api(`/api/posts/${encodeURIComponent(id)}/publish`, {
+        method: "POST",
+        body: JSON.stringify({ dryRun: false, channels }),
+      });
+      const results = response.result?.results || [];
+      const failed = results.filter((result) => !result.ok && !result.skipped).length;
+      const summary = results.map((result) => `${channelLabel(result.channel)}: ${result.ok ? "published" : result.skipped ? "skipped" : "failed"}`).join(" · ");
+      toast(summary || "Retry finished.", failed ? "error" : "success");
       await refreshAll();
     } catch (error) {
       toast(error.message, "error");
@@ -1042,6 +1109,9 @@ OCR invoice capture is built into Fatortak.
       const saved = await savePost($("#post-status").value || "draft");
       if (saved) await publish(saved.id, false);
     });
+    $("#post-channels").addEventListener("click", () => {
+      if (state.editing?.id) showChannelStatus(state.editing.id);
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         if (!$("#scrim").hidden) setSidebar(false);
@@ -1051,7 +1121,7 @@ OCR invoice capture is built into Fatortak.
     });
 
     $("#view").addEventListener("click", async (event) => {
-      const target = event.target.closest("[data-view],[data-edit],[data-dry],[data-publish],[data-delete],[data-new],[data-template],[data-import-queue],[data-refresh],[data-sync-metrics],[data-save-settings],[data-connect],[data-channel-help],[data-cal-prev],[data-cal-next],[data-cal-today],[data-refresh-connections]");
+      const target = event.target.closest("[data-view],[data-edit],[data-dry],[data-publish],[data-delete],[data-channels],[data-new],[data-template],[data-import-queue],[data-refresh],[data-sync-metrics],[data-save-settings],[data-connect],[data-channel-help],[data-cal-prev],[data-cal-next],[data-cal-today],[data-refresh-connections]");
       if (!target) return;
       if (target.dataset.view) return setView(target.dataset.view);
       if (target.dataset.template) {
@@ -1074,6 +1144,7 @@ OCR invoice capture is built into Fatortak.
       }
       if (target.dataset.dry) return publish(target.dataset.dry, true);
       if (target.dataset.publish) return publish(target.dataset.publish, false);
+      if (target.dataset.channels) return showChannelStatus(target.dataset.channels);
       if (target.dataset.delete) return deletePost(target.dataset.delete);
       if (target.dataset.importQueue !== undefined) return importQueue();
       if (target.dataset.refreshConnections !== undefined) return refreshConnections();

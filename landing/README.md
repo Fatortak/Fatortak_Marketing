@@ -34,6 +34,7 @@ You can also open `index.html` directly, but a local server is better for testin
 | `assets/favicon.png` | Square real F mark on brand purple. |
 | `assets/og.png` | Legacy 1200x630 social preview; production metadata now uses `assets/brand/cover-og.png`. |
 | `assets/brand/` | Professional covers with the Fatortak logo: OG, README, X, Facebook, LinkedIn, YouTube and avatar. |
+| `assets/screenshots/*.jpg` | JPEG publish variants for Instagram (the Graph API does not accept PNG). |
 | `assets/screenshots/` | Real application screenshots captured from the local demo tenant. |
 | `assets/social/` | Square avatar, Facebook cover and YouTube banner for manual profile setup. |
 | `site.webmanifest`, `robots.txt`, `sitemap.xml` | Basic PWA/SEO files. |
@@ -111,6 +112,12 @@ The current social and Open Graph covers are generated from `.brand-cover.html`:
 
 ```powershell
 node scripts/generate-brand-covers.mjs
+```
+
+Instagram accepts JPEG, not PNG. After generating or changing screenshots, create the JPEG publish variants:
+
+```powershell
+powershell -File scripts/convert-instagram-jpegs.ps1
 ```
 
 The legacy `.og-card.html` remains for the older 1200×630 card.

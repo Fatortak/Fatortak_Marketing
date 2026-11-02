@@ -127,6 +127,24 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 - X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access. The scheduler records those results per channel and continues with the channels that are ready.
 - Keep the Node service warm. The GitHub Actions keepalive pings `/portal/?ping=1` every 10 minutes; if IIS recycles the app pool, the next ping restarts Node and the scheduler catches overdue posts on startup.
 
+## Channel status and Instagram
+
+- Every post row has a **Channel status** button. It opens a per-channel table with
+  published / failed / skipped, API details, post URLs or media IDs, and a
+  **Retry failed** action.
+- Instagram accepts JPEG only. Public publish URLs now use
+  `assets/screenshots/<name>.jpg`; the portal preview keeps the PNG. The 49 JPEG
+  variants are committed under `landing/assets/screenshots/` and on the production
+  landing site.
+- The 09:00 post failed Instagram with `Media ID is not available` because it was
+  given a PNG. After the JPEG variants and container-status polling, the Instagram
+  retry succeeded (`18095998496670091`). Facebook, Bluesky and Mastodon published;
+  X failed with `credits depleted`.
+- The 13:00 post published to Facebook and Instagram (`18075864659760177`);
+  LinkedIn was skipped because `LINKEDIN_ACCESS_TOKEN` and `LINKEDIN_AUTHOR_URN`
+  are not configured.
+- Re-run `landing/scripts/convert-instagram-jpegs.ps1` after adding PNG cards.
+
 ## Brand rollout — 1 November 2026
 
 New professional covers with the Fatortak logo and the live dashboard are in

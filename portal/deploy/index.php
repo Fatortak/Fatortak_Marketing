@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+@set_time_limit(180);
+
 /**
  * Fatortak marketing portal — production front controller.
  *
@@ -509,7 +511,7 @@ $options = [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_FOLLOWLOCATION => false,
     CURLOPT_CONNECTTIMEOUT => 5,
-    CURLOPT_TIMEOUT => 120,
+    CURLOPT_TIMEOUT => 180,
     CURLOPT_HTTPHEADER => $headers,
     CURLOPT_HEADERFUNCTION => static function ($curl, string $line) use (&$responseHeaders): int {
         $length = strlen($line);

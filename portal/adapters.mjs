@@ -204,7 +204,7 @@ async function postInstagram(text, media) {
   }
   const container = await formPost(`https://graph.facebook.com/v21.0/${userId}/media`, fields);
   if (!container.id) return { ok: false, error: "Instagram did not return a media container id" };
-  if (video) await waitForMetaContainer(`https://graph.facebook.com/v21.0/${container.id}`, token);
+  await waitForMetaContainer(`https://graph.facebook.com/v21.0/${container.id}`, token, "status_code", 24);
   const published = await formPost(`https://graph.facebook.com/v21.0/${userId}/media_publish`, {
     creation_id: container.id,
     access_token: token,

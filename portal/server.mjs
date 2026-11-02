@@ -273,7 +273,7 @@ function mediaFromLibrary(id) {
   if (!item) return {};
   return {
     mediaUrl: `${PUBLIC_BASE}/media/landing/${item.file}`,
-    mediaPublicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file}` : "",
+    mediaPublicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file.replace(/\.png$/i, ".jpg")}` : "",
     mediaKind: item.kind,
     mediaAlt: item.alt,
     mediaName: item.file,
@@ -1023,10 +1023,15 @@ async function resolvePostMedia(post) {
   };
 }
 
-async function publishPost(post, { dryRun = true, automatic = false } = {}) {
+async function publishPost(post, { dryRun = true, automatic = false, channels: requestedChannels = null } = {}) {
   CONFIG = loadConfig();
-  const channels = post.channels.filter((channel) => CHANNEL_DEFS.some((def) => def.key === channel));
+  const validChannels = post.channels.filter((channel) => CHANNEL_DEFS.some((def) => def.key === channel));
+  const requested = Array.isArray(requestedChannels) && requestedChannels.length
+    ? validChannels.filter((channel) => requestedChannels.includes(channel))
+    : null;
+  const channels = requested || validChannels;
   if (!channels.length) throw new Error("No valid channels selected");
+  const subset = Boolean(requested);
   const media = await resolvePostMedia(post);
   if (DATA.settings.mediaRequired && !media) {
     post.status = "blocked";
@@ -1110,18 +1115,30 @@ async function publishPost(post, { dryRun = true, automatic = false } = {}) {
     results.push({ channel, ...result });
   }
 
-  const ok = results.filter((result) => result.ok && !result.dryRun).length;
-  const failures = results.filter((result) => !result.ok && !result.skipped);
-  const skipped = results.filter((result) => result.skipped);
-  post.results = results;
+  const previous = Array.isArray(post.results) ? post.results : [];
+  const merged = subset
+    ? previous.filter((result) => !channels.includes(result.channel)).concat(results)
+    : results;
+  post.results = merged;
   post.lastAttemptAt = new Date().toISOString();
+  const attemptOk = results.filter((result) => result.ok && !result.dryRun).length;
+  const ok = merged.filter((result) => result.ok && !result.dryRun).length;
+  const failures = merged.filter((result) => !result.ok && !result.skipped);
+  const skipped = merged.filter((result) => result.skipped);
   if (dryRun) {
     post.status = "dry_run";
     addActivity(DATA, "dry_run", `Dry run “${post.title}” across ${channels.length} channel${channels.length === 1 ? "" : "s"}.`, post.id);
   } else if (ok > 0) {
     post.status = "published";
-    post.publishedAt = new Date().toISOString();
-    addActivity(DATA, "published", `Published “${post.title}” to ${ok} channel${ok === 1 ? "" : "s"}.`, post.id);
+    if (!post.publishedAt) post.publishedAt = new Date().toISOString();
+    addActivity(
+      DATA,
+      subset ? "retry" : "published",
+      subset
+        ? `Retried “${post.title}” on ${channels.length} channel${channels.length === 1 ? "" : "s"}: ${attemptOk} succeeded.`
+        : `Published “${post.title}” to ${ok} channel${ok === 1 ? "" : "s"}.`,
+      post.id
+    );
   } else if (failures.length === 0 && skipped.length > 0) {
     post.status = "blocked";
     addActivity(DATA, "blocked", `Blocked “${post.title}”: no selected channel is connected yet.`, post.id);
@@ -1130,7 +1147,7 @@ async function publishPost(post, { dryRun = true, automatic = false } = {}) {
     addActivity(DATA, "failed", `Publish failed for “${post.title}” (${failures.length + skipped.length} channel issues).`, post.id);
   }
   saveData();
-  return { results, published: ok, failures: failures.length, skipped: skipped.length, dryRun };
+  return { results, published: attemptOk, mergedPublished: ok, failures: failures.length, skipped: skipped.length, dryRun, channels };
 }
 
 function overview() {
@@ -1283,7 +1300,7 @@ async function handleApi(req, res, url) {
       library: MEDIA_LIBRARY.map((item) => ({
         ...item,
         url: `${PUBLIC_BASE}/media/landing/${item.file}`,
-        publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file}` : "",
+        publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file.replace(/\.png$/i, ".jpg")}` : "",
       })),
     });
   }
@@ -1292,7 +1309,7 @@ async function handleApi(req, res, url) {
     return json(res, 200, { media: listUploadedMedia(), library: MEDIA_LIBRARY.map((item) => ({
       ...item,
       url: `${PUBLIC_BASE}/media/landing/${item.file}`,
-      publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file}` : "",
+      publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file.replace(/\.png$/i, ".jpg")}` : "",
     })) });
   }
 
@@ -1502,7 +1519,8 @@ async function handleApi(req, res, url) {
         if (!dryRun && !LIVE) {
           return json(res, 403, { error: "Live publishing is locked. Set MARKETING_LIVE=true on the portal server." });
         }
-        const result = await publishPost(post, { dryRun, automatic: false });
+        const channels = Array.isArray(body.channels) ? body.channels.map(String) : null;
+        const result = await publishPost(post, { dryRun, automatic: false, channels });
         return json(res, 200, { post, result });
       } catch (error) {
         return json(res, 400, { error: error.message });
