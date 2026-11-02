@@ -35,7 +35,7 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | Bluesky | @fatortak.bsky.social | Connected and verified with an app password. |
 | Facebook Page | Fatortak Software Solutions | Connected and verified with a **non-expiring Page token**. App secret and long-lived user token stored privately. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
-| LinkedIn | Fatortak company page | App and company page verified; Community Management API access needs the registered legal entity form. |
+| LinkedIn | Fatortak company page | App and company page verified. Community Management API Development Tier access request submitted 2 Nov 2026; awaiting Microsoft Vetting Services/LinkedIn review. Portal URN `urn:li:organization:109974822` and version `202601` are prefilled; token pending. |
 | Threads | @fatortak.software | OAuth token generated and saved, but the Threads API is blocked pending App Review or a Threads Tester. Portal test currently fails. |
 | Mastodon | @fatortaksoftware@mastodon.social | Connected and verified. Avatar, header and bio set. |
 | Telegram, Discord, Dev.to | — | Need one-time tokens/webhooks. |
@@ -128,8 +128,22 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 - X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access. The scheduler records those results per channel and continues with the channels that are ready.
 - Keep the Node service warm. The server-side keepalive pings every 5 minutes and survives app-pool recycles; the GitHub Actions workflow every 10 minutes is the fallback. If both are idle, the next portal request starts Node and the scheduler catches overdue posts on startup.
 
-## Channel status and Instagram
+## LinkedIn approval — 2 November 2026
 
+- The Community Management API Development Tier access form was submitted for the
+  Fatortak Social app on 2 November 2026. Qualtrics confirmed 100% submission.
+- LinkedIn will verify the business through Microsoft Vetting Services at
+  linkedin@rabbeh.com and will email the decision.
+- The LinkedIn Products page still shows **Access request form** until approval.
+- The portal's LinkedIn form is prefilled with
+  `urn:li:organization:109974822` and API version `202601`.
+- After approval: generate a token with `w_organization_social` and
+  `r_organization_admin`, save and test in the portal, then open the 13:00 post →
+  **Status** → **Retry skipped (1)**.
+- The access form was completed with the registered business information, not
+  placeholder details.
+
+## Channel status and Instagram
 - Every post row has a **Channel status** button. It opens a per-channel table with
   published / failed / skipped, API details, post URLs or media IDs, and a
   **Retry failed** / **Retry skipped** actions.
