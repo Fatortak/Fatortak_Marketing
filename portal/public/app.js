@@ -397,7 +397,7 @@
               <td>${fmtDate(post.scheduledAt)}</td>
               <td>${statusChip(post.status)}</td>
               <td class="row-actions">
-                <button class="icon-btn" data-channels="${esc(post.id)}" title="Channel status"><svg><use href="#i-report"></use></svg></button>
+                <button class="btn btn-ghost btn-sm" data-channels="${esc(post.id)}" title="Channel status" style="white-space:nowrap"><svg style="width:12px;height:12px"><use href="#i-report"></use></svg> Status</button>
                 <button class="icon-btn" data-edit="${esc(post.id)}" title="Edit"><svg><use href="#i-pen"></use></svg></button>
                 <button class="icon-btn" data-dry="${esc(post.id)}" title="Dry-run publish"><svg><use href="#i-send"></use></svg></button>
                 <button class="icon-btn" data-publish="${esc(post.id)}" title="Publish live"><svg><use href="#i-check"></use></svg></button>
