@@ -114,6 +114,7 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 - The Node service binds `127.0.0.1:4318` and requires a private bearer token (`App_Data/portal-app/node.token`) that PHP injects on every proxied request.
 - State, `.env`, uploaded media and backups live under `App_Data/portal-app/`, which IIS does not serve (verified `403`).
 - Node restarts automatically from the PHP supervisor. Authenticated operators can restart it with `/portal/?restart=1`.
+- A WMI-created keepalive (`App_Data/portal-app/keepalive.mjs`) pings `/portal/?ping=1` every 5 minutes. It runs outside the IIS app-pool job object, so it survives app-pool recycles. PHP restarts it when `data/keepalive.txt` is older than 15 minutes.
 - Deploy with `portal/scripts/build-production.ps1` and `portal/scripts/deploy-production.ps1`. Re-deploys keep the remote data and `.env` unless `-ForceData` / `-ForceEnv` is used.
 - Production credentials live in `%USERPROFILE%\.config\fatortak\portal-production.txt` (outside the repo). Plesk admin is not required for this deployment path.
 - Static landing deployment still uses the scoped FTPS account in `%USERPROFILE%\.config\fatortak\plesk.env`.
@@ -125,7 +126,7 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 - Every post has an image; the library has **37 unique visuals** — 30 new `social-v2` cards plus the original social cards.
 - The production portal is **live and armed**: dry run is off, `MARKETING_LIVE=true` and `PORTAL_AUTO_PUBLISH=true`. The first scheduled post is **2 November 2026 at 09:00 Cairo**.
 - X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access. The scheduler records those results per channel and continues with the channels that are ready.
-- Keep the Node service warm. The GitHub Actions keepalive pings `/portal/?ping=1` every 10 minutes; if IIS recycles the app pool, the next ping restarts Node and the scheduler catches overdue posts on startup.
+- Keep the Node service warm. The server-side keepalive pings every 5 minutes and survives app-pool recycles; the GitHub Actions workflow every 10 minutes is the fallback. If both are idle, the next portal request starts Node and the scheduler catches overdue posts on startup.
 
 ## Channel status and Instagram
 

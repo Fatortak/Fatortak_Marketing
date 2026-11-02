@@ -14,9 +14,11 @@ InterServer Windows/Plesk subscription. No Plesk admin or SSH access is needed.
 /App_Data/portal-app/                 private, not served by IIS
   auth.json                           login hash + session secret
   node.token                          bearer token for the local Node API
-  portal/                   server.mjs, adapters.mjs, .env, public/
-  automation/src/           channel adapters and render helpers
+  marketing/portal/                   server.mjs, adapters.mjs, .env, public/
+  marketing/automation/src/           channel adapters and render helpers
   marketing/config.example.json       public link/profile config
+  keepalive.mjs                       self-ping every 5 minutes
+  start-keepalive.ps1                 WMI launcher outside the IIS job object
   data/portal.json                    live queue and settings
   data/media/                         uploaded media
   data/backups/                       40 rotating JSON snapshots
@@ -39,10 +41,14 @@ InterServer Windows/Plesk subscription. No Plesk admin or SSH access is needed.
    `X-HTTP-Method-Override` header. The UI sends `POST` with
    `X-Portal-Method: PUT|DELETE`; `index.php` translates it before proxying.
    `web.config` disables WebDAV and allows unlisted verbs as a second layer.
+7. A WMI-created keepalive (`keepalive.mjs`) pings `/portal/?ping=1` every
+   5 minutes. It runs outside the IIS app-pool job object, so it survives app-pool
+   recycles. `index.php` restarts it if `data/keepalive.txt` is older than
+   15 minutes.
 
 The `?ping=1` endpoint is unauthenticated. It returns only
-`{ ok, service, at }`, starts Node if needed, and is used by the GitHub Actions
-keepalive workflow every 10 minutes.
+`{ ok, service, at }`, starts Node if needed, and is used by the server keepalive
+and the GitHub Actions fallback every 10 minutes.
 
 ## Build and deploy
 
@@ -65,7 +71,9 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy-production.ps1 -SkipProv
 - Health: `/portal/index.php/api/health` after login, or `/portal/?ping=1`.
 - Logs: `App_Data/portal-app/data/server.log`.
 - Backups: `App_Data/portal-app/data/backups/`.
-- Keepalive: `.github/workflows/portal-keepalive.yml` on `main`.
+- Keepalive heartbeat: `App_Data/portal-app/data/keepalive.txt`; log:
+  `App_Data/portal-app/data/keepalive.log`.
+- Keepalive fallback: `.github/workflows/portal-keepalive.yml` on `main`.
 
 ## Security notes
 

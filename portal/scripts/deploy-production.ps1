@@ -106,6 +106,10 @@ Get-ChildItem $appLocal -Recurse -File | ForEach-Object {
   Upload-FtpFile $_.FullName $remote
 }
 
+Write-Output "=== keepalive ==="
+Upload-FtpFile (Join-Path $portalRoot "deploy\keepalive.mjs") "/App_Data/portal-app/keepalive.mjs"
+Upload-FtpFile (Join-Path $portalRoot "deploy\start-keepalive.ps1") "/App_Data/portal-app/start-keepalive.ps1"
+
 if (-not $SkipProvision) {
   if (-not $provisionFile -or -not $provisionKey) { throw "No provision file/key in $credFile" }
   $url = "https://fatortak.rabbeh.com/portal/$provisionFile`?key=$provisionKey"

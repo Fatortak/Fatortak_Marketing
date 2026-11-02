@@ -29,6 +29,8 @@ jobs:
         run: node --check server.mjs
       - name: Check adapters
         run: node --check adapters.mjs
+      - name: Check keepalive
+        run: node --check deploy/keepalive.mjs
       - name: Check dashboard
         run: node --check public/app.js
 

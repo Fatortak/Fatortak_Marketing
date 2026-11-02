@@ -270,6 +270,27 @@ function ensure_node(string $portalDir, string $dataDir, string $siteRoot, strin
     return wait_for_node(10);
 }
 
+function ensure_keepalive(string $appRoot, string $dataDir): void
+{
+    $heartbeat = $dataDir . DIRECTORY_SEPARATOR . 'keepalive.txt';
+    $script = $appRoot . DIRECTORY_SEPARATOR . 'start-keepalive.ps1';
+    if (!is_file($script)) {
+        return;
+    }
+    if (is_file($heartbeat) && time() - filemtime($heartbeat) < 900) {
+        return;
+    }
+    $lock = @fopen($dataDir . DIRECTORY_SEPARATOR . 'keepalive.lock', 'c');
+    if ($lock && flock($lock, LOCK_EX)) {
+        clearstatcache(true, $heartbeat);
+        if (!is_file($heartbeat) || time() - filemtime($heartbeat) >= 900) {
+            @exec('powershell -NoProfile -ExecutionPolicy Bypass -File "' . $script . '" 2>&1', $out, $code);
+        }
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
 function render_login(string $error, string $csrf, bool $throttled): void
 {
     http_response_code($throttled ? 429 : ($error !== '' ? 401 : 200));
@@ -372,6 +393,7 @@ if ($ping) {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     $ok = ensure_node($portalDir, $dataDir, $siteRoot, $logFile, $tokenFile);
+    ensure_keepalive($appRoot, $dataDir);
     http_response_code($ok ? 200 : 503);
     echo json_encode(['ok' => $ok, 'service' => 'fatortak-portal', 'at' => gmdate('c')], JSON_UNESCAPED_SLASHES);
     exit;
@@ -439,6 +461,8 @@ if (!$authenticated) {
     render_login('', $csrf, false);
     exit;
 }
+
+ensure_keepalive($appRoot, $dataDir);
 
 if (isset($_GET['restart'])) {
     header('Content-Type: application/json; charset=utf-8');
