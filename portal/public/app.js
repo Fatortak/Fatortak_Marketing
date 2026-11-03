@@ -387,7 +387,7 @@
     });
     $("#view").innerHTML = `
       <div class="page-head"><div><span class="eyebrow">Content queue</span><h2>${fmtNumber(posts.length)} posts</h2><p>Review, edit, schedule and publish across every channel.</p></div>
-      <div class="page-head-actions"><button class="btn btn-ghost" data-import-queue>Import 90-day queue</button><button class="btn btn-primary" data-new>New post</button></div></div>
+      <div class="page-head-actions"><button class="btn btn-ghost" data-import-queue>Import legacy queue</button><button class="btn btn-primary" data-new>New post</button></div></div>
       <div class="card toolbar">
         <div class="search"><svg><use href="#i-search"></use></svg><input id="filter-q" placeholder="Search posts…" value="${esc(filters.q)}" /></div>
         <select id="filter-status"><option value="">All statuses</option>${["needs_review","scheduled","published","failed","blocked","dry_run","draft","approved"].map((status) => `<option value="${status}" ${filters.status === status ? "selected" : ""}>${status.replace(/_/g, " ")}</option>`).join("")}</select>
@@ -572,7 +572,7 @@ OCR invoice capture is built into Fatortak.
       </div>
       <div class="card card-pad section">
         <div class="section-head"><h3>Queue and data</h3><span>local JSON store</span></div>
-        <div class="form-actions"><button class="btn btn-outline" data-import-queue>Import 90-day queue</button><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=json">Export portal JSON</a></div>
+        <div class="form-actions"><button class="btn btn-outline" data-import-queue>Import legacy queue</button><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=json">Export portal JSON</a></div>
         <p style="color:var(--muted-2);font-size:.7rem;margin-top:10px">Portal state is stored in <code>marketing/portal/data/portal.json</code> (gitignored). The existing automation queue is separate and remains the GitHub Actions source.</p>
       </div>
       <div class="card card-pad section">
@@ -1070,6 +1070,10 @@ OCR invoice capture is built into Fatortak.
   }
 
   async function importQueue() {
+    const confirmed = window.confirm(
+      "Import the legacy 90-day queue?\n\nThis only adds legacy posts that are missing. It can schedule duplicate content on top of the current 10-post day plan, so use it only when restoring the old queue."
+    );
+    if (!confirmed) return;
     try {
       const result = await api("/api/import-queue", { method: "POST", body: JSON.stringify({}) });
       toast(`Imported ${result.imported} queue posts.`, "success");
