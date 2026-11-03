@@ -34,6 +34,10 @@ Open <http://127.0.0.1:4180>.
 4 November, assigns JPEG media, targets Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn, and
 validates server limits, banned claims, pricing and media.
 
+The first two days lead with the refreshed UI, reports hub, data import, platform console, onboarding
+and invoice-template themes. `landing/scripts/generate-social-v3.mjs` renders the 12 matching English
+and Arabic cards from screenshots of the current app.
+
 The legacy `scripts/rebuild-queue.mjs` remains for the original 3/day queue.
 
 The portal seeds itself from `content/queue.json` on first run. State is stored in `portal/data/portal.json`, which is gitignored.

@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import {
   features,
   useCases,
-  pains,
   tips,
   oss,
   commercial,
@@ -29,7 +28,109 @@ const PRICING_AR = "الأسعار: Starter 300 جنيه/شهر، Professional 6
 
 const firstLine = (value) => String(value || "").split("\n")[0].replace(/^#+\s*/, "").slice(0, 90);
 
-const enThemes = [];
+const NEW_THEMES_EN = [
+  {
+    key: "ui",
+    title: "The new interface.",
+    core: "The new Fatortak interface uses a light canvas, clear hierarchy and Arabic-first typography across reports, invoices and projects.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-01-ui.png",
+  },
+  {
+    key: "reports",
+    title: "13 reports. One ledger.",
+    core: "A new reports hub for financial, receivables, sales, cash and tax reports. Every report exports to CSV or PDF.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-02-reports.png",
+  },
+  {
+    key: "import",
+    title: "Bring your Excel data.",
+    core: "Import customers, suppliers or items from CSV or Excel, with Arabic header aliases, column mapping and validation before anything is saved.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-03-import.png",
+  },
+  {
+    key: "platform",
+    title: "Every company. One console.",
+    core: "Run multiple workspaces from one installation: tenants, users, invoices, collections and activity in one platform console.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-04-platform.png",
+  },
+  {
+    key: "onboarding",
+    title: "From zero to first invoice.",
+    core: "A guided checklist covers company profile, chart of accounts, first customer, item, quotation and invoice. Demo data is one click away.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-05-onboarding.png",
+  },
+  {
+    key: "templates",
+    title: "Six invoices. Your identity.",
+    core: "Choose sales and purchase templates, set your logo and brand colour, and preview print and the public link before saving. Arabic and RTL included.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-06-templates.png",
+  },
+];
+
+const NEW_THEMES_AR = [
+  {
+    key: "ui",
+    title: "واجهة جديدة.",
+    core: "واجهة فاتورتك الجديدة بخلفية فاتحة وتسلسل واضح وتنسيق عربي أولاً عبر التقارير والفواتير والمشاريع.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-07-ui-ar.png",
+  },
+  {
+    key: "reports",
+    title: "13 تقريرًا. دفتر واحد.",
+    core: "مركز تقارير جديد للمالية والعملاء والمبيعات والنقد والضرائب. كل تقرير يُصدَّر إلى CSV أو PDF.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-08-reports-ar.png",
+  },
+  {
+    key: "import",
+    title: "انقل بياناتك من إكسل.",
+    core: "استورد العملاء أو الموردين أو الأصناف من CSV أو Excel، مع ربط الأعمدة والأسماء العربية والتحقق قبل الحفظ.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-09-import-ar.png",
+  },
+  {
+    key: "platform",
+    title: "كل شركة. لوحة واحدة.",
+    core: "أدر عدة مساحات عمل من تثبيت واحد: الشركات والمستخدمون والفواتير والتحصيل والنشاط في لوحة منصة واحدة.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-10-platform-ar.png",
+  },
+  {
+    key: "onboarding",
+    title: "من الصفر إلى أول فاتورة.",
+    core: "قائمة بدء مُوجّهة تغطي بيانات الشركة ودليل الحسابات وأول عميل وصنف وعرض سعر وفاتورة. وبيانات تجريبية بضغطة.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-11-onboarding-ar.png",
+  },
+  {
+    key: "templates",
+    title: "ستة قوالب فواتير. هويتك.",
+    core: "اختر قالب المبيعات والمشتريات، وحدد شعارك ولون علامتك، وعاين الطباعة والرابط العام قبل الحفظ. بدعم العربية وRTL.",
+    pillar: "whats-new",
+    link: "{{site}}",
+    media: "social-v3-12-templates-ar.png",
+  },
+];
+
+const enThemes = [...NEW_THEMES_EN];
 for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
   const feature = features[i];
   enThemes.push({ key: `feature-${i}`, title: feature.title, core: feature.detail, pillar: "product", link: "{{site}}" });
@@ -39,10 +140,6 @@ for (const i of [0, 1, 2, 3, 4]) {
   enThemes.push({ key: `use-${i}`, title: item.title, core: `${item.title}.\n\n${item.body}`, pillar: "use-case", link: "{{site}}", allowHook: false, useCtaVariants: true });
 }
 for (const i of [0, 1, 2, 3, 4]) {
-  const pain = pains[i];
-  enThemes.push({ key: `pain-${i}`, title: firstLine(pain), core: pain, pillar: "insight", link: "{{site}}" });
-}
-for (const i of [0, 1, 2, 3, 4]) {
   const tip = tips[i];
   enThemes.push({ key: `tip-${i}`, title: firstLine(tip), core: tip, pillar: "tip", link: "{{site}}" });
 }
@@ -50,14 +147,11 @@ for (const i of [0, 1, 2]) {
   const item = oss[i];
   enThemes.push({ key: `oss-${i}`, title: firstLine(item), core: item, pillar: "open-source", link: "{{repo}}" });
 }
-for (const i of [0, 1]) {
-  const item = commercial[i];
-  enThemes.push({ key: `commercial-${i}`, title: firstLine(item), core: item, pillar: "commercial", link: "{{site}}" });
-}
+enThemes.push({ key: "commercial-0", title: firstLine(commercial[0]), core: commercial[0], pillar: "commercial", link: "{{site}}" });
 enThemes.push({ key: "pricing", title: "Pricing", core: PRICING_EN, pillar: "commercial", link: "{{site}}" });
 
-const arThemes = [];
-for (let i = 0; i < 20; i += 1) {
+const arThemes = [...NEW_THEMES_AR];
+for (let i = 0; i < 14; i += 1) {
   const feature = features[i];
   arThemes.push({ key: `feature-${i}`, title: firstLine(feature.ar), core: feature.ar, pillar: "arabic", link: "{{site}}" });
 }
@@ -196,7 +290,13 @@ for (let day = 0; day < 30; day += 1) {
     if (fitted.adjusted) adjustedForX += 1;
     xLengths.push(fitted.length);
     const title = uniqueTitle(firstLine(rawContent));
-    const mediaFile = mediaFor(language, theme.pillar, usedMedia, day * 7 + slot * 3);
+    let mediaFile;
+    if (theme.media && existing.has(theme.media) && !usedMedia.has(theme.media)) {
+      mediaFile = theme.media;
+      usedMedia.add(mediaFile);
+    } else {
+      mediaFile = mediaFor(language, theme.pillar, usedMedia, day * 7 + slot * 3);
+    }
     const mediaBase = mediaFile.replace(/\.png$/i, "");
     posts.push({
       id,

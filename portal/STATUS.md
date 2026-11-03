@@ -96,7 +96,7 @@ backed by a Facebook Developer Account as a tester.
 
 Live publishing is already enabled (`MARKETING_LIVE=true`, `PORTAL_AUTO_PUBLISH=true` and dry run off). To pause, turn **Dry run** on in Settings.
 
-The queue now holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00–21:30 Cairo) from 4 November to 3 December 2026, plus the published history. Every post has an image; the library uses **46 unique visuals**. All new posts target Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn. Instagram gets JPEG publish variants; X still needs credits; LinkedIn stays skipped until its token; Dev.to is article-only and Threads is blocked.
+The queue now holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00-21:30 Cairo) from 4 November to 3 December 2026, plus the published history. Every post has an image; the library uses **53 unique visuals**, including 12 new cards for the refreshed UI, reports hub, data import, platform console, onboarding and invoice templates. All new posts target Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn. Instagram gets JPEG publish variants; X still needs credits; LinkedIn stays skipped until its token; Dev.to is article-only and Threads is blocked.
 
 ## Metrics and reports
 
@@ -126,8 +126,8 @@ The queue now holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00
 ## Current publishing state
 
 - The queue is **306 posts** total: 6 history/published posts plus **300 new posts at 10 per day** (5 Arabic + 5 English) from 4 November to 3 December 2026.
-- Every new post has an image; the library uses **46 unique visuals**. Instagram receives JPEG publish variants.
-- The first new post is **4 November 2026 at 08:00 Cairo**; today's 19:00 post is the last old-queue post.
+- Every new post has an image; the library uses **53 unique visuals**, including 12 new UI/feature cards. Instagram receives JPEG publish variants.
+- The 3 November 19:00 post published to Bluesky, Facebook and Instagram; X returned `credits depleted`. The next post is **4 November 2026 at 08:00 Cairo**, leading with the refreshed UI, reports hub, data import, platform console, onboarding and invoice templates.
 - X still needs API credits; LinkedIn waits for its token; Threads is blocked/expired; Dev.to is article-only. The scheduler records every channel result and the status modal shows it.
 - Keep the Node service warm. The server-side keepalive pings every 5 minutes and survives app-pool recycles; the GitHub Actions workflow every 10 minutes is the fallback. If both are idle, the next portal request starts Node and the scheduler catches overdue posts on startup.
 
