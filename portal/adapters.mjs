@@ -322,7 +322,7 @@ function percentEncode(value) {
   );
 }
 
-function oauth1Header(method, url) {
+export function oauth1Header(method, url) {
   const consumerKey = env("X_API_KEY");
   const consumerSecret = env("X_API_SECRET");
   const token = env("X_OAUTH1_ACCESS_TOKEN") || env("X_ACCESS_TOKEN");
@@ -335,11 +335,15 @@ function oauth1Header(method, url) {
     oauth_token: token,
     oauth_version: "1.0",
   };
-  const parameterString = Object.keys(oauth)
-    .sort()
-    .map((key) => `${percentEncode(key)}=${percentEncode(oauth[key])}`)
+  const parsed = new URL(url);
+  const query = [...parsed.searchParams.entries()];
+  const parameterString = [...Object.entries(oauth), ...query]
+    .map(([key, value]) => [percentEncode(key), percentEncode(value)])
+    .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))
+    .map(([key, value]) => `${key}=${value}`)
     .join("&");
-  const base = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(parameterString)}`;
+  const baseUrl = `${parsed.origin}${parsed.pathname}`;
+  const base = `${method.toUpperCase()}&${percentEncode(baseUrl)}&${percentEncode(parameterString)}`;
   const signingKey = `${percentEncode(consumerSecret)}&${percentEncode(tokenSecret)}`;
   oauth.oauth_signature = crypto.createHmac("sha1", signingKey).update(base).digest("base64");
   return `OAuth ${Object.keys(oauth)

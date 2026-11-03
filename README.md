@@ -32,11 +32,13 @@ The portal is live at <https://fatortak.rabbeh.com/portal/>.
 - HTTPS enforced; the Node service binds `127.0.0.1:4318`.
 - PHP supervises the Node process and proxies the API and media.
 - State, credentials, media and backups live in `App_Data` on the server, never in Git.
-- The queue holds **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from
-  2 November to 1 December 2026, with **37 unique visuals**.
-- Dry run is off and the scheduler is armed. X needs API credits; Threads is
-  blocked by Meta App Review. Facebook, Instagram, Mastodon, Bluesky and Dev.to
-  are connected.
+- The queue holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00–21:30 Cairo) from
+  4 November to 3 December 2026, plus the published history. **46 unique visuals.**
+- Every post targets the short-form channels: Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn.
+  LinkedIn stays skipped until its token; X needs API credits. Dev.to is article-only and Threads is
+  still blocked by Meta review.
+- Metrics sync ingests real Facebook, Instagram, Mastodon, Bluesky, X and Dev.to data where the
+  platform exposes it. The portal shows `—` for unavailable metrics instead of fake zeros.
 
 Portal deployment is documented in [`portal/deploy/README.md`](portal/deploy/README.md).
 Build and deploy from `portal/`:

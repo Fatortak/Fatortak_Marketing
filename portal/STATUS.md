@@ -36,15 +36,15 @@ The new Facebook Page and Instagram account are both connected to the portal and
 | Facebook Page | Fatortak Software Solutions | Connected and verified with a **non-expiring Page token**. App secret and long-lived user token stored privately. |
 | Instagram | @fatortak.software | Connected and verified with the durable Fatortak Automation system-user token. Profile image set. |
 | LinkedIn | Fatortak company page | App and company page verified. Community Management API Development Tier access request submitted 2 Nov 2026; awaiting Microsoft Vetting Services/LinkedIn review. Portal URN `urn:li:organization:109974822` and version `202601` are prefilled; token pending. |
-| Threads | @fatortak.software | OAuth token generated and saved, but the Threads API is blocked pending App Review or a Threads Tester. Portal test currently fails. |
+| Threads | @fatortak.software | OAuth token expired 1 Nov 2026; re-authentication needed. Publishing is still blocked by Meta App Review/tester access. Portal test fails. |
 | Mastodon | @fatortaksoftware@mastodon.social | Connected and verified. Avatar, header and bio set. |
-| Telegram, Discord, Dev.to | — | Need one-time tokens/webhooks. |
+| Telegram, Discord, Dev.to | — | Telegram and Discord need one-time tokens/webhooks. Dev.to is connected but article-only; it is not in the daily 10-post queue. |
 | TikTok, YouTube | — | Need platform audit/OAuth and video assets. |
 | Reddit, Hacker News, Product Hunt | — | Monitoring only; unattended posting violates their rules. |
 
 ## Publishing safety
 
-The portal is deliberately still in **dry run** with live publishing locked and the scheduler off. This prevents partial posts while the Facebook Page token is short-lived and X has no credits.
+The portal is **live and armed**: dry run is off and the scheduler publishes due posts. X credits, LinkedIn credentials and Threads access are the remaining channel limitations.
 
 ### Facebook Page token refresh
 
@@ -70,7 +70,7 @@ new Page token.
 
 ### Threads blocker
 
-The Threads OAuth flow completed and the token was saved, but `graph.threads.net` returns:
+The Threads OAuth flow completed, but the saved token expired on 1 November 2026. Re-authenticate before retrying; `graph.threads.net` still returns:
 “This action requires the threads_basic permission. You must submit for app review, or your
 user must be in the list of Threads testers.” Adding the Threads profile as a tester failed
 because it has no Facebook Developer Account; the app roles input expects a valid Facebook
@@ -94,17 +94,20 @@ backed by a Facebook Developer Account as a tester.
   role. The Page-side management works; the IG-side Business Suite home may still ask for
   access. This does not affect the link or API publishing.
 
-To enable live automatic publishing after fixing the connections:
+Live publishing is already enabled (`MARKETING_LIVE=true`, `PORTAL_AUTO_PUBLISH=true` and dry run off). To pause, turn **Dry run** on in Settings.
 
-```powershell
-$env:MARKETING_LIVE="true"
-$env:PORTAL_AUTO_PUBLISH="true"
-npm start
-```
+The queue now holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00–21:30 Cairo) from 4 November to 3 December 2026, plus the published history. Every post has an image; the library uses **46 unique visuals**. All new posts target Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn. Instagram gets JPEG publish variants; X still needs credits; LinkedIn stays skipped until its token; Dev.to is article-only and Threads is blocked.
 
-Then turn off dry run in **Settings**. The scheduler will publish due posts, skip channels that are unconfigured or whose last connection test failed, and record per-channel results.
+## Metrics and reports
 
-The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 November to 1 December 2026. Every post has an image; the library now has **37 unique visuals** — 30 new `social-v2` cards plus the original social cards. Repeated hooks were varied and the queue includes a full pricing post (Starter 300 / Professional 600 / Enterprise 900 EGP/month).
+- `POST /api/metrics/sync` (also scheduled every 6 hours) ingests real data:
+  - Facebook: followers plus post reach, views, reactions and clicks from portal-published posts.
+  - Instagram: followers, reach, views and likes/comments.
+  - Mastodon and Bluesky: followers, posts and engagement from recent posts.
+  - X: followers and post count; reach/engagement are unavailable without paid owned-read access.
+  - Dev.to: article reactions, comments and views when published articles exist.
+- Analytics and Reports show `—` when the platform does not expose a metric; they no longer show fake zeros.
+- The same sync re-tests configured channels and refreshes the **verified / test stale** state.
 
 ## Deployment
 
@@ -122,10 +125,10 @@ The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 Novemb
 
 ## Current publishing state
 
-- The queue is **90 posts at 3 per day** (09:00, 13:00, 19:00 Cairo) from 2 November to 1 December 2026.
-- Every post has an image; the library has **37 unique visuals** — 30 new `social-v2` cards plus the original social cards.
-- The production portal is **live and armed**: dry run is off, `MARKETING_LIVE=true` and `PORTAL_AUTO_PUBLISH=true`. The first scheduled post is **2 November 2026 at 09:00 Cairo**.
-- X posting still needs API credits; Threads API is still blocked by Meta App Review/tester access. The scheduler records those results per channel and continues with the channels that are ready.
+- The queue is **306 posts** total: 6 history/published posts plus **300 new posts at 10 per day** (5 Arabic + 5 English) from 4 November to 3 December 2026.
+- Every new post has an image; the library uses **46 unique visuals**. Instagram receives JPEG publish variants.
+- The first new post is **4 November 2026 at 08:00 Cairo**; today's 19:00 post is the last old-queue post.
+- X still needs API credits; LinkedIn waits for its token; Threads is blocked/expired; Dev.to is article-only. The scheduler records every channel result and the status modal shows it.
 - Keep the Node service warm. The server-side keepalive pings every 5 minutes and survives app-pool recycles; the GitHub Actions workflow every 10 minutes is the fallback. If both are idle, the next portal request starts Node and the scheduler catches overdue posts on startup.
 
 ## LinkedIn approval — 2 November 2026

@@ -27,6 +27,15 @@ npm start
 
 Open <http://127.0.0.1:4180>.
 
+## Daily 10-post queue
+
+`node scripts/build-daily-10.mjs <input-portal.json> <output-portal.json>` builds 300 posts at 10/day
+(5 Arabic + 5 English, 08:00–21:30 Cairo) from 4 November to 3 December 2026. It preserves posts before
+4 November, assigns JPEG media, targets Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn, and
+validates server limits, banned claims, pricing and media.
+
+The legacy `scripts/rebuild-queue.mjs` remains for the original 3/day queue.
+
 The portal seeds itself from `content/queue.json` on first run. State is stored in `portal/data/portal.json`, which is gitignored.
 
 ## What the portal does

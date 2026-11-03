@@ -19,6 +19,7 @@ import {
   connectionState,
   channelMode,
   testConnection,
+  oauth1Header,
 } from "./adapters.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -763,26 +764,46 @@ function postSummary() {
 }
 
 function queueSnapshot() {
-  try {
-    const queue = loadQueue();
-    const state = loadState();
-    const stats = queueStats(queue, state);
-    const next = queue.items
-      .filter((item) => !state.posted?.[item.id])
-      .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))[0];
-    return { ...stats, next: next ? { id: next.id, date: next.date, time: next.time } : null };
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return { total: 0, posted: 0, upcoming: 0, overdue: 0, remaining: 0, next: null, available: false };
-    }
-    return { total: 0, posted: 0, upcoming: 0, overdue: 0, remaining: 0, next: null, error: error.message };
-  }
+  const now = nowInTimezone(DATA.settings.timezone || "Africa/Cairo");
+  const scheduled = DATA.posts.filter((post) => ["scheduled", "approved"].includes(post.status));
+  const posted = DATA.posts.filter((post) => post.status === "published").length;
+  const next = scheduled
+    .slice()
+    .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))[0];
+  return {
+    total: DATA.posts.length,
+    posted,
+    upcoming: scheduled.length,
+    overdue: scheduled.filter((post) => String(post.scheduledAt) < now).length,
+    remaining: DATA.posts.length - posted,
+    next: next
+      ? { id: next.id, date: String(next.scheduledAt).slice(0, 10), time: String(next.scheduledAt).slice(11, 16) }
+      : null,
+  };
 }
 
 function metricsTotals() {
-  const totals = { followers: 0, reach: 0, engagement: 0, clicks: 0, posts: 0 };
+  const totals = {
+    followers: 0,
+    reach: 0,
+    engagement: 0,
+    clicks: 0,
+    posts: 0,
+    channels: 0,
+    available: { followers: 0, reach: 0, engagement: 0, clicks: 0, posts: 0 },
+  };
   for (const value of Object.values(DATA.metrics)) {
-    for (const key of Object.keys(totals)) totals[key] += Number(value[key] || 0);
+    if (!value?.lastUpdated) continue;
+    totals.channels += 1;
+    for (const key of ["followers", "reach", "engagement", "clicks", "posts"]) {
+      const raw = value[key];
+      if (raw === null || raw === undefined || raw === "") continue;
+      const number = Number(raw);
+      if (Number.isFinite(number)) {
+        totals[key] += number;
+        totals.available[key] += 1;
+      }
+    }
   }
   return totals;
 }
@@ -891,11 +912,15 @@ async function syncGithub() {
   const data = await response.json();
   DATA.metrics.github = {
     ...DATA.metrics.github,
-    followers: data.stargazers_count || 0,
-    engagement: data.forks_count || 0,
-    posts: data.open_issues_count || 0,
+    followers: null,
+    reach: null,
+    engagement: null,
+    clicks: null,
+    posts: null,
     lastUpdated: new Date().toISOString(),
-    note: `${data.full_name} · stars / forks / open issues`,
+    note: `${data.full_name} · ${data.stargazers_count || 0} stars · ${data.forks_count || 0} forks · ${
+      data.open_issues_count || 0
+    } open issues`,
   };
   return { channel: "github", stars: data.stargazers_count || 0, forks: data.forks_count || 0 };
 }
@@ -908,12 +933,32 @@ async function syncBluesky() {
   });
   if (!response.ok) throw new Error(`Bluesky HTTP ${response.status}`);
   const data = await response.json();
+  let engagement = null;
+  try {
+    const feedResponse = await fetch(
+      `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(handle)}&limit=30`,
+      { signal: AbortSignal.timeout(12000) }
+    );
+    if (feedResponse.ok) {
+      const feed = await feedResponse.json();
+      engagement = (feed.feed || []).reduce(
+        (sum, item) =>
+          sum + Number(item.post?.likeCount || 0) + Number(item.post?.repostCount || 0) + Number(item.post?.replyCount || 0),
+        0
+      );
+    }
+  } catch {
+    engagement = null;
+  }
   DATA.metrics.bluesky = {
     ...DATA.metrics.bluesky,
     followers: data.followersCount || 0,
+    reach: null,
+    engagement,
+    clicks: null,
     posts: data.postsCount || 0,
     lastUpdated: new Date().toISOString(),
-    note: `@${handle}`,
+    note: `@${handle} · engagement from the latest 30 posts`,
   };
   return { channel: "bluesky", followers: data.followersCount || 0 };
 }
@@ -927,33 +972,286 @@ async function syncMastodon() {
   });
   if (!response.ok) throw new Error(`Mastodon HTTP ${response.status}`);
   const data = await response.json();
+  let engagement = null;
+  try {
+    const statusesResponse = await fetch(
+      `${instance.replace(/\/$/, "")}/api/v1/accounts/${data.id}/statuses?limit=20`,
+      { signal: AbortSignal.timeout(12000) }
+    );
+    if (statusesResponse.ok) {
+      const statuses = await statusesResponse.json();
+      engagement = (statuses || []).reduce(
+        (sum, status) =>
+          sum + Number(status.favourites_count || 0) + Number(status.reblogs_count || 0) + Number(status.replies_count || 0),
+        0
+      );
+    }
+  } catch {
+    engagement = null;
+  }
   DATA.metrics.mastodon = {
     ...DATA.metrics.mastodon,
     followers: data.followers_count || 0,
+    reach: null,
+    engagement,
+    clicks: null,
     posts: data.statuses_count || 0,
     lastUpdated: new Date().toISOString(),
-    note: `@${account}`,
+    note: `@${account} · engagement from the latest 20 posts`,
   };
   return { channel: "mastodon", followers: data.followers_count || 0 };
+}
+
+function insightTotal(data, name) {
+  const item = (data?.data || []).find((entry) => entry.name === name);
+  if (!item) return null;
+  if (item.total_value && typeof item.total_value.value === "number") return item.total_value.value;
+  if (!Array.isArray(item.values)) return null;
+  return item.values.reduce((sum, entry) => sum + Number(entry.value || 0), 0);
+}
+
+function insightNumeric(data, name) {
+  const item = (data?.data || []).find((entry) => entry.name === name);
+  if (!item || !Array.isArray(item.values) || !item.values.length) return null;
+  const value = item.values[0]?.value;
+  if (typeof value === "number") return value;
+  if (value && typeof value === "object") {
+    return Object.values(value).reduce((sum, entry) => sum + Number(entry || 0), 0);
+  }
+  return null;
+}
+
+async function graphGet(pathname, params, token) {
+  const url = new URL(`https://graph.facebook.com/v21.0/${String(pathname).replace(/^\//, "")}`);
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.error) throw new Error(data.error?.message || `Graph HTTP ${response.status}`);
+  return data;
+}
+
+async function syncFacebook() {
+  const pageId = env("FACEBOOK_PAGE_ID");
+  const token = env("FACEBOOK_PAGE_ACCESS_TOKEN");
+  if (!pageId || !token) return null;
+  const profile = await graphGet(pageId, { fields: "name,followers_count,fan_count" }, token);
+  const postIds = [
+    ...new Set(
+      DATA.posts.flatMap((post) =>
+        (post.results || [])
+          .filter((result) => result.channel === "facebook" && result.ok && result.id)
+          .map((result) => String(result.id))
+      )
+    ),
+  ];
+  let reach = null;
+  let views = null;
+  let reactions = 0;
+  let clicks = 0;
+  let counted = 0;
+  const notes = [];
+  for (const postId of postIds.slice(0, 20)) {
+    try {
+      const insights = await graphGet(
+        `${postId}/insights`,
+        { metric: "post_reactions_by_type_total,post_clicks,post_media_view,post_total_media_view_unique" },
+        token
+      );
+      reactions += insightNumeric(insights, "post_reactions_by_type_total") || 0;
+      clicks += insightNumeric(insights, "post_clicks") || 0;
+      views = (views || 0) + (insightNumeric(insights, "post_media_view") || 0);
+      reach = (reach || 0) + (insightNumeric(insights, "post_total_media_view_unique") || 0);
+      counted += 1;
+    } catch (error) {
+      notes.push(`post insights: ${error.message}`);
+    }
+  }
+  DATA.metrics.facebook = {
+    followers: Number(profile.followers_count ?? profile.fan_count ?? 0),
+    reach: counted ? reach : null,
+    engagement: counted ? reactions + clicks : null,
+    clicks: counted ? clicks : null,
+    posts: postIds.length,
+    lastUpdated: new Date().toISOString(),
+    note: `Page: ${profile.name || pageId} · portaled posts${views !== null ? ` · views: ${views}` : ""}${
+      notes.length ? ` · ${notes[0]}` : ""
+    }`,
+  };
+  return {
+    channel: "facebook",
+    followers: DATA.metrics.facebook.followers,
+    reach: DATA.metrics.facebook.reach,
+    engagement: DATA.metrics.facebook.engagement,
+  };
+}
+
+async function syncInstagram() {
+  const userId = env("INSTAGRAM_USER_ID");
+  const token = env("INSTAGRAM_ACCESS_TOKEN");
+  if (!userId || !token) return null;
+  const profile = await graphGet(userId, { fields: "username,followers_count,follows_count,media_count" }, token);
+  let reach = null;
+  let views = null;
+  let engagement = null;
+  const notes = [];
+  try {
+    const insights = await graphGet(
+      `${userId}/insights`,
+      { metric: "reach,views,profile_views", period: "day", metric_type: "total_value" },
+      token
+    );
+    reach = insightTotal(insights, "reach");
+    views = insightTotal(insights, "views");
+  } catch (error) {
+    notes.push(`insights: ${error.message}`);
+    try {
+      const insights = await graphGet(`${userId}/insights`, { metric: "impressions,reach", period: "day" }, token);
+      reach = insightTotal(insights, "reach");
+      views = insightTotal(insights, "impressions");
+    } catch (fallbackError) {
+      notes.push(`fallback: ${fallbackError.message}`);
+    }
+  }
+  try {
+    const media = await graphGet(`${userId}/media`, { fields: "like_count,comments_count", limit: "50" }, token);
+    engagement = (media.data || []).reduce(
+      (sum, item) => sum + Number(item.like_count || 0) + Number(item.comments_count || 0),
+      0
+    );
+  } catch (error) {
+    notes.push(`media: ${error.message}`);
+  }
+  DATA.metrics.instagram = {
+    followers: Number(profile.followers_count || 0),
+    reach,
+    engagement,
+    clicks: null,
+    posts: Number(profile.media_count || 0),
+    lastUpdated: new Date().toISOString(),
+    note: `@${profile.username || userId}${views !== null ? ` · views: ${views}` : ""}${
+      notes.length ? ` · ${notes[0]}` : ""
+    }`,
+  };
+  return { channel: "instagram", followers: DATA.metrics.instagram.followers, reach, engagement };
+}
+
+async function syncX() {
+  const token = env("X_ACCESS_TOKEN");
+  const oauth1Ready = Boolean(
+    env("X_API_KEY") &&
+      env("X_API_SECRET") &&
+      (env("X_OAUTH1_ACCESS_TOKEN") || (env("X_ACCESS_TOKEN") && env("X_ACCESS_TOKEN_SECRET"))) &&
+      (env("X_OAUTH1_ACCESS_TOKEN_SECRET") || env("X_ACCESS_TOKEN_SECRET"))
+  );
+  if (!token && !oauth1Ready) return null;
+  const url = "https://api.x.com/2/users/me?user.fields=public_metrics";
+  const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: oauth1Header("GET", url) };
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.errors) throw new Error(data.errors?.[0]?.message || `X HTTP ${response.status}`);
+  const publicMetrics = data.data?.public_metrics || {};
+  DATA.metrics.x = {
+    followers: Number(publicMetrics.followers_count || 0),
+    reach: null,
+    engagement: null,
+    clicks: null,
+    posts: Number(publicMetrics.tweet_count || 0),
+    lastUpdated: new Date().toISOString(),
+    note: `@${data.data?.username || "connected"} · reach/engagement need paid owned-read access`,
+  };
+  return { channel: "x", followers: DATA.metrics.x.followers };
+}
+
+async function syncDevTo() {
+  const key = env("DEVTO_API_KEY");
+  if (!key) return null;
+  const headers = { "api-key": key };
+  const profileResponse = await fetch("https://dev.to/api/users/me", {
+    headers,
+    signal: AbortSignal.timeout(12000),
+  });
+  const profile = await profileResponse.json().catch(() => ({}));
+  if (!profileResponse.ok) throw new Error(`Dev.to HTTP ${profileResponse.status}`);
+  const articlesResponse = await fetch("https://dev.to/api/articles/me/published?per_page=100", {
+    headers,
+    signal: AbortSignal.timeout(15000),
+  });
+  const articles = articlesResponse.ok ? await articlesResponse.json().catch(() => []) : [];
+  const engagement = (articles || []).reduce(
+    (sum, article) => sum + Number(article.public_reactions_count || 0) + Number(article.comments_count || 0),
+    0
+  );
+  const views = (articles || []).reduce(
+    (sum, article) => sum + (Number.isFinite(Number(article.page_views_count)) ? Number(article.page_views_count) : 0),
+    0
+  );
+  DATA.metrics.devto = {
+    followers: null,
+    reach: articles.length ? views : null,
+    engagement: articles.length ? engagement : null,
+    clicks: null,
+    posts: articles.length,
+    lastUpdated: new Date().toISOString(),
+    note: `@${profile.username || "fatortak"} · ${articles.length} published article${
+      articles.length === 1 ? "" : "s"
+    }${articles.length ? "" : " · no articles yet"}`,
+  };
+  return { channel: "devto", posts: articles.length };
 }
 
 async function syncMetrics() {
   const results = [];
   const warnings = [];
+  const tested = [];
   try { results.push(await syncGithub()); } catch (error) { warnings.push(`GitHub: ${error.message}`); }
-  try { const b = await syncBluesky(); if (b) results.push(b); } catch (error) { warnings.push(`Bluesky: ${error.message}`); }
-  try { const m = await syncMastodon(); if (m) results.push(m); } catch (error) { warnings.push(`Mastodon: ${error.message}`); }
-  const traffic = await getTraffic(true);
-  if (traffic.error) warnings.push(`Plausible: ${traffic.error}`);
+  try { const value = await syncBluesky(); if (value) results.push(value); } catch (error) { warnings.push(`Bluesky: ${error.message}`); }
+  try { const value = await syncMastodon(); if (value) results.push(value); } catch (error) { warnings.push(`Mastodon: ${error.message}`); }
+  try { const value = await syncFacebook(); if (value) results.push(value); } catch (error) { warnings.push(`Facebook: ${error.message}`); }
+  try { const value = await syncInstagram(); if (value) results.push(value); } catch (error) { warnings.push(`Instagram: ${error.message}`); }
+  try { const value = await syncX(); if (value) results.push(value); } catch (error) { warnings.push(`X: ${error.message}`); }
+  try { const value = await syncDevTo(); if (value) results.push(value); } catch (error) { warnings.push(`Dev.to: ${error.message}`); }
   for (const channel of CHANNEL_DEFS) {
-    if (["x", "linkedin", "facebook", "instagram", "threads", "tiktok", "youtube", "telegram", "discord", "devto"].includes(channel.key)) {
-      const info = channelInfo(channel.key);
-      if (!info.configured) warnings.push(`${channel.label}: connect API credentials to ingest metrics.`);
+    if (!channelInfo(channel.key).configured) continue;
+    try {
+      const check = await testConnection(channel.key);
+      DATA.connectionChecks[channel.key] = {
+        at: new Date().toISOString(),
+        ok: Boolean(check.ok),
+        detail: String(check.detail || ""),
+      };
+      tested.push({ channel: channel.key, ok: Boolean(check.ok) });
+    } catch (error) {
+      DATA.connectionChecks[channel.key] = {
+        at: new Date().toISOString(),
+        ok: false,
+        detail: error.message,
+      };
+      tested.push({ channel: channel.key, ok: false });
+      warnings.push(`${channel.label} test: ${error.message}`);
     }
   }
-  addActivity(DATA, "metrics", `Metrics sync completed (${results.length} channel${results.length === 1 ? "" : "s"}).`);
+  const traffic = await getTraffic(true);
+  if (traffic.error) warnings.push(`Traffic: ${traffic.error}`);
+  for (const channel of CHANNEL_DEFS) {
+    if (
+      ["linkedin", "threads", "tiktok", "youtube", "telegram", "discord"].includes(channel.key) &&
+      !channelInfo(channel.key).configured
+    ) {
+      warnings.push(`${channel.label}: connect credentials to ingest metrics.`);
+    }
+  }
+  addActivity(
+    DATA,
+    "metrics",
+    `Metrics sync completed (${results.length} channel${results.length === 1 ? "" : "s"}, ${tested.length} connection test${tested.length === 1 ? "" : "s"}).`
+  );
   saveData();
-  return { synced: results, warnings, traffic };
+  return { synced: results, warnings, traffic, tested };
 }
 
 function validatePostInput(body, existing = null) {
@@ -1183,6 +1481,13 @@ function reportsSummary() {
   }
   const connected = channelSummary().filter((channel) => channel.configured);
   const blocked = DATA.posts.filter((post) => post.status === "blocked").length;
+  const totals = metricsTotals();
+  const unavailable = channelSummary()
+    .filter((channel) => !channel.metrics?.lastUpdated)
+    .map((channel) => ({
+      channel: channel.label,
+      note: channel.metrics?.note || (channel.configured ? "No metrics received yet." : "Channel is not configured."),
+    }));
   const recommendations = [];
   if (!siteLiveCache.value) recommendations.push("Deploy the landing page before publishing posts that use {{site}} links.");
   if (!connected.length) recommendations.push("Connect at least one posting API in the portal environment.");
@@ -1193,12 +1498,26 @@ function reportsSummary() {
   if (DATA.settings.mediaRequired && DATA.posts.some((post) => !post.mediaUrl)) {
     recommendations.push("Some posts have no image or video. Attach media before scheduling or publishing.");
   }
-  if (!DATA.metrics.github.lastUpdated) recommendations.push("Run a metrics sync to ingest GitHub and traffic data.");
+  if (!totals.channels) {
+    recommendations.push("No live channel metrics yet. Run Sync metrics and check each channel's API permissions.");
+  } else if (unavailable.length) {
+    recommendations.push(
+      `No live metrics yet for ${unavailable
+        .slice(0, 5)
+        .map((item) => item.channel)
+        .join(", ")}${unavailable.length > 5 ? ` and ${unavailable.length - 5} more` : ""}.`
+    );
+  }
   return {
     generatedAt: new Date().toISOString(),
     posts: postSummary(),
     channelCounts,
-    metrics: { totals: metricsTotals(), channels: DATA.metrics },
+    metrics: {
+      totals,
+      channels: DATA.metrics,
+      channelsWithData: totals.channels,
+      unavailable,
+    },
     connected: connected.map((channel) => channel.label),
     recommendations,
     latestReport: readLatestReport(),
@@ -1673,6 +1992,12 @@ async function schedulerTick() {
 
 setInterval(schedulerTick, 60_000);
 setTimeout(schedulerTick, 5_000);
+setInterval(() => {
+  syncMetrics().catch((error) => console.error(`Metrics sync failed: ${error.message}`));
+}, 6 * 60 * 60 * 1000);
+setTimeout(() => {
+  syncMetrics().catch((error) => console.error(`Initial metrics sync failed: ${error.message}`));
+}, 30_000);
 
 process.on("uncaughtException", (error) => {
   console.error(`Uncaught exception: ${error?.stack || error}`);

@@ -57,6 +57,12 @@
     return new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(n);
   }
 
+  function metricValue(value, lastUpdated) {
+    if (!lastUpdated || value === null || value === undefined || value === "") return "—";
+    const number = Number(value);
+    return Number.isFinite(number) ? fmtNumber(number) : "—";
+  }
+
   function fmtDate(value, withTime = true) {
     if (!value) return "—";
     const date = new Date(value);
@@ -302,9 +308,9 @@
               <td><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.profile || "No profile URL")}</span></div></div></td>
               <td><span class="chip ${channel.mode === "api" ? "purple" : channel.mode === "monitoring" ? "cyan" : "muted"}">${esc(channel.mode)}</span></td>
               <td>${channelStatusChip(channel)}</td>
-              <td>${fmtNumber(channel.metrics?.followers)}</td>
-              <td>${fmtNumber(channel.metrics?.engagement)}</td>
-              <td>${fmtNumber(channel.metrics?.clicks)}</td>
+              <td>${metricValue(channel.metrics?.followers, channel.metrics?.lastUpdated)}</td>
+              <td>${metricValue(channel.metrics?.engagement, channel.metrics?.lastUpdated)}</td>
+              <td>${metricValue(channel.metrics?.clicks, channel.metrics?.lastUpdated)}</td>
               <td>${channel.metrics?.lastUpdated ? fmtDate(channel.metrics.lastUpdated, false) : "—"}</td>
               <td class="row-actions">${channel.profile ? `<a class="icon-btn" href="${esc(channel.profile)}" target="_blank" rel="noopener" title="Open profile"><svg><use href="#i-external"></use></svg></a>` : ""}</td>
             </tr>
@@ -456,7 +462,7 @@ OCR invoice capture is built into Fatortak.
             <div class="chips" style="margin-bottom:2px"><span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>${channel.verified ? `<span class="chip ${verifiedFresh(channel) ? "lime" : channel.verified.ok ? "amber" : "rose"}">${verifiedFresh(channel) ? "test ok" : channel.verified.ok ? "test stale" : "test failed"}</span>` : ""}</div>
             ${channel.verified?.detail ? `<p class="channel-verify-detail">${esc(channel.verified.detail)}</p>` : ""}
             <div class="env-list">${(channel.env || []).map((name) => `<code>${esc(name)}</code>`).join("") || `<code>no API credentials</code>`}</div>
-            <div class="channel-metrics"><div><span>Followers</span><strong>${fmtNumber(channel.metrics?.followers)}</strong></div><div><span>Engagement</span><strong>${fmtNumber(channel.metrics?.engagement)}</strong></div><div><span>Clicks</span><strong>${fmtNumber(channel.metrics?.clicks)}</strong></div></div>
+            <div class="channel-metrics"><div><span>Followers</span><strong>${metricValue(channel.metrics?.followers, channel.metrics?.lastUpdated)}</strong></div><div><span>Engagement</span><strong>${metricValue(channel.metrics?.engagement, channel.metrics?.lastUpdated)}</strong></div><div><span>Clicks</span><strong>${metricValue(channel.metrics?.clicks, channel.metrics?.lastUpdated)}</strong></div></div>
             <div class="channel-actions">
               ${channel.profile ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.profile)}" target="_blank" rel="noopener">Profile <svg><use href="#i-external"></use></svg></a>` : ""}
               <button class="btn ${channel.mode === "api" ? "btn-primary" : "btn-outline"} btn-sm" data-connect="${esc(channel.key)}">${channel.mode === "api" ? (channel.configured ? "Manage" : "Connect") : "Why blocked"}</button>
@@ -478,16 +484,16 @@ OCR invoice capture is built into Fatortak.
     $("#view").innerHTML = `
       <div class="page-head"><div><span class="eyebrow">Analytics</span><h2>Channel performance</h2><p>Metrics are ingestion-only. No manual counters: missing data means the API is not connected.</p></div><div class="page-head-actions"><button class="btn btn-primary" data-sync-metrics><svg><use href="#i-refresh"></use></svg>Sync metrics</button><a class="btn btn-ghost" href="${API_BASE}/api/reports/export?format=csv">Export CSV</a></div></div>
       <div class="grid metric-grid">
-        <div class="card metric-card"><span>Followers</span><strong>${fmtNumber(totals.followers)}</strong></div>
-        <div class="card metric-card"><span>Reach</span><strong>${fmtNumber(totals.reach)}</strong></div>
-        <div class="card metric-card"><span>Engagement</span><strong>${fmtNumber(totals.engagement)}</strong></div>
-        <div class="card metric-card"><span>Clicks</span><strong>${fmtNumber(totals.clicks)}</strong></div>
+        <div class="card metric-card"><span>Followers</span><strong>${totals.channels ? fmtNumber(totals.followers) : "—"}</strong></div>
+        <div class="card metric-card"><span>Reach</span><strong>${totals.available?.reach ? fmtNumber(totals.reach) : "—"}</strong></div>
+        <div class="card metric-card"><span>Engagement</span><strong>${totals.available?.engagement ? fmtNumber(totals.engagement) : "—"}</strong></div>
+        <div class="card metric-card"><span>Clicks</span><strong>${totals.available?.clicks ? fmtNumber(totals.clicks) : "—"}</strong></div>
       </div>
       <div class="section two-col">
         <div class="card card-pad">
           <div class="section-head"><h3>Audience by channel</h3><span>followers</span></div>
           <div class="bar-chart">
-            ${channels.map((channel) => `<div class="bar-row"><label>${esc(channel.label)}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round(((metrics[channel.key]?.followers || 0) / maxFollowers) * 100)}%"></div></div><strong>${fmtNumber(metrics[channel.key]?.followers)}</strong></div>`).join("")}
+            ${channels.map((channel) => { const followers = Number(metrics[channel.key]?.followers || 0); return `<div class="bar-row"><label>${esc(channel.label)}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((followers / maxFollowers) * 100)}%"></div></div><strong>${metricValue(metrics[channel.key]?.followers, metrics[channel.key]?.lastUpdated)}</strong></div>`; }).join("")}
           </div>
         </div>
         <div class="card card-pad">
@@ -496,7 +502,7 @@ OCR invoice capture is built into Fatortak.
         </div>
       </div>
       <div class="card section"><div class="table-wrap"><table><thead><tr><th>Channel</th><th>Status</th><th>Followers</th><th>Reach</th><th>Engagement</th><th>Clicks</th><th>Posts</th><th>Last sync</th></tr></thead><tbody>
-        ${channels.map((channel) => `<tr><td><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div></td><td><span class="chip ${channel.configured ? "lime" : channel.mode === "restricted" ? "muted" : "amber"}">${channel.configured ? "API" : channel.mode}</span></td><td>${fmtNumber(metrics[channel.key]?.followers)}</td><td>${fmtNumber(metrics[channel.key]?.reach)}</td><td>${fmtNumber(metrics[channel.key]?.engagement)}</td><td>${fmtNumber(metrics[channel.key]?.clicks)}</td><td>${fmtNumber(metrics[channel.key]?.posts)}</td><td>${metrics[channel.key]?.lastUpdated ? fmtDate(metrics[channel.key].lastUpdated, false) : "—"}</td></tr>`).join("")}
+        ${channels.map((channel) => `<tr><td><div class="channel-name">${channelIcon(channel.key, channel.label)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div></td><td><span class="chip ${channel.configured ? "lime" : channel.mode === "restricted" ? "muted" : "amber"}">${channel.configured ? "API" : channel.mode}</span></td><td>${metricValue(metrics[channel.key]?.followers, metrics[channel.key]?.lastUpdated)}</td><td>${metricValue(metrics[channel.key]?.reach, metrics[channel.key]?.lastUpdated)}</td><td>${metricValue(metrics[channel.key]?.engagement, metrics[channel.key]?.lastUpdated)}</td><td>${metricValue(metrics[channel.key]?.clicks, metrics[channel.key]?.lastUpdated)}</td><td>${metricValue(metrics[channel.key]?.posts, metrics[channel.key]?.lastUpdated)}</td><td>${metrics[channel.key]?.lastUpdated ? fmtDate(metrics[channel.key].lastUpdated, false) : "—"}</td></tr>`).join("")}
       </tbody></table></div></div>
     `;
   }
@@ -513,7 +519,7 @@ OCR invoice capture is built into Fatortak.
       <div class="grid kpis">
         ${kpi("Published · 30d", fmtNumber(posts.published30), `${fmtNumber(posts.published)} total`)}
         ${kpi("Scheduled", fmtNumber(posts.scheduled), `${fmtNumber(posts.total)} in portal`)}
-        ${kpi("Followers", fmtNumber(metrics.followers), `${fmtNumber(metrics.engagement)} engagements`)}
+        ${kpi("Followers", metrics.channels ? fmtNumber(metrics.followers) : "—", metrics.available?.engagement ? `${fmtNumber(metrics.engagement)} engagements` : "no engagement data")}
         ${kpi("Landing visitors", traffic.configured ? fmtNumber(traffic.visitors) : "—", traffic.configured ? (traffic.provider === "first-party" ? "First-party · 30 days" : "Plausible · 30 days") : "connect analytics")}
       </div>
       <div class="section report-grid">
@@ -525,6 +531,13 @@ OCR invoice capture is built into Fatortak.
           <div class="section-head"><h3>Posts by channel</h3><span>${fmtNumber(posts.total)} posts</span></div>
           <div class="bar-chart">${Object.entries(channelCounts).sort((a, b) => b[1] - a[1]).map(([key, count]) => `<div class="bar-row"><label>${esc(channelLabel(key))}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((count / maxChannel) * 100)}%"></div></div><strong>${fmtNumber(count)}</strong></div>`).join("")}</div>
         </div>
+      </div>
+      <div class="card card-pad section">
+        <div class="section-head"><h3>Live channel data</h3><span>${fmtNumber(metrics.channels || 0)} channels with data</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Channel</th><th>Followers</th><th>Reach</th><th>Engagement</th><th>Clicks</th><th>Last sync</th></tr></thead><tbody>
+          ${Object.entries(report.metrics?.channels || {}).filter(([, value]) => value?.lastUpdated).map(([key, value]) => `<tr><td>${esc(channelLabel(key))}</td><td>${metricValue(value.followers, value.lastUpdated)}</td><td>${metricValue(value.reach, value.lastUpdated)}</td><td>${metricValue(value.engagement, value.lastUpdated)}</td><td>${metricValue(value.clicks, value.lastUpdated)}</td><td>${fmtDate(value.lastUpdated, false)}</td></tr>`).join("") || `<tr><td colspan="6" style="color:var(--muted)">No live channel data yet. Run Sync metrics on Analytics.</td></tr>`}
+        </tbody></table></div>
+        ${report.metrics?.unavailable?.length ? `<p style="color:var(--muted-2);font-size:.7rem;line-height:1.6;margin-top:12px">No live data yet: ${report.metrics.unavailable.map((item) => esc(item.channel)).join(", ")}.</p>` : ""}
       </div>
       <div class="card card-pad section">
         <div class="section-head"><h3>Latest automation report</h3><span>${report.latestReport ? "marketing/reports" : "none yet"}</span></div>
