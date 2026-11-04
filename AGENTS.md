@@ -5,8 +5,10 @@ Two agents share this checkout (`main`). Read this before editing.
 ## Ownership
 
 - **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/public/*`, `portal/test-*.mjs`,
-  `portal/README.md`): Claude Code is editing these now** to add `channelMedia` / `storyMedia`
-  (your request). Please don't edit them until this line says they are free.
+  `portal/README.md`): free to edit again.** Claude Code added `channelMedia` / `storyMedia`:
+  `post.channelMedia = { instagram: {mediaUrl, mediaPublicUrl, mediaKind, mediaName, mediaAlt}, facebook: {...} }`
+  replaces the main media for those channels only; `post.storyMedia` (9:16) is used by Story
+  automations. The remaining 48 feed images still need 4:5 and 9:16 renders.
 - Content, queue builders (`portal/scripts/*`), landing assets and deployment: yours (the content agent's).
   Claude Code will not touch `portal/scripts/*`.
 

@@ -215,6 +215,74 @@ test("video posts send the poster to X/LinkedIn and keep video elsewhere", async
   assert.equal(toImage.data.post.posterUrl, "", "switching to an image clears the video poster");
 });
 
+test("per-channel media and story media reach the right channels", async () => {
+  const bad = await api("/api/posts", {
+    method: "POST",
+    body: { content: "Bad variant", channels: ["instagram"], channelMedia: { instagram: { mediaUrl: "ftp://nope/x.jpg" } }, ...media },
+  });
+  assert.equal(bad.status, 400);
+
+  const created = await api("/api/posts", {
+    method: "POST",
+    body: {
+      content: "Feed sizes",
+      channels: ["instagram", "facebook", "x"],
+      tags: ["launch-sizes"],
+      ...media,
+      channelMedia: {
+        instagram: { url: "https://cdn.example/card-4x5.jpg", name: "card-4x5.jpg" },
+        facebook: { mediaUrl: "https://cdn.example/card-4x5.jpg", mediaName: "card-4x5.jpg" },
+        bluesky: { mediaUrl: "https://cdn.example/ignored.jpg" },
+      },
+      storyMedia: { mediaUrl: "https://cdn.example/card-9x16.jpg", mediaName: "card-9x16.jpg" },
+    },
+  });
+  assert.equal(created.status, 201, created.text);
+  const post = created.data.post;
+  assert.deepEqual(Object.keys(post.channelMedia).sort(), ["facebook", "instagram"], "only targeted channels keep a variant");
+  assert.equal(post.channelMedia.instagram.mediaPublicUrl, "https://cdn.example/card-4x5.jpg");
+  assert.equal(post.channelMedia.instagram.mediaKind, "image");
+  assert.equal(post.storyMedia.mediaName, "card-9x16.jpg");
+
+  const dry = await api(`/api/posts/${post.id}/publish`, { method: "POST", body: { dryRun: true } });
+  const byChannel = Object.fromEntries(dry.data.result.results.map((result) => [result.channel, result]));
+  assert.equal(byChannel.instagram.mediaName, "card-4x5.jpg");
+  assert.equal(byChannel.instagram.mediaVariant, "channel");
+  assert.equal(byChannel.x.mediaName, "dashboard.png", "other channels keep the main media");
+  assert.equal(byChannel.instagram.mediaNote, undefined, "a per-channel image is not mistaken for a video cover");
+
+  const full = await api(`/api/posts/${post.id}`);
+  const previews = Object.fromEntries(full.data.preview.map((item) => [item.channel, item]));
+  assert.equal(previews.instagram.media.custom, true);
+  assert.equal(previews.instagram.media.url, "https://cdn.example/card-4x5.jpg");
+  assert.equal(previews.x.media.custom, false);
+
+  const rule = await api("/api/automations", {
+    method: "POST",
+    body: {
+      name: "Sizes story",
+      trigger: { event: "published", minutes: 0 },
+      filter: { tags: ["launch-sizes"] },
+      actions: [
+        { type: "story", channels: ["facebook"], media: "post" },
+        { type: "post", channels: ["instagram", "x"], media: "post", text: "Out now: {{title}}" },
+      ],
+    },
+  });
+  const tested = await api(`/api/automations/${rule.data.automation.id}/test`, { method: "POST", body: { postId: post.id } });
+  const outcomes = tested.data.outcomes;
+  assert.equal(outcomes.find((o) => o.type === "story").mediaName, "card-9x16.jpg", "stories use the 9:16 story media");
+  assert.equal(outcomes.find((o) => o.type === "post" && o.channel === "instagram").mediaName, "card-4x5.jpg");
+  assert.equal(outcomes.find((o) => o.type === "post" && o.channel === "x").mediaName, "dashboard.png");
+  await api(`/api/automations/${rule.data.automation.id}`, { method: "DELETE" });
+
+  const cleared = await api(`/api/posts/${post.id}`, { method: "PUT", body: { storyMedia: null, channelMedia: { instagram: post.channelMedia.instagram } } });
+  assert.equal(cleared.data.post.storyMedia, null);
+  assert.deepEqual(Object.keys(cleared.data.post.channelMedia), ["instagram"]);
+  const kept = await api(`/api/posts/${post.id}`, { method: "PUT", body: { content: "Feed sizes v2" } });
+  assert.deepEqual(Object.keys(kept.data.post.channelMedia), ["instagram"], "edits that don't mention media keep the variants");
+});
+
 test("live publish is locked without MARKETING_LIVE", async () => {
   const created = await api("/api/posts", { method: "POST", body: { content: "Live?", channels: ["x"], ...media } });
   const live = await api(`/api/posts/${created.data.post.id}/publish`, { method: "POST", body: { dryRun: false } });

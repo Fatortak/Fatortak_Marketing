@@ -3522,6 +3522,10 @@
       overrides: Object.fromEntries(
         Object.entries(state.editor.overrides || {}).filter(([channel, text]) => text && text.trim() && $$("#channel-picker input:checked").some((input) => input.value === channel))
       ),
+      channelMedia: Object.fromEntries(
+        Object.entries(state.editor.channelMedia || {}).filter(([channel, variant]) => variant?.mediaUrl && $$("#channel-picker input:checked").some((input) => input.value === channel))
+      ),
+      storyMedia: state.editor.storyMedia || null,
     };
   }
 
@@ -3617,10 +3621,32 @@
     updateDirty();
   }
 
-  function openMediaPicker() {
+  function renderStoryMedia() {
+    const story = state.editor.storyMedia;
+    const thumb = $("#story-thumb");
+    thumb.innerHTML = story
+      ? story.mediaKind === "video"
+        ? `<video src="${esc(story.mediaUrl)}" muted playsinline preload="metadata"></video>`
+        : `<img src="${esc(story.mediaUrl)}" alt="" />`
+      : icon("story");
+    thumb.classList.toggle("is-empty", !story);
+    $("#story-hint").textContent = story
+      ? `${story.mediaName || "Story media"} · used by Story automations${/^https:\/\//i.test(story.mediaPublicUrl || "") ? "" : " (Instagram needs a public https URL)"}`
+      : "Optional. Story automations use it instead of the main image.";
+    $("#story-pick").textContent = story ? "Change" : "Choose";
+    $("#story-clear").hidden = !story;
+  }
+
+  // Variants are stored with the post's field names (mediaUrl, mediaPublicUrl…).
+  function mediaEntryToVariant(item) {
+    const media = mediaEntryToPostMedia(item);
+    return { mediaUrl: media.url, mediaPublicUrl: media.publicUrl, mediaKind: media.kind, mediaName: media.name, mediaAlt: media.alt };
+  }
+
+  function openMediaPicker(onPick = null, title = "Choose media") {
     const entries = allMediaEntries();
     openModal({
-      title: "Choose media",
+      title,
       wide: true,
       body: entries.length ? `<div class="media-grid">${entries.map((item, index) => `
         <button type="button" class="media-item" data-media-index="${index}">
@@ -3632,8 +3658,10 @@
       onOpen: () => {
         $$("[data-media-index]").forEach((button) =>
           button.addEventListener("click", () => {
-            setPostMedia(mediaEntryToPostMedia(entries[Number(button.dataset.mediaIndex)]));
+            const entry = entries[Number(button.dataset.mediaIndex)];
             finishModal(null);
+            if (typeof onPick === "function") onPick(entry);
+            else setPostMedia(mediaEntryToPostMedia(entry));
           })
         );
       },
@@ -3671,6 +3699,8 @@
     const source = { ...(post || {}), ...(prefill || {}) };
     editor.overrides = { ...(source.overrides || {}) };
     editor.openOverrides = new Set(Object.keys(editor.overrides));
+    editor.channelMedia = JSON.parse(JSON.stringify(source.channelMedia || {}));
+    editor.storyMedia = source.storyMedia ? { ...source.storyMedia } : null;
     editor.issues = [];
     editor.automations = [];
     $("#drawer-eyebrow").textContent = post?.id ? `Edit post · ${post.id}` : prefill?.title ? "New post from template" : "New post";
@@ -3695,6 +3725,7 @@
       : null;
     $("#post-media-alt").value = source.mediaAlt || "";
     setPostMedia(prefill?.media || existingMedia || (post?.id ? null : defaultMediaForPillar(source.pillar || "product")));
+    renderStoryMedia();
     applyLanguageDir();
     updateStatusHint();
     $("#post-delete").hidden = !post?.id;
@@ -3770,7 +3801,7 @@
     try {
       const data = await api("/api/preview", {
         method: "POST",
-        body: jsonBody({ id: $("#post-id").value || undefined, content: body.content, channels: body.channels, mediaUrl: body.mediaUrl, mediaKind: body.mediaKind, mediaPublicUrl: body.mediaPublicUrl, posterUrl: body.posterUrl, overrides: body.overrides, language: body.language }),
+        body: jsonBody({ id: $("#post-id").value || undefined, content: body.content, channels: body.channels, mediaUrl: body.mediaUrl, mediaKind: body.mediaKind, mediaPublicUrl: body.mediaPublicUrl, posterUrl: body.posterUrl, overrides: body.overrides, channelMedia: body.channelMedia, language: body.language }),
       });
       if (seq !== editor.previewSeq) return;
       editor.preview = data.channels || [];
@@ -3845,7 +3876,17 @@
             ${open ? `<div class="override-box"><textarea rows="5" data-override="${esc(item.channel)}" dir="${rtl ? "rtl" : "auto"}" placeholder="Write the ${esc(item.label)} version…">${esc(editor.overrides?.[item.channel] ?? $("#post-content").value)}</textarea>
               <div class="override-actions"><span class="field-hint">Placeholders like {{site}} work here too.</span><button type="button" class="link-btn" data-override-reset="${esc(item.channel)}">Use main copy</button></div></div>` : ""}
             <div class="preview-text" dir="${rtl ? "rtl" : "auto"}">${esc(item.text) || `<em class="muted">Empty</em>`}</div>
-            ${body.mediaUrl ? `<div class="preview-media">${body.mediaKind === "video" ? `${body.posterUrl ? `<img src="${esc(body.posterUrl)}" alt="" loading="lazy" />` : ""}<span class="thumb-video overlay">${icon("play")}</span>` : `<img src="${esc(body.mediaUrl)}" alt="" loading="lazy" />`}</div>` : ""}
+            ${(() => {
+              const variant = editor.channelMedia?.[item.channel];
+              const url = variant?.mediaUrl || body.mediaUrl;
+              const kind = variant?.mediaKind || body.mediaKind;
+              if (!url) return "";
+              const visual = kind === "video"
+                ? `${!variant && body.posterUrl ? `<img src="${esc(body.posterUrl)}" alt="" loading="lazy" />` : `<video src="${esc(url)}" muted playsinline preload="metadata"></video>`}<span class="thumb-video overlay">${icon("play")}</span>`
+                : `<img src="${esc(url)}" alt="" loading="lazy" />`;
+              return `<div class="preview-media ${variant ? "is-custom" : ""}">${visual}</div>
+                <div class="media-variant-row">${variant ? `<span class="chip purple" title="${esc(variant.mediaName || url)}">${icon("image")}own image · ${esc((variant.mediaName || "custom").slice(0, 28))}</span><button type="button" class="link-btn" data-variant-pick="${esc(item.channel)}">Change</button><button type="button" class="link-btn" data-variant-clear="${esc(item.channel)}">Use main image</button>` : `<span class="field-hint">Main image</span><button type="button" class="link-btn" data-variant-pick="${esc(item.channel)}">Use a different image here</button>`}</div>`;
+            })()}
             <footer>
               ${item.limit ? `<div class="limit-bar"><span style="width:${pct}%"></span></div><span class="limit-text">${fmtNumber(item.length)} / ${fmtNumber(item.limit)}</span>` : `<span class="limit-text">${fmtNumber(item.length)} chars</span>`}
             </footer>
@@ -4193,7 +4234,19 @@
         loadMedia().catch(() => {});
       }
     });
-    $("#media-library").addEventListener("click", openMediaPicker);
+    $("#media-library").addEventListener("click", () => openMediaPicker());
+    $("#story-pick").addEventListener("click", () =>
+      openMediaPicker((entry) => {
+        state.editor.storyMedia = mediaEntryToVariant(entry);
+        renderStoryMedia();
+        updateDirty();
+      }, "Story version (9:16)")
+    );
+    $("#story-clear").addEventListener("click", () => {
+      state.editor.storyMedia = null;
+      renderStoryMedia();
+      updateDirty();
+    });
     $("#media-clear").addEventListener("click", () => setPostMedia(null));
     $("#media-url-toggle").addEventListener("click", () => {
       $("#media-url-row").hidden = !$("#media-url-row").hidden;
@@ -4263,6 +4316,25 @@
       const restore = event.target.closest("[data-restore]");
       if (restore) restoreRevision(Number(restore.dataset.restore));
       if (event.target.closest("[data-side-status]") && state.editor.post?.id) showChannelStatus(state.editor.post.id);
+      const pickVariant = event.target.closest("[data-variant-pick]");
+      if (pickVariant) {
+        const channel = pickVariant.dataset.variantPick;
+        openMediaPicker((entry) => {
+          state.editor.channelMedia = { ...(state.editor.channelMedia || {}), [channel]: mediaEntryToVariant(entry) };
+          renderSidePanel();
+          schedulePreview(50);
+          updateDirty();
+        }, `Image for ${channelLabel(channel)}`);
+        return;
+      }
+      const clearVariant = event.target.closest("[data-variant-clear]");
+      if (clearVariant) {
+        delete state.editor.channelMedia[clearVariant.dataset.variantClear];
+        renderSidePanel();
+        schedulePreview(50);
+        updateDirty();
+        return;
+      }
       const toggle = event.target.closest("[data-override-toggle]");
       if (toggle) {
         const channel = toggle.dataset.overrideToggle;

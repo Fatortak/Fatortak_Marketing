@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#ffffff" />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="favicon.png" type="image/png" />
-  <link rel="stylesheet" href="styles.css?v=20261104-4" />
+  <link rel="stylesheet" href="styles.css?v=20261104-5" />
 </head>
 <body>
   <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -174,6 +174,13 @@
           <input type="hidden" id="post-media-name" />
           <input type="hidden" id="post-media-source" />
           <label class="field" style="margin-top:10px"><span>Alt text</span><input id="post-media-alt" maxlength="1000" placeholder="Describe the image for screen readers" /></label>
+          <div class="story-media-row">
+            <div class="story-thumb" id="story-thumb" aria-hidden="true"></div>
+            <div class="story-copy"><strong>Story version (9:16)</strong><span id="story-hint">Optional. Story automations use it instead of the main image.</span></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="story-pick">Choose</button>
+            <button type="button" class="link-btn" id="story-clear" hidden>Remove</button>
+          </div>
+          <p class="field-hint">Need a different size per channel (e.g. 4:5 for Instagram)? Use <strong>Use a different image here</strong> on that channel's preview card.</p>
         </section>
 
         <section class="form-section">
@@ -223,6 +230,6 @@
 
   <div class="menu" id="menu" role="menu" hidden></div>
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20261104-4"></script>
+  <script src="app.js?v=20261104-5"></script>
 </body>
 </html>

@@ -704,6 +704,8 @@ function revisionSnapshot(post) {
     posterName: post.posterName || "",
     notes: post.notes || "",
     overrides: { ...(post.overrides || {}) },
+    channelMedia: JSON.parse(JSON.stringify(post.channelMedia || {})),
+    storyMedia: post.storyMedia ? { ...post.storyMedia } : null,
   };
 }
 
@@ -1811,7 +1813,53 @@ function validatePostInput(body, existing = null) {
     })(),
     notes: String(body.notes ?? existing?.notes ?? "").slice(0, 4000),
     overrides: cleanOverrides(body.overrides ?? existing?.overrides, channels),
+    channelMedia: cleanChannelMedia(body.channelMedia ?? existing?.channelMedia, channels),
+    storyMedia: cleanMediaVariant("storyMedia" in body ? body.storyMedia : existing?.storyMedia, "Story media"),
     utm: body.utm || existing?.utm || null,
+  };
+}
+
+// A media variant: the same post, a different file (e.g. 4:5 for Instagram, 9:16 for Stories).
+// Accepts both the post field names (mediaUrl…) and the media-library names (url, publicUrl…).
+function cleanMediaVariant(raw, label) {
+  if (!raw || typeof raw !== "object") return null;
+  const mediaUrl = String(raw.mediaUrl || raw.url || "").trim();
+  if (!mediaUrl) return null;
+  const portalPath = mediaUrl.startsWith("/media/") || (PUBLIC_BASE && mediaUrl.startsWith(`${PUBLIC_BASE}/media/`));
+  if (!/^https?:\/\//i.test(mediaUrl) && !portalPath) throw new Error(`${label}: media URL must be an https URL or a portal /media path`);
+  const publicRaw = String(raw.mediaPublicUrl || raw.publicUrl || "").trim();
+  const name = String(raw.mediaName || raw.name || "").trim().slice(0, 200);
+  const kind = raw.mediaKind || raw.kind;
+  return {
+    mediaUrl: mediaUrl.slice(0, 2000),
+    mediaPublicUrl: (/^https?:\/\//i.test(publicRaw) ? publicRaw : /^https?:\/\//i.test(mediaUrl) ? mediaUrl : "").slice(0, 2000),
+    mediaKind: kind === "video" || kind === "image" ? kind : mediaTypeFromName(name || mediaUrl, "image"),
+    mediaName: name,
+    mediaAlt: String(raw.mediaAlt || raw.alt || "").slice(0, 1000),
+  };
+}
+
+// Per-channel media. Only channels the post targets keep a variant; the rest use the main media.
+function cleanChannelMedia(value, channels) {
+  const result = {};
+  if (!value || typeof value !== "object") return result;
+  for (const channel of channels) {
+    const variant = cleanMediaVariant(value[channel], `${channel} media`);
+    if (variant) result[channel] = variant;
+  }
+  return result;
+}
+
+// The post as seen by one channel (or by Stories): same copy, the variant's media.
+function withMediaVariant(post, variant) {
+  if (!variant) return post;
+  return {
+    ...post,
+    mediaUrl: variant.mediaUrl,
+    mediaPublicUrl: variant.mediaPublicUrl,
+    mediaKind: variant.mediaKind,
+    mediaName: variant.mediaName,
+    mediaAlt: variant.mediaAlt || post.mediaAlt,
   };
 }
 
@@ -1854,7 +1902,15 @@ function previewPost(post, media = null) {
     const limit = LIMITS[channel] || 0;
     const length = channelTextLength(channel, text);
     const rule = DATA.settings.channelRules?.[channel];
+    const variant = post.channelMedia?.[channel] || null;
+    const channelMediaInfo = variant ? { kind: variant.mediaKind, publicUrl: variant.mediaPublicUrl, posterUrl: post.posterUrl } : media;
     return {
+      media: {
+        url: variant?.mediaUrl || post.mediaUrl || "",
+        kind: variant?.mediaKind || post.mediaKind || "",
+        name: variant?.mediaName || post.mediaName || "",
+        custom: Boolean(variant),
+      },
       channel,
       label: CHANNEL_DEFS.find((def) => def.key === channel)?.label || channel,
       text,
@@ -1865,7 +1921,7 @@ function previewPost(post, media = null) {
       rules: rule ? [rule.linkInBio ? "link in bio" : "", rule.hashtags ? "hashtags" : "", rule.dailyCap ? `max ${rule.dailyCap}/day` : ""].filter(Boolean) : [],
       mode: MONITORING.has(channel) ? "monitoring" : channelMode(channel),
       configured: connectionState(channel).configured,
-      notes: channelTextNotes(channel, text, media),
+      notes: channelTextNotes(channel, text, channelMediaInfo),
     };
   });
 }
@@ -1959,13 +2015,13 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
   } catch {
     siteHost = "";
   }
-  let mediaHost = "";
-  try {
-    mediaHost = media?.publicUrl ? new URL(media.publicUrl).hostname : "";
-  } catch {
-    mediaHost = "";
-  }
-  const mediaOnSite = Boolean(siteHost && mediaHost && siteHost === mediaHost);
+  const hostedOnSite = (item) => {
+    try {
+      return Boolean(siteHost && item?.publicUrl && new URL(item.publicUrl).hostname === siteHost);
+    } catch {
+      return false;
+    }
+  };
   for (const channel of channels) {
     const rendered = renderForChannel(post, channel);
     const limit = LIMITS[channel];
@@ -1974,7 +2030,10 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
       results.push({ channel, ok: false, skipped: true, reason: `Text is ${length} characters; ${channel} allows ${limit}.` });
       continue;
     }
-    if (mediaOnSite && ["instagram", "threads", "devto"].includes(channel) && DATA.settings.requireLiveSite && !(await getSiteLive())) {
+    // Per-channel media (e.g. 4:5 for Instagram/Facebook) replaces the main file for this channel only.
+    const variant = post.channelMedia?.[channel] || null;
+    const baseMedia = variant ? (await resolvePostMedia(withMediaVariant(post, variant))) || media : media;
+    if (hostedOnSite(baseMedia) && ["instagram", "threads", "devto"].includes(channel) && DATA.settings.requireLiveSite && !(await getSiteLive())) {
       results.push({ channel, ok: false, skipped: true, reason: "Media is hosted on the landing page, which is not live yet." });
       continue;
     }
@@ -2009,7 +2068,8 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
       results.push({ channel, ok: false, skipped: true, capped: true, reason: `Daily cap reached (${cap}/day) for ${channel}. Raise it in Connections → channel rules.` });
       continue;
     }
-    const channelMedia = media?.kind === "video" && poster && VIDEO_POSTER_CHANNELS.has(channel) ? poster : media;
+    const usePoster = Boolean(baseMedia?.kind === "video" && poster && VIDEO_POSTER_CHANNELS.has(channel));
+    const channelMedia = usePoster ? poster : baseMedia;
     if (dryRun) {
       const state = connectionState(channel);
       results.push({
@@ -2017,7 +2077,9 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
         ok: true,
         dryRun: true,
         media: channelMedia?.kind || null,
-        ...(channelMedia !== media ? { mediaNote: "Would publish the video cover image." } : {}),
+        mediaName: channelMedia?.name || "",
+        ...(variant ? { mediaVariant: "channel" } : {}),
+        ...(usePoster ? { mediaNote: "Would publish the video cover image." } : {}),
         ...(capReached ? { mediaNote: `Daily cap of ${cap} already reached today; the scheduler would skip this channel.` } : {}),
         length,
         ready: state.configured,
@@ -2035,9 +2097,10 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
     } catch (error) {
       result = { ok: false, error: error.message };
     }
-    if (result.ok && channelMedia !== media) {
+    if (result.ok && usePoster) {
       result.mediaNote = "Video cover published; video upload is not enabled for this channel yet.";
     }
+    if (result.ok && variant) result.mediaVariant = variant.mediaName || "channel media";
     results.push({ channel, at: new Date().toISOString(), ...result });
   }
 
@@ -2170,9 +2233,13 @@ function automationTemplateText(template, post) {
     .replaceAll("{{content}}", String(post.content || ""));
 }
 
-async function automationMedia(post, mode) {
+// Media for an automation action. Stories prefer the post's 9:16 story media; posts prefer the
+// channel's own media (e.g. 4:5 on Instagram) before the main file.
+async function automationMedia(post, mode, { story = false, channel = "" } = {}) {
   if (mode === "none") return null;
-  const media = await resolvePostMedia(post);
+  if (story && post.storyMedia && mode !== "poster") return resolvePostMedia(withMediaVariant(post, post.storyMedia));
+  const source = !story && channel && post.channelMedia?.[channel] ? withMediaVariant(post, post.channelMedia[channel]) : post;
+  const media = await resolvePostMedia(source);
   if (mode === "poster" && media?.kind === "video" && post.posterUrl) {
     return resolvePostMedia({ ...post, mediaUrl: post.posterUrl, mediaPublicUrl: post.posterPublicUrl || post.posterUrl, mediaKind: "image", mediaName: post.posterName || path.basename(post.posterUrl) });
   }
@@ -2184,10 +2251,10 @@ async function runAutomation(rule, post, { dryRun = true, source = "scheduler" }
   CONFIG = loadConfig();
   const outcomes = [];
   for (const action of rule.actions) {
-    const media = await automationMedia(post, action.media);
     for (const channel of action.channels) {
+      const media = await automationMedia(post, action.media, { story: action.type === "story", channel });
       const state = connectionState(channel);
-      const base = { channel, type: action.type, media: media?.kind || null };
+      const base = { channel, type: action.type, media: media?.kind || null, mediaName: media?.name || "" };
       if (action.type === "story") {
         if (!media) {
           outcomes.push({ ...base, ok: false, skipped: true, reason: "The post has no image or video for a story." });
@@ -2861,13 +2928,16 @@ function filterPosts(params) {
 function mediaUsage() {
   const usage = {};
   for (const post of DATA.posts) {
-    const url = String(post.mediaUrl || "");
-    const match = /\/media\/(?!landing\/)([^/?#]+)$/.exec(url);
-    const key = match ? decodeURIComponentSafe(match[1]) : url.includes("/media/landing/") ? `landing:${path.basename(url)}` : "";
-    if (!key) continue;
-    usage[key] = usage[key] || { total: 0, pending: 0 };
-    usage[key].total += 1;
-    if (["scheduled", "approved", "needs_review", "draft", "publishing"].includes(post.status)) usage[key].pending += 1;
+    // Main media plus per-channel and story variants: a file in use anywhere can't be deleted by accident.
+    const urls = new Set([post.mediaUrl, ...Object.values(post.channelMedia || {}).map((variant) => variant?.mediaUrl), post.storyMedia?.mediaUrl].map((value) => String(value || "")).filter(Boolean));
+    for (const url of urls) {
+      const match = /\/media\/(?!landing\/)([^/?#]+)$/.exec(url);
+      const key = match ? decodeURIComponentSafe(match[1]) : url.includes("/media/landing/") ? `landing:${path.basename(url)}` : "";
+      if (!key) continue;
+      usage[key] = usage[key] || { total: 0, pending: 0 };
+      usage[key].total += 1;
+      if (["scheduled", "approved", "needs_review", "draft", "publishing"].includes(post.status)) usage[key].pending += 1;
+    }
   }
   return usage;
 }
@@ -3081,6 +3151,11 @@ async function handleApi(req, res, url) {
         utm: existing?.utm || null,
       };
       draft.overrides = cleanOverrides(body.overrides ?? existing?.overrides, draft.channels);
+      draft.channelMedia = cleanChannelMedia(body.channelMedia ?? existing?.channelMedia, draft.channels);
+      draft.mediaUrl = body.mediaUrl ?? existing?.mediaUrl ?? "";
+      draft.mediaKind = body.mediaKind ?? existing?.mediaKind ?? "";
+      draft.mediaName = body.mediaName ?? existing?.mediaName ?? "";
+      draft.posterUrl = body.posterUrl ?? existing?.posterUrl ?? "";
       const mediaUrl = body.mediaUrl ?? existing?.mediaUrl;
       const media = mediaUrl
         ? {
