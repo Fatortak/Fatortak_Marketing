@@ -1981,7 +1981,8 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
     }
     // Daily caps protect reach on feeds that punish over-posting. They limit the scheduler only;
     // a person pressing Publish now always goes through.
-    const cap = Number(DATA.settings.channelRules?.[channel]?.dailyCap || 0);
+    // Posts tagged #priority (e.g. the daily videos) always go out and do not wait for a free slot.
+    const cap = (post.tags || []).includes("priority") ? 0 : Number(DATA.settings.channelRules?.[channel]?.dailyCap || 0);
     const capReached = cap > 0 && publishedTodayCount(channel) >= cap;
     if (!dryRun && automatic && capReached) {
       results.push({ channel, ok: false, skipped: true, capped: true, reason: `Daily cap reached (${cap}/day) for ${channel}. Raise it in Connections → channel rules.` });
@@ -2395,7 +2396,10 @@ function contentAudit() {
   if (volume.some((v) => v.over)) suggestions.push({ code: "caps", text: `${volume.filter((v) => v.over).map((v) => `${v.label} gets up to ${v.effectiveMax}/day (recommended ${v.recommended})`).join("; ")}. Apply recommended daily caps so the busiest feeds don't lose reach.` });
   if (byCode["ig-link"]) suggestions.push({ code: "link-in-bio", text: `${byCode["ig-link"]} Instagram captions contain links nobody can click. Turn on “link in bio” for Instagram.` });
   if (byCode.repeat) suggestions.push({ code: "repeat", text: `${byCode.repeat} upcoming posts repeat a message from the previous 3 days. ${repeats.size} unique messages cover ${DATA.posts.length} posts (up to ${Math.max(0, ...messages)} uses of one message).` });
-  if (byCode["no-hashtags"]) suggestions.push({ code: "hashtags", text: "Instagram and LinkedIn copy has no hashtags. Add 3–5 standard hashtags per channel in channel rules." });
+  if (byCode["no-hashtags"]) {
+    const lacking = [...new Set(Object.values(issues).flat().filter((issue) => issue.code === "no-hashtags").map((issue) => issue.message.split(":")[0]))];
+    suggestions.push({ code: "hashtags", channels: lacking, text: `${lacking.join(" and ")} copy has no hashtags. Add 3–5 standard hashtags in that channel's rules.` });
+  }
   if (upcoming.length && questions / upcoming.length < 0.1) suggestions.push({ code: "questions", text: `Only ${questions} of ${upcoming.length} upcoming posts ask a question. Questions invite replies, which most feeds reward.` });
   if (byCode["too-long"]) suggestions.push({ code: "too-long", text: `${byCode["too-long"]} posts are too long for at least one channel and will be skipped there. Add a shorter per-channel version.` });
 
@@ -2788,8 +2792,10 @@ async function handleApi(req, res, url) {
         id: existing?.id || "preview",
         content: String(body.content ?? existing?.content ?? ""),
         channels: (Array.isArray(body.channels) ? body.channels : existing?.channels || []).filter((key) => known.has(key)),
+        language: body.language || existing?.language || "en",
         utm: existing?.utm || null,
       };
+      draft.overrides = cleanOverrides(body.overrides ?? existing?.overrides, draft.channels);
       const mediaUrl = body.mediaUrl ?? existing?.mediaUrl;
       const media = mediaUrl
         ? {

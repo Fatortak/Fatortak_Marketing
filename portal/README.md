@@ -53,10 +53,13 @@ The portal seeds itself from `content/queue.json` on first run. State is stored 
 | **Calendar** | Month grid in the portal timezone; drag a post to another day to reschedule (with Undo); "+N more" day view; create a post on a given day; language/channel filters |
 | **Media** | Uploads and the brand library with usage counts, drag-and-drop multi-upload with progress, copy URL, "new post from this", and delete (refused while unpublished posts use the file) |
 | **Templates** | Reusable copy with default language, pillar and channels; create, edit, delete, and start a post from a template |
-| **Post editor** | Two-pane drawer: copy with tracked-link placeholders, language (Arabic is RTL), pillar, tags, channel picker showing connection readiness, media (upload, drop, library, external URL, alt text), schedule quick picks, status with guidance, notes; live per-channel preview with platform character counting; last publish and dry-run results; revision history with restore; unsaved-change guard; Ctrl/⌘+S |
-| **Connections** | Filter by connected / needs setup / restricted; connect, test one or all; see which channels are API-ready, need review, or are monitoring-only |
-| **Analytics** | Traffic, traffic by source, followers, reach, engagement, clicks and last sync |
-| **Reports** | Rule-based recommendations, EN/AR and pillar mix, posts per channel, CSV/JSON export, latest automation report |
+| **Automations** | Rules that run around posts: **before** a post (N minutes), **after** it publishes (with optional delay), or **when it is scheduled** (e.g. a new offer). Filter by tag, pillar, language, channel or keyword. Actions: **Story** on Facebook/Instagram, or a **Post** (teaser, announcement, follow-up) on any connected channel from a template with `{{title}}`, `{{excerpt}}`, `{{time}}`, `{{date}}` and link placeholders. Recipes, dry-run Test, Run now, pause, run log |
+| **Content health** | Score and fixes for the upcoming queue: repeated messages within 3 days, posts per day per channel vs recommended, Instagram links nobody can click, missing hashtags, too-long posts, missing media/alt text, question share, pillar and language mix; one-click recommended rules |
+| **Trash** | Deleted posts kept 30 days; restore (as draft) or delete forever |
+| **Post editor** | Two-pane drawer: copy with tracked-link placeholders, language (Arabic is RTL), pillar, tags, channel picker showing connection readiness, media (upload, drop, library, external URL, alt text), schedule quick picks, status with guidance, notes; live per-channel preview with platform character counting and **per-channel custom copy**; content checks; last publish and dry-run results; automations that apply to the post; revision history with restore; unsaved-change guard; Ctrl/⌘+S |
+| **Connections** | Readiness bar and status buckets (ready / needs attention / not connected / can't automate); per channel: setup effort, what it supports (text, image, video, story, stats), step-by-step guide, field help with format checks before saving, test, disconnect, and **publishing rules** (daily cap, standard hashtags, Instagram "link in bio") |
+| **Analytics** | Followers with 7/30-day growth and history chart, reach, engagement, clicks, posts, traffic by source. Every number shows its measurement window on hover |
+| **Reports** | Delivery per channel from real publish results (published / failed / skipped / capped, success rate), top posts by engagement, recommendations, EN/AR and pillar mix, planned posts per channel, automation runs, CSV/JSON export |
 | **Activity** | Searchable, filterable, paginated audit trail (last 1,000 events) linking back to posts |
 | **Settings** | Dry-run (with a go-live confirmation), auto-approve, require media, live-site guard, timezone, public media host; changes are tracked and logged |
 
@@ -69,6 +72,22 @@ Keyboard: `N` new post, `/` search, `R` refresh, `G` then `O/C/K/M/T/A/S/R` to s
 - **A published post is not re-published by accident.** Publishing it again requires an explicit confirmation; retrying individual channels from Results is always allowed.
 - **Edits are conflict-checked.** A save made from a stale copy (the scheduler or another tab changed the post) is refused with a prompt to overwrite or reload.
 - **Interrupted publishes are flagged, not repeated.** A post left in `publishing` by a crash or restart is marked `failed` on startup so a person can check which channels already received it.
+- **Channel rules apply everywhere.** Daily caps, hashtags and "link in bio" change previews, dry runs and real publishes alike. Caps limit only the scheduler; posts tagged `#priority` and manual publishes are never capped.
+- **Stories exist on Facebook and Instagram only.** No other platform offers a Stories API; use a Post action for the rest. Stories carry media only (no captions or link stickers through the API). Instagram stories need a public https JPEG/MP4.
+- **Automations run only in live mode** (`MARKETING_LIVE=true`, scheduler on, dry run off), act on each post at most once per rule, and never fire for events that happened before the rule was created.
+- **Deleting moves to Trash.** Restored posts come back as drafts so nothing publishes by surprise.
+
+### Metric windows
+
+| Channel | Reach | Engagement |
+| --- | --- | --- |
+| Facebook | Sum of per-post unique viewers for portal posts from the last 28 days | Reactions + clicks on the same posts |
+| Instagram | Unique accounts reached in the last 28 days (account insights) | Likes + comments on the latest 50 posts |
+| Bluesky | — | Likes + reposts + replies on the latest 30 posts |
+| Mastodon | — | Favourites + boosts + replies on the latest 20 posts |
+| Dev.to | Lifetime page views of published articles | Lifetime reactions + comments |
+
+Totals add channels with different windows, so the dashboard labels them as such. Follower history is snapshotted once a day at metric sync.
 
 ## Channel automation matrix
 
@@ -244,6 +263,15 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 | GET/POST | `/api/templates` | List / create templates |
 | PUT/DELETE | `/api/templates/:id` | Update / delete a template |
 | GET | `/api/activity` | Paginated audit trail (`type`, `q`, `postId`, `limit`, `offset`) |
+| GET/POST | `/api/automations` | List rules, recent runs and story/post channels / create a rule |
+| PUT/DELETE | `/api/automations/:id` | Update (incl. pause) / delete a rule |
+| POST | `/api/automations/:id/test` | Dry-run a rule on the next matching post (or `{ postId }`) |
+| POST | `/api/automations/:id/run` | Run it for real (requires `MARKETING_LIVE=true`) |
+| GET | `/api/content/audit` | Content health: score, issues per post, volume per channel, suggestions |
+| GET/DELETE | `/api/trash` | List deleted posts / empty trash |
+| POST | `/api/trash/:id/restore` | Restore a post as a draft |
+| DELETE | `/api/trash/:id` | Delete a post forever |
+| DELETE | `/api/connections/:channel/credentials` | Disconnect a channel (removes its saved credentials) |
 | GET | `/api/calendar?month=YYYY-MM` | Calendar posts |
 | GET | `/api/connections` | Channel modes, setup links, media support and verification |
 | PUT | `/api/connections/:channel/credentials` | Save whitelisted credentials to `.env` |

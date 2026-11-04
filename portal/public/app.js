@@ -36,10 +36,13 @@
     mediaView: { filter: "all", q: "" },
     activityView: { type: "", q: "", offset: 0, limit: 50 },
     connectionsFilter: "all",
-    editor: { post: null, snapshot: "", preview: [], side: "preview", previewSeq: 0, saving: false },
+    automations: null,
+    audit: null,
+    trash: null,
+    editor: { post: null, snapshot: "", preview: [], side: "preview", previewSeq: 0, saving: false, overrides: {}, issues: [], automations: [] },
   };
 
-  const VIEWS = ["overview", "content", "calendar", "media", "templates", "connections", "analytics", "reports", "activity", "settings"];
+  const VIEWS = ["overview", "content", "calendar", "media", "templates", "automations", "health", "trash", "connections", "analytics", "reports", "activity", "settings"];
   const LEGACY_VIEWS = { queue: "content", composer: "templates" };
 
   const PAGE_META = {
@@ -48,7 +51,10 @@
     calendar: ["Calendar", "Drag posts between days to reschedule them."],
     media: ["Media", "Uploaded files and the brand screenshot library."],
     templates: ["Templates", "Reusable copy to start new posts fast."],
-    connections: ["Connections", "Which channels are connected, verified or restricted."],
+    automations: ["Automations", "Stories, teasers and follow-ups that run on their own."],
+    health: ["Content health", "What will hurt reach, and one-click fixes."],
+    trash: ["Trash", "Deleted posts are kept for 30 days."],
+    connections: ["Connections", "Connect channels and set how each one publishes."],
     analytics: ["Analytics", "Traffic, followers, engagement and channel health."],
     reports: ["Reports", "What worked, what to change and what to do next."],
     activity: ["Activity", "Audit trail of every change and publish."],
@@ -689,6 +695,9 @@
     state.loadedAt = Date.now();
     state.reports = null;
     state.activity = null;
+    state.audit = null;
+    state.trash = null;
+    state.automations = null;
     pruneSelection();
     renderChrome();
     renderView();
@@ -702,6 +711,8 @@
     state.loadedAt = Date.now();
     state.reports = null;
     state.activity = null;
+    state.audit = null;
+    state.trash = null;
     pruneSelection();
     renderChrome();
     renderView();
@@ -831,6 +842,18 @@
     cBadge.hidden = !failing;
     cBadge.textContent = String(failing);
     cBadge.title = `${failing} connection test${failing === 1 ? "" : "s"} failing`;
+
+    const flagged = state.posts.filter((post) => post.health && (post.health.error || post.health.warn)).length;
+    const hBadge = $("#badge-health");
+    hBadge.hidden = !flagged;
+    hBadge.textContent = flagged > 99 ? "99+" : String(flagged);
+    hBadge.title = `${flagged} upcoming post${flagged === 1 ? "" : "s"} with warnings`;
+
+    const autos = overview.automations?.enabled || 0;
+    const aBadge = $("#badge-automations");
+    aBadge.hidden = !autos;
+    aBadge.textContent = String(autos);
+    aBadge.title = `${autos} active automation${autos === 1 ? "" : "s"}`;
   }
 
   function renderView() {
@@ -844,6 +867,9 @@
       calendar: renderCalendar,
       media: renderMedia,
       templates: renderTemplates,
+      automations: renderAutomations,
+      health: renderHealth,
+      trash: renderTrash,
       connections: renderConnections,
       analytics: renderAnalytics,
       reports: renderReports,
@@ -1050,6 +1076,7 @@
       <div class="page-head">
         <div><span class="eyebrow">Content library</span><h2>${plural(filtered.length, "post")}${filtersActive() || c.status ? ` <small>of ${fmtNumber(state.posts.length)}</small>` : ""}</h2></div>
         <div class="page-head-actions">
+          <a class="btn btn-ghost" href="#/trash">${icon("trash")}Trash${state.overview?.trash ? ` <em class="count-pill">${fmtNumber(state.overview.trash)}</em>` : ""}</a>
           <a class="btn btn-ghost" href="${esc(withToken(`${API_BASE}/api/reports/export?format=csv${exportParams.toString() ? `&${exportParams}` : ""}`))}" download>${icon("download")}Export CSV</a>
           <button class="btn btn-primary" data-new>${icon("plus")}New post</button>
         </div>
@@ -1135,7 +1162,7 @@
       </td>
       <td>${channelIcons(post.channels, 4)}</td>
       <td><div class="when ${overdue ? "is-overdue" : ""}"><strong>${esc(fmtWall(post.scheduledAt, { year: false }))}</strong><span>${overdue ? "overdue · " : ""}${esc(relativeWall(post.scheduledAt))}</span></div></td>
-      <td><div class="status-cell">${statusChip(post.status)}${resultHint}</div></td>
+      <td><div class="status-cell">${statusChip(post.status)}${resultHint}${post.health && (post.health.error || post.health.warn) ? `<button type="button" class="health-mini ${post.health.error ? "err" : ""}" data-edit="${esc(post.id)}" title="${post.health.error ? `${post.health.error} problem(s)` : ""} ${post.health.warn ? `${post.health.warn} warning(s)` : ""} — open to see checks">${icon("alert")}${post.health.error + post.health.warn}</button>` : ""}</div></td>
       <td class="col-actions"><div class="row-actions">
         ${["needs_review", "draft", "approved"].includes(post.status) ? `<button class="btn btn-ghost btn-sm" data-approve="${esc(post.id)}" title="Approve and schedule">${icon("check")}Approve</button>` : ""}
         <button class="icon-btn sm" data-edit="${esc(post.id)}" title="Edit" aria-label="Edit">${icon("pen")}</button>
@@ -1661,77 +1688,90 @@
    * Connections
    * ------------------------------------------------------------------ */
 
+  const CAPABILITY_LABELS = [
+    ["text", "Text"],
+    ["image", "Image"],
+    ["video", "Video"],
+    ["story", "Story"],
+    ["metrics", "Stats"],
+  ];
+
+  function connectionGroup(channel) {
+    if (channel.mode !== "api") return "restricted";
+    if (!channel.configured) return "setup";
+    if (channel.verified && !channel.verified.ok) return "attention";
+    if (!channel.verified) return "attention";
+    return "ready";
+  }
+
+  function connectionGroupLabel(group) {
+    return { ready: "Ready to publish", attention: "Needs attention", setup: "Not connected", restricted: "Can't automate" }[group] || group;
+  }
+
+  function capabilityRow(channel) {
+    const caps = channel.capabilities || {};
+    return `<div class="caps">${CAPABILITY_LABELS.map(([key, label]) => `<span class="cap ${caps[key] ? "on" : "off"}" title="${esc(caps[key] ? `${label}: supported` : `${label}: not available on ${channel.label}`)}">${caps[key] ? icon("check") : icon("close")}${label}</span>`).join("")}</div>`;
+  }
+
+  function ruleChips(rule) {
+    if (!rule) return "";
+    const chips = [];
+    if (rule.dailyCap) chips.push(`<span class="chip purple">max ${rule.dailyCap}/day</span>`);
+    if (rule.linkInBio) chips.push(`<span class="chip cyan">link in bio</span>`);
+    if (rule.hashtags) chips.push(`<span class="chip muted" title="${esc(rule.hashtags)}">${rule.hashtags.split(" ").length} hashtags</span>`);
+    return chips.join("");
+  }
+
   function renderConnections() {
     const channels = state.connections;
     const filter = state.connectionsFilter;
-    const connected = channels.filter((c) => c.configured).length;
-    const verified = channels.filter(verifiedFresh).length;
-    const groups = {
-      all: channels,
-      connected: channels.filter((c) => c.configured),
-      setup: channels.filter((c) => c.mode === "api" && !c.configured),
-      restricted: channels.filter((c) => c.mode !== "api"),
-    };
-    const list = groups[filter] || channels;
+    const groups = { ready: [], attention: [], setup: [], restricted: [] };
+    for (const channel of channels) groups[connectionGroup(channel)].push(channel);
+    const apiCount = channels.filter((channel) => channel.mode === "api").length;
+    const readyPct = apiCount ? Math.round((groups.ready.length / apiCount) * 100) : 0;
+    const list = filter === "all" ? [...groups.attention, ...groups.ready, ...groups.setup, ...groups.restricted] : groups[filter] || [];
     $("#view").innerHTML = `
       <div class="page-head">
-        <div><span class="eyebrow">Connections</span><h2>${connected} connected <small>· ${verified} verified today · ${channels.length} channels</small></h2><p>Save credentials once, test them, then the scheduler publishes for you. Account creation and app review happen in each platform's console.</p></div>
-        <div class="page-head-actions"><button class="btn btn-ghost" data-test-all>${icon("refresh")}Test all connected</button></div>
+        <div><span class="eyebrow">Connections</span><h2>${groups.ready.length} of ${apiCount} channels ready <small>${groups.attention.length ? `· ${groups.attention.length} need attention` : ""}</small></h2>
+          <p>Connect a channel once and the scheduler posts for you. Each card shows what the channel supports and how long setup takes.</p></div>
+        <div class="page-head-actions">
+          <button class="btn btn-ghost" data-test-all>${icon("refresh")}Test all connected</button>
+          <button class="btn btn-outline" data-apply-recommended>${icon("check")}Apply recommended rules</button>
+        </div>
       </div>
-      <div class="segmented section-gap" role="group" aria-label="Filter channels">
-        ${[["all", "All"], ["connected", "Connected"], ["setup", "Needs setup"], ["restricted", "Restricted"]].map(([key, label]) => `<button type="button" class="${filter === key ? "is-active" : ""}" data-conn-filter="${key}">${label}<em>${groups[key].length}</em></button>`).join("")}
+      <div class="card card-pad connect-summary">
+        <div class="progress-row"><div class="progress"><span style="width:${readyPct}%"></span></div><strong>${readyPct}%</strong></div>
+        <div class="summary-chips">
+          ${["ready", "attention", "setup", "restricted"].map((group) => `<button type="button" class="summary-chip ${group} ${filter === group ? "is-active" : ""}" data-conn-filter="${group}"><strong>${groups[group].length}</strong><span>${connectionGroupLabel(group)}</span></button>`).join("")}
+          <button type="button" class="summary-chip all ${filter === "all" ? "is-active" : ""}" data-conn-filter="all"><strong>${channels.length}</strong><span>All channels</span></button>
+        </div>
       </div>
-      <div class="channel-grid">
-        ${list.map((channel) => `
-          <article class="card channel-card">
-            <div class="channel-head"><div class="channel-name">${channelIcon(channel.key)}<div><strong>${esc(channel.label)}</strong><span>${esc(channel.mode)}</span></div></div>${channelStatusChip(channel)}</div>
-            <p>${esc(channel.requirements)}</p>
-            <div class="chips"><span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span>${channel.verified?.at ? `<span class="chip muted" title="${esc(fmtInstant(channel.verified.at))}">tested ${esc(relativeInstant(channel.verified.at))}</span>` : ""}</div>
-            ${channel.verified?.detail ? `<p class="channel-verify-detail ${channel.verified.ok ? "" : "is-error"}">${esc(channel.verified.detail)}</p>` : ""}
-            <div class="channel-metrics"><div><span>Followers</span><strong>${metricValue(channel.metrics?.followers, channel.metrics?.lastUpdated)}</strong></div><div><span>Engagement</span><strong>${metricValue(channel.metrics?.engagement, channel.metrics?.lastUpdated)}</strong></div><div><span>Posts</span><strong>${fmtNumber(state.posts.filter((post) => post.channels.includes(channel.key)).length)}</strong></div></div>
+      <div class="channel-grid section">
+        ${list.map((channel) => {
+          const group = connectionGroup(channel);
+          const guide = channel.guide;
+          const action = group === "setup" ? "Connect" : group === "attention" ? "Fix" : group === "ready" ? "Manage" : "Details";
+          return `<article class="card channel-card group-${group}">
+            <div class="channel-head">
+              <div class="channel-name">${channelIcon(channel.key)}<div><strong>${esc(channel.label)}</strong><span>${esc(connectionGroupLabel(group))}</span></div></div>
+              ${channelStatusChip(channel)}
+            </div>
+            ${group === "setup" && guide ? `<p class="effort">${icon("clock")}${esc(guide.effort)} · ${esc(guide.difficulty)} setup</p>` : ""}
+            ${channel.configured && channel.verified?.detail ? `<p class="channel-verify-detail ${channel.verified.ok ? "" : "is-error"}">${esc(channel.verified.detail)}</p>` : ""}
+            ${group === "restricted" ? `<p class="muted-text">${esc(channel.requirements)}</p>` : ""}
+            ${channel.mode === "api" ? capabilityRow(channel) : ""}
+            ${ruleChips(channel.rule) ? `<div class="chips">${ruleChips(channel.rule)}</div>` : ""}
+            ${channel.configured ? `<div class="channel-metrics"><div><span>Followers</span><strong>${metricValue(channel.metrics?.followers, channel.metrics?.lastUpdated)}</strong></div><div><span>Tested</span><strong>${channel.verified?.at ? esc(relativeInstant(channel.verified.at)) : "never"}</strong></div><div><span>Planned posts</span><strong>${fmtNumber(state.posts.filter((post) => post.status === "scheduled" && post.channels.includes(channel.key)).length)}</strong></div></div>` : ""}
             <div class="channel-actions">
               ${channel.profile ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.profile)}" target="_blank" rel="noopener">Profile ${icon("external")}</a>` : ""}
-              ${channel.configured ? `<button class="btn btn-outline btn-sm" data-test-channel="${esc(channel.key)}">Test</button>` : ""}
-              <button class="btn ${channel.mode === "api" && !channel.configured ? "btn-primary" : "btn-ghost"} btn-sm" data-connect="${esc(channel.key)}">${channel.mode === "api" ? (channel.configured ? "Manage" : "Connect") : "Details"}</button>
+              ${channel.configured ? `<button class="btn btn-ghost btn-sm" data-test-channel="${esc(channel.key)}">Test</button>` : ""}
+              <button class="btn ${group === "setup" || group === "attention" ? "btn-primary" : "btn-outline"} btn-sm" data-connect="${esc(channel.key)}">${action}</button>
             </div>
-          </article>`).join("") || `<div class="card">${emptyState("Nothing here", "No channels in this group.")}</div>`}
+          </article>`;
+        }).join("") || `<div class="card">${emptyState("Nothing here", "No channels in this group.")}</div>`}
       </div>
-      <div class="card card-pad section"><div class="section-head"><h3>Why some channels are restricted</h3></div><p class="prose">Hacker News, Reddit and Product Hunt do not allow compliant unattended posting. TikTok needs a Content Posting API audit and a video. YouTube needs OAuth, a video and quota. WhatsApp is opt-in template messaging. The portal monitors these where possible and blocks publishing instead of risking the account.</p></div>
+      <div class="card card-pad section"><div class="section-head"><h3>Why some channels can't be automated</h3></div><p class="prose">Hacker News, Reddit and Product Hunt don't allow unattended posting. TikTok needs an approved Content Posting app and video. YouTube needs Google OAuth, video and quota. WhatsApp is opt-in messaging, not a feed. Stories are only available through Facebook and Instagram — the other platforms have no Stories API.</p></div>
     `;
-  }
-
-  function credentialLabel(key) {
-    const labels = {
-      X_ACCESS_TOKEN: "X user access token (OAuth 2.0, optional)",
-      X_API_KEY: "X API key (OAuth 1.0a)",
-      X_API_SECRET: "X API secret (OAuth 1.0a)",
-      X_OAUTH1_ACCESS_TOKEN: "X OAuth 1.0a access token",
-      X_OAUTH1_ACCESS_TOKEN_SECRET: "X OAuth 1.0a token secret",
-      LINKEDIN_ACCESS_TOKEN: "LinkedIn access token",
-      LINKEDIN_AUTHOR_URN: "Company URN (urn:li:organization:…)",
-      LINKEDIN_VERSION: "LinkedIn API version (YYYYMM)",
-      FACEBOOK_PAGE_ID: "Facebook Page ID",
-      FACEBOOK_PAGE_ACCESS_TOKEN: "Facebook Page access token",
-      INSTAGRAM_USER_ID: "Instagram Business account ID",
-      INSTAGRAM_ACCESS_TOKEN: "Instagram access token",
-      THREADS_USER_ID: "Threads user ID",
-      THREADS_ACCESS_TOKEN: "Threads access token",
-      BLUESKY_HANDLE: "Bluesky handle (name.bsky.social)",
-      BLUESKY_APP_PASSWORD: "Bluesky app password",
-      BLUESKY_SERVICE: "Bluesky service URL",
-      MASTODON_INSTANCE: "Mastodon instance URL",
-      MASTODON_ACCESS_TOKEN: "Mastodon access token",
-      MASTODON_ACCOUNT: "Mastodon account handle",
-      TELEGRAM_BOT_TOKEN: "Telegram bot token",
-      TELEGRAM_CHAT_ID: "Telegram channel ID (starts with -100)",
-      DISCORD_WEBHOOK_URL: "Discord webhook URL",
-      DEVTO_API_KEY: "Dev.to API key",
-    };
-    return labels[key] || key;
-  }
-
-  function secretField(key) {
-    return /TOKEN|SECRET|PASSWORD|API_KEY|WEBHOOK/i.test(key);
   }
 
   async function testChannel(key, button) {
@@ -1747,13 +1787,13 @@
         const detail = data.result?.detail || (ok ? "Connection verified." : "Connection failed.");
         if (box) {
           box.className = `connect-result ${ok ? "ok" : "error"}`;
-          box.textContent = detail;
+          box.textContent = ok ? `Connected · ${detail}` : detail;
         }
         toast(`${channelLabel(key)}: ${detail}`, ok ? "success" : "error");
         const index = state.connections.findIndex((item) => item.key === key);
         if (index >= 0 && data.channel) state.connections[index] = { ...state.connections[index], ...data.channel };
         renderChrome();
-        if (state.view === "connections" && !box) renderConnections();
+        if (state.view === "connections") renderConnections();
         return ok;
       } catch (error) {
         if (box) {
@@ -1777,73 +1817,124 @@
     });
   }
 
-  function openChannelSetup(key) {
+  async function saveChannelRules(changes, { quiet = false } = {}) {
+    const response = await api("/api/settings", { method: "PUT", body: jsonBody({ channelRules: changes }) });
+    state.overview.settings = response.settings;
+    if (!quiet) toast("Channel rules saved.", "success");
+    await loadConnections();
+    state.audit = null;
+    return response;
+  }
+
+  async function applyRecommendedRules(button) {
+    const current = state.overview?.settings?.channelRules || {};
+    const changes = {};
+    const details = [];
+    for (const channel of state.connections.filter((item) => item.mode === "api" && item.recommendedDaily)) {
+      const rule = { ...(current[channel.key] || {}) };
+      const planned = state.posts.filter((post) => post.status === "scheduled" && post.channels.includes(channel.key));
+      const perDay = {};
+      for (const post of planned) perDay[post.scheduledAt.slice(0, 10)] = (perDay[post.scheduledAt.slice(0, 10)] || 0) + 1;
+      const max = Math.max(0, ...Object.values(perDay));
+      if (max > channel.recommendedDaily && !rule.dailyCap) {
+        rule.dailyCap = channel.recommendedDaily;
+        details.push(`${channel.label}: max ${channel.recommendedDaily}/day (now up to ${max})`);
+      }
+      if (channel.key === "instagram" && !rule.linkInBio) {
+        rule.linkInBio = true;
+        details.push("Instagram: replace links with “Link in bio”");
+      }
+      if (JSON.stringify(rule) !== JSON.stringify(current[channel.key] || {})) changes[channel.key] = rule;
+    }
+    if (!details.length) return toast("Rules already match the recommendations.", "success");
+    const ok = await confirmDialog({
+      title: "Apply recommended rules?",
+      message: "These limits protect reach on feeds that punish over-posting. Extra posts still go to the other channels; you can change any rule later.",
+      detail: `<ul class="plain-list">${details.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`,
+      confirmLabel: "Apply",
+    });
+    if (!ok) return;
+    await withBusy(button, async () => {
+      try {
+        await saveChannelRules(changes, { quiet: true });
+        toast(`Applied ${plural(details.length, "rule")}.`, "success");
+        renderView();
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+  }
+
+  function fieldInput(field) {
+    const placeholder = field.saved && field.secret ? "Saved — leave blank to keep" : field.example || "";
+    return `<label class="field cred-field" data-field="${esc(field.key)}">
+      <span>${esc(field.label)} ${field.required ? "" : `<em class="optional">optional</em>`} ${field.saved ? `<em class="saved">${icon("check")}saved</em>` : ""}</span>
+      <div class="secret-input"><input type="${field.secret ? "password" : "text"}" data-env-key="${esc(field.key)}" data-pattern="${esc(field.pattern)}" value="${esc(field.value || "")}" placeholder="${esc(placeholder)}" autocomplete="off" spellcheck="false" />${field.secret ? `<button type="button" class="link-btn" data-reveal>Show</button>` : ""}</div>
+      ${field.help ? `<small class="field-hint">${esc(field.help)}</small>` : ""}
+      <small class="field-error" hidden></small>
+    </label>`;
+  }
+
+  function openChannelSetup(key, tab = "connect") {
     const channel = channelDef(key);
     if (!channel) return;
-    const fields = channel.credentialKeys || [];
-    const isApi = channel.mode === "api" && fields.length > 0;
+    const isApi = channel.mode === "api" && (channel.fields || []).length > 0;
+    const guide = channel.guide;
+    const rule = channel.rule || {};
     const links = [
-      channel.console ? `<a class="btn btn-outline btn-sm" href="${esc(channel.console)}" target="_blank" rel="noopener">Developer console ${icon("external")}</a>` : "",
+      channel.console ? `<a class="btn btn-outline btn-sm" href="${esc(channel.console)}" target="_blank" rel="noopener">Open developer console ${icon("external")}</a>` : "",
       channel.docs ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.docs)}" target="_blank" rel="noopener">API docs ${icon("external")}</a>` : "",
       channel.profile ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.profile)}" target="_blank" rel="noopener">Live profile ${icon("external")}</a>` : "",
       !channel.configured && channel.signup ? `<a class="btn btn-ghost btn-sm" href="${esc(channel.signup)}" target="_blank" rel="noopener">Create account ${icon("external")}</a>` : "",
     ].filter(Boolean).join("");
-    const form = isApi
-      ? `<form id="connect-form" class="connect-form" autocomplete="off">
-          ${fields.map((name) => `
-            <label class="field">
-              <span>${esc(credentialLabel(name))} <code>${esc(name)}</code></span>
-              <div class="secret-input"><input type="${secretField(name) ? "password" : "text"}" data-env-key="${esc(name)}" placeholder="${channel.configured ? "Saved — leave blank to keep" : esc(name)}" autocomplete="off" spellcheck="false" />${secretField(name) ? `<button type="button" class="link-btn" data-reveal>Show</button>` : ""}</div>
-            </label>`).join("")}
-          <div id="connect-result" class="connect-result ${channel.verified ? (channel.verified.ok ? "ok" : "error") : ""}">${channel.verified ? esc(channel.verified.detail || "") : "Values are written to the portal's private .env file and are never returned by the API."}</div>
-        </form>`
-      : `<div class="connect-result error">${esc(channel.requirements)}</div>`;
+
+    const connectTab = isApi
+      ? `<div class="setup-grid">
+          <div class="setup-steps">
+            <h4>${guide ? `Setup · ${esc(guide.effort)}` : "Setup"}</h4>
+            <ol class="steps">${(guide?.steps || [channel.note]).map((step) => `<li>${esc(step)}</li>`).join("")}</ol>
+            <div class="connect-links">${links}</div>
+            <p class="field-hint">The portal can't create accounts, accept platform terms, pass app review or type an OTP for you. Once a valid token is saved, posting is automatic.</p>
+          </div>
+          <form id="connect-form" class="connect-form" autocomplete="off">
+            ${channel.fields.map(fieldInput).join("")}
+            <div id="connect-result" class="connect-result ${channel.verified ? (channel.verified.ok ? "ok" : "error") : ""}">${channel.verified ? esc(`${channel.verified.ok ? "Connected · " : ""}${channel.verified.detail || ""}`) : "Values are stored in the portal's private .env file and never shown again."}</div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" id="connect-save">${icon("check")}Save & test</button>
+              ${channel.configured ? `<button type="button" class="btn btn-outline" id="connect-test">Test again</button><button type="button" class="btn btn-danger" id="connect-remove">Disconnect</button>` : ""}
+            </div>
+          </form>
+        </div>`
+      : `<div class="connect-result error">${esc(channel.requirements)}</div><div class="connect-links">${links}</div>`;
+
+    const rulesTab = `<form id="rules-form" class="rules-form">
+        <p class="prose">Rules change what this channel receives without editing each post. They apply to previews, dry runs and real publishes.</p>
+        <label class="field"><span>Maximum posts per day</span>
+          <div class="inline-input"><input type="number" min="0" max="100" id="rule-cap" value="${esc(rule.dailyCap || 0)}" /><button type="button" class="link-btn" id="rule-cap-recommended">Use recommended (${channel.recommendedDaily || "—"})</button></div>
+          <small class="field-hint">0 = no limit. When the limit is reached, the scheduler skips this channel for the rest of the day (other channels still publish). Posts tagged <code>#priority</code> (for example your daily videos) always go out, and publishing by hand is never limited.</small></label>
+        <label class="field"><span>Standard hashtags</span><input id="rule-hashtags" value="${esc(rule.hashtags || "")}" placeholder="#fatortak #accounting #MENA" />
+          <small class="field-hint">Added to the end of every post on ${esc(channel.label)} unless the post already includes them.</small></label>
+        <div class="setting-row"><div><strong>Replace links with “Link in bio”</strong><span>For channels where links in captions aren't clickable (Instagram). Arabic posts use “الرابط في البايو”.</span></div><label class="switch"><input type="checkbox" id="rule-bio" ${rule.linkInBio ? "checked" : ""} /><span></span></label></div>
+        <label class="field" id="rule-bio-text-wrap" ${rule.linkInBio ? "" : "hidden"}><span>Custom wording (optional)</span><input id="rule-bio-text" maxlength="60" value="${esc(rule.linkText || "")}" placeholder="Link in bio" /></label>
+        <div class="form-actions"><button type="button" class="btn btn-primary" id="rules-save">${icon("check")}Save rules</button><button type="button" class="btn btn-ghost" id="rules-clear">Clear rules</button></div>
+      </form>`;
 
     openModal({
-      title: `${channel.label} connection`,
+      title: `${channel.label}`,
       wide: true,
       body: `
-        <div class="connect-head">${channelIcon(channel.key)}${channelStatusChip(channel)}<span class="chip ${channel.media === "none" ? "muted" : "purple"}">${esc(mediaSupportLabel(channel.media))}</span></div>
-        <p class="prose">${esc(channel.note || channel.requirements)}</p>
-        ${isApi ? `<p class="field-hint">The portal can't create accounts, accept platform terms, pass app review or enter an OTP. Once a valid token is saved, posting is automatic.</p>` : ""}
-        ${form}
-        <div class="connect-links">${links}</div>
-        ${channel.media === "public-url" ? `<p class="field-hint">This channel downloads media from a public URL. Set the public media host in Settings or attach an https URL.</p>` : ""}`,
-      actions: isApi
-        ? [
-            { label: "Close", className: "btn-ghost" },
-            ...(channel.configured ? [{ label: "Test saved", className: "btn-outline", stay: true, onClick: (button) => testChannel(key, button).then(() => true) }] : []),
-            {
-              label: "Save & test",
-              className: "btn-primary",
-              stay: true,
-              onClick: async (button) => {
-                const values = {};
-                $$("#connect-form [data-env-key]").forEach((input) => {
-                  const value = input.value.trim();
-                  if (value) values[input.dataset.envKey] = value;
-                });
-                if (!Object.keys(values).length) {
-                  toast("Enter at least one credential value.", "error");
-                  return true;
-                }
-                await withBusy(button, async () => {
-                  try {
-                    await api(`/api/connections/${encodeURIComponent(key)}/credentials`, { method: "PUT", body: jsonBody({ values }) });
-                    toast("Credentials saved.", "success");
-                    $$("#connect-form [data-env-key]").forEach((input) => (input.value = ""));
-                    await loadConnections();
-                  } catch (error) {
-                    toast(error.message, "error");
-                  }
-                });
-                await testChannel(key, null);
-                return true;
-              },
-            },
-          ]
-        : [{ label: "Close", className: "btn-ghost" }],
+        <div class="connect-head">${channelIcon(channel.key)}${channelStatusChip(channel)}${channel.mode === "api" ? capabilityRow(channel) : ""}</div>
+        ${channel.mode === "api" ? `<div class="segmented section-gap" role="tablist"><button type="button" data-setup-tab="connect" class="${tab === "connect" ? "is-active" : ""}">Connection</button><button type="button" data-setup-tab="rules" class="${tab === "rules" ? "is-active" : ""}">Publishing rules</button></div>` : ""}
+        <div data-setup-panel="connect" ${tab === "connect" ? "" : "hidden"}>${connectTab}</div>
+        ${channel.mode === "api" ? `<div data-setup-panel="rules" ${tab === "rules" ? "" : "hidden"}>${rulesTab}</div>` : ""}`,
+      actions: [],
       onOpen: () => {
+        $$("[data-setup-tab]").forEach((button) =>
+          button.addEventListener("click", () => {
+            $$("[data-setup-tab]").forEach((item) => item.classList.toggle("is-active", item === button));
+            $$("[data-setup-panel]").forEach((panel) => (panel.hidden = panel.dataset.setupPanel !== button.dataset.setupTab));
+          })
+        );
         $$("#connect-form [data-reveal]").forEach((button) =>
           button.addEventListener("click", () => {
             const input = button.previousElementSibling;
@@ -1851,59 +1942,668 @@
             button.textContent = input.type === "password" ? "Show" : "Hide";
           })
         );
+        const validateField = (input) => {
+          const wrap = input.closest(".cred-field");
+          const error = wrap.querySelector(".field-error");
+          const pattern = input.dataset.pattern;
+          const value = input.value.trim();
+          const bad = value && pattern && !new RegExp(pattern).test(value);
+          const field = channel.fields.find((item) => item.key === input.dataset.envKey);
+          error.hidden = !bad;
+          error.textContent = bad ? `This doesn't look right${field?.example ? ` — expected something like ${field.example}` : ""}.` : "";
+          input.classList.toggle("is-invalid", Boolean(bad));
+          return !bad;
+        };
+        $$("#connect-form [data-env-key]").forEach((input) => input.addEventListener("input", () => validateField(input)));
+        $("#connect-save")?.addEventListener("click", async (event) => {
+          const inputs = $$("#connect-form [data-env-key]");
+          if (!inputs.every(validateField)) return toast("Fix the highlighted fields first.", "error");
+          const values = {};
+          for (const input of inputs) {
+            const field = channel.fields.find((item) => item.key === input.dataset.envKey);
+            const value = input.value.trim();
+            if (value && !(field && !field.secret && value === (field.value || ""))) values[input.dataset.envKey] = value;
+          }
+          const missing = channel.fields.filter((field) => field.required && !field.saved && !values[field.key]);
+          if (missing.length) return toast(`Fill in: ${missing.map((field) => field.label).join(", ")}.`, "error");
+          await withBusy(event.currentTarget, async () => {
+            try {
+              if (Object.keys(values).length) await api(`/api/connections/${encodeURIComponent(key)}/credentials`, { method: "PUT", body: jsonBody({ values }) });
+              $$("#connect-form input[type=password]").forEach((input) => (input.value = ""));
+              await loadConnections();
+              const ok = await testChannel(key, null);
+              if (ok) {
+                finishModal(null);
+                toast(`${channel.label} is connected and verified.`, "success");
+              }
+            } catch (error) {
+              const box = $("#connect-result");
+              if (box) {
+                box.className = "connect-result error";
+                box.textContent = error.message;
+              }
+              toast(error.message, "error");
+            }
+          });
+        });
+        $("#connect-test")?.addEventListener("click", (event) => testChannel(key, event.currentTarget));
+        $("#connect-remove")?.addEventListener("click", async () => {
+          finishModal(null);
+          const ok = await confirmDialog({
+            title: `Disconnect ${channel.label}?`,
+            message: `This removes the saved ${channel.label} credentials from the portal. Scheduled posts will skip ${channel.label} until you connect it again. Nothing is deleted on ${channel.label}.`,
+            confirmLabel: "Disconnect",
+            danger: true,
+          });
+          if (!ok) return;
+          try {
+            await api(`/api/connections/${encodeURIComponent(key)}/credentials`, { method: "DELETE" });
+            toast(`${channel.label} disconnected.`, "success");
+            await loadConnections();
+          } catch (error) {
+            toast(error.message, "error");
+          }
+        });
+        $("#rule-bio")?.addEventListener("change", (event) => ($("#rule-bio-text-wrap").hidden = !event.target.checked));
+        $("#rule-cap-recommended")?.addEventListener("click", () => ($("#rule-cap").value = channel.recommendedDaily || 0));
+        $("#rules-save")?.addEventListener("click", (event) =>
+          withBusy(event.currentTarget, async () => {
+            try {
+              await saveChannelRules({ [key]: { dailyCap: Number($("#rule-cap").value || 0), hashtags: $("#rule-hashtags").value, linkInBio: $("#rule-bio").checked, linkText: $("#rule-bio-text").value } });
+              finishModal(null);
+            } catch (error) {
+              toast(error.message, "error");
+            }
+          })
+        );
+        $("#rules-clear")?.addEventListener("click", async () => {
+          try {
+            await saveChannelRules({ [key]: {} });
+            finishModal(null);
+          } catch (error) {
+            toast(error.message, "error");
+          }
+        });
       },
     });
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Automations
+   * ------------------------------------------------------------------ */
+
+  const EVENT_LABEL = {
+    before: "Before a post publishes",
+    published: "After a post publishes",
+    scheduled: "When a post is scheduled",
+  };
+
+  const AUTOMATION_PRESETS = [
+    {
+      key: "story-live",
+      title: "Share every new post as a Story",
+      text: "When a post goes live, share its image or video as a Facebook and Instagram Story.",
+      rule: { name: "Story when a post goes live", trigger: { event: "published", minutes: 5 }, filter: {}, actions: [{ type: "story", channels: ["facebook", "instagram"], media: "post" }] },
+    },
+    {
+      key: "teaser",
+      title: "Tease launches 1 hour before",
+      text: "For posts tagged #launch: a Story plus a short teaser on X, Bluesky and Mastodon an hour before.",
+      rule: { name: "Launch teaser", trigger: { event: "before", minutes: 60 }, filter: { tags: ["launch"] }, actions: [{ type: "story", channels: ["facebook", "instagram"], media: "post" }, { type: "post", channels: ["x", "bluesky", "mastodon"], media: "none", text: "Coming up at {{time}} (Cairo): {{title}}" }] },
+    },
+    {
+      key: "offer",
+      title: "Announce new offers everywhere",
+      text: "When a post tagged #offer is scheduled, share a Story and announce it on Telegram, X and LinkedIn right away.",
+      rule: { name: "New offer announcement", trigger: { event: "scheduled", minutes: 0 }, filter: { tags: ["offer"] }, actions: [{ type: "story", channels: ["facebook", "instagram"], media: "post" }, { type: "post", channels: ["telegram", "x", "linkedin"], media: "post", text: "New offer: {{excerpt}}\n\n{{pricing}}" }] },
+    },
+    {
+      key: "follow-up",
+      title: "Next-day follow-up",
+      text: "A day after a #launch post goes out, remind followers who missed it.",
+      rule: { name: "Next-day reminder", trigger: { event: "published", minutes: 1440 }, filter: { tags: ["launch"] }, actions: [{ type: "post", channels: ["x", "bluesky", "mastodon"], media: "none", text: "In case you missed it: {{title}}\n\n{{site}}" }] },
+    },
+  ];
+
+  function durationText(minutes) {
+    const m = Number(minutes || 0);
+    if (!m) return "";
+    if (m % 1440 === 0) return plural(m / 1440, "day");
+    if (m % 60 === 0) return plural(m / 60, "hour");
+    return plural(m, "minute");
+  }
+
+  function automationSentence(rule) {
+    const t = rule.trigger || {};
+    const f = rule.filter || {};
+    const when = t.event === "before"
+      ? `${durationText(t.minutes)} before`
+      : t.event === "published"
+        ? t.minutes ? `${durationText(t.minutes)} after` : "As soon as"
+        : t.minutes ? `${durationText(t.minutes)} after` : "As soon as";
+    const what = [
+      f.language ? (f.language === "ar" ? "Arabic" : "English") : "",
+      "post",
+      f.tags?.length ? `tagged ${f.tags.map((tag) => `#${tag}`).join(" or ")}` : "",
+      f.pillars?.length ? `in ${f.pillars.map(pillarLabel).join(" / ")}` : "",
+      f.channels?.length ? `going to ${f.channels.map(channelLabel).join(" / ")}` : "",
+      f.keyword ? `mentioning “${f.keyword}”` : "",
+    ].filter(Boolean).join(" ");
+    const verb = t.event === "scheduled" ? "is scheduled" : t.event === "before" ? "publishes" : "publishes";
+    const actions = (rule.actions || []).map((action) =>
+      action.type === "story" ? `share a Story on ${action.channels.map(channelLabel).join(" & ")}` : `post on ${action.channels.map(channelLabel).join(", ")}`
+    );
+    const article = /^[AEIOU]/i.test(what) ? "an" : "a";
+    return `${when} ${t.event === "before" ? `${article} ${what}` : `${article} ${what}`} ${verb}, ${actions.join(" and ")}.`;
+  }
+
+  async function loadAutomations() {
+    state.automations = await api("/api/automations");
+    return state.automations;
+  }
+
+  async function renderAutomations() {
+    if (!state.automations) {
+      $("#view").innerHTML = `<div class="card card-pad"><div class="skeleton" style="width:30%"></div><div class="skeleton" style="width:70%;margin-top:14px"></div></div>`;
+      try {
+        await loadAutomations();
+      } catch (error) {
+        $("#view").innerHTML = `<div class="card">${emptyState("Automations unavailable", error.message)}</div>`;
+        return;
+      }
+      if (state.view !== "automations") return;
+    }
+    const data = state.automations;
+    const rules = data.automations || [];
+    const runs = data.runs || [];
+    $("#view").innerHTML = `
+      <div class="page-head">
+        <div><span class="eyebrow">Automations</span><h2>${plural(rules.filter((rule) => rule.enabled).length, "active rule")} <small>of ${rules.length}</small></h2><p>Share Stories, teasers, offers and follow-ups automatically around your posts.</p></div>
+        <div class="page-head-actions"><button class="btn btn-primary" data-auto-new>${icon("plus")}New automation</button></div>
+      </div>
+      <div class="alert ${data.live ? "lime" : "amber"}">${icon(data.live ? "bolt" : "info")}<div><strong>${data.live ? "Automations are running" : "Automations are paused while the portal is in dry run"}</strong><span>${data.live ? "Rules are checked every minute together with the scheduler." : "Use Test to see exactly what a rule would do. They start running when live publishing and the scheduler are on."}</span></div></div>
+      <div class="inline-alert info-note">${icon("story")}<span><strong>Stories</strong> can be published to Facebook and Instagram only — no other platform offers a Stories API. For X, LinkedIn, Bluesky, Mastodon, Threads, Telegram and Discord use a <strong>Post</strong> action (teaser, announcement or follow-up).</span></div>
+      ${rules.length ? `<div class="auto-list section">${rules.map((rule) => `
+        <article class="card auto-card ${rule.enabled ? "" : "is-paused"}">
+          <label class="switch" title="${rule.enabled ? "Pause" : "Turn on"}"><input type="checkbox" data-auto-toggle="${esc(rule.id)}" ${rule.enabled ? "checked" : ""} /><span></span></label>
+          <div class="auto-main">
+            <strong>${esc(rule.name)}</strong>
+            <p>${esc(automationSentence(rule))}</p>
+            <div class="chips">${rule.actions.map((action) => `<span class="chip ${action.type === "story" ? "purple" : "cyan"}">${action.type === "story" ? "Story" : "Post"} · ${action.channels.map(channelLabel).join(", ")}</span>`).join("")}<span class="chip muted">${rule.runCount ? `ran ${plural(rule.runCount, "time")} · last ${esc(relativeInstant(rule.lastRunAt))}` : "not run yet"}</span></div>
+          </div>
+          <div class="auto-actions">
+            <button class="btn btn-outline btn-sm" data-auto-test="${esc(rule.id)}">${icon("play")}Test</button>
+            <button class="btn btn-ghost btn-sm" data-auto-edit="${esc(rule.id)}">Edit</button>
+            <button class="icon-btn sm" data-auto-more="${esc(rule.id)}" aria-label="More" aria-haspopup="menu">${icon("more")}</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      <div class="section">
+        <div class="section-head"><h3>${rules.length ? "Add from a recipe" : "Start from a recipe"}</h3></div>
+        <div class="preset-grid">${AUTOMATION_PRESETS.map((preset) => `<button type="button" class="card preset" data-auto-preset="${preset.key}"><strong>${esc(preset.title)}</strong><span>${esc(preset.text)}</span></button>`).join("")}</div>
+      </div>
+      <div class="card card-pad section">
+        <div class="section-head"><h3>Recent runs</h3><span>${plural(runs.length, "run")}</span></div>
+        ${runs.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>Automation</th><th>Post</th><th>Result</th></tr></thead><tbody>${runs.slice(0, 30).map((run, index) => `
+          <tr><td>${esc(fmtInstant(run.at))}</td><td>${esc(run.ruleName)}</td><td><button class="link-btn" data-edit="${esc(run.postId)}">${esc(run.postTitle)}</button></td>
+          <td><button class="link-btn" data-auto-run-detail="${index}">${run.ok}/${run.total} succeeded</button></td></tr>`).join("")}</tbody></table></div>` : emptyState("No runs yet", "Runs appear here once a rule fires.")}
+      </div>
+    `;
+  }
+
+  function outcomesTable(outcomes) {
+    return `<div class="result-list">${outcomes.map((outcome) => {
+      const label = outcome.dryRun ? (outcome.ok ? "Would run" : "Would skip") : outcome.ok ? "Done" : outcome.skipped ? "Skipped" : "Failed";
+      const cls = outcome.dryRun ? (outcome.ok ? "scheduled" : "blocked") : outcome.ok ? "published" : outcome.skipped ? "blocked" : "failed";
+      return `<div class="result-row">
+        <div class="result-channel">${channelIcon(outcome.channel, { size: "xs" })}<strong>${esc(channelLabel(outcome.channel))}</strong><span class="chip ${outcome.type === "story" ? "purple" : "cyan"}">${outcome.type === "story" ? "Story" : "Post"}</span></div>
+        <span class="status ${cls}">${esc(label)}</span>
+        <p class="result-detail">${esc(outcome.reason || outcome.error || outcome.url || (outcome.id ? `id: ${outcome.id}` : ""))}${outcome.text ? `<br><span class="quote" dir="auto">${esc(outcome.text)}</span>` : ""}</p>
+      </div>`;
+    }).join("")}</div>`;
+  }
+
+  async function testAutomation(id, { live = false } = {}) {
+    const rule = state.automations?.automations.find((item) => item.id === id);
+    if (!rule) return;
+    if (live) {
+      if (!state.overview?.live) return toast("Live publishing is locked (MARKETING_LIVE=false).", "error");
+      const ok = await confirmDialog({ title: "Run now?", message: `Run <strong>${esc(rule.name)}</strong> for real on the next matching post. Stories and posts are published immediately.`, confirmLabel: "Run now", danger: true });
+      if (!ok) return;
+    }
+    try {
+      const result = await api(`/api/automations/${encodeURIComponent(id)}/${live ? "run" : "test"}`, { method: "POST", body: jsonBody({}) });
+      openModal({
+        title: `${live ? "Ran" : "Test"} · ${rule.name}`,
+        wide: true,
+        body: `<p class="prose">${live ? "Ran on" : "Simulated on"} <strong dir="auto">${esc(result.post.title)}</strong> (${esc(fmtWall(result.post.scheduledAt))}). ${plural(result.matching, "post")} currently match this rule.${live ? "" : " Nothing was sent."}</p>${outcomesTable(result.outcomes)}`,
+        actions: [{ label: "Close", className: "btn-ghost" }],
+      });
+      if (live) {
+        state.automations = null;
+        renderAutomations();
+      }
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  function automationForm(rule) {
+    const t = rule.trigger || { event: "published", minutes: 0 };
+    const unit = !t.minutes ? 1 : t.minutes % 1440 === 0 ? 1440 : t.minutes % 60 === 0 ? 60 : 1;
+    const f = rule.filter || {};
+    const pillars = state.meta?.pillars || Object.keys(PILLAR_LABEL);
+    return `<form id="auto-form" class="auto-form">
+      <p class="auto-sentence" id="auto-sentence"></p>
+      <label class="field"><span>Name</span><input id="auto-name" maxlength="80" value="${esc(rule.name || "")}" placeholder="Offer story" autofocus /></label>
+      <fieldset class="auto-step"><legend><b>1</b> When</legend>
+        <div class="field-row">
+          <label class="field"><span>Trigger</span><select id="auto-event">${Object.entries(EVENT_LABEL).map(([key, label]) => `<option value="${key}" ${t.event === key ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+          <label class="field"><span id="auto-delay-label">Timing</span><div class="inline-input"><input type="number" min="0" id="auto-amount" value="${t.minutes ? t.minutes / unit : 0}" /><select id="auto-unit"><option value="1" ${unit === 1 ? "selected" : ""}>minutes</option><option value="60" ${unit === 60 ? "selected" : ""}>hours</option><option value="1440" ${unit === 1440 ? "selected" : ""}>days</option></select></div></label>
+        </div>
+      </fieldset>
+      <fieldset class="auto-step"><legend><b>2</b> Which posts <em>(leave empty for all posts)</em></legend>
+        <div class="field-row">
+          <label class="field"><span>Tags</span><input id="auto-tags" list="tag-options" value="${esc((f.tags || []).join(", "))}" placeholder="offer, launch" /></label>
+          <label class="field"><span>Language</span><select id="auto-lang"><option value="">Any</option><option value="en" ${f.language === "en" ? "selected" : ""}>English</option><option value="ar" ${f.language === "ar" ? "selected" : ""}>Arabic</option></select></label>
+        </div>
+        <div class="field"><span>Pillars</span><div class="chip-picker" id="auto-pillars">${pillars.map((pillar) => `<label class="pick ${f.pillars?.includes(pillar) ? "is-checked" : ""}"><input type="checkbox" value="${esc(pillar)}" ${f.pillars?.includes(pillar) ? "checked" : ""} />${esc(pillarLabel(pillar))}</label>`).join("")}</div></div>
+        <label class="field"><span>Text contains</span><input id="auto-keyword" value="${esc(f.keyword || "")}" placeholder="e.g. discount" /></label>
+      </fieldset>
+      <fieldset class="auto-step"><legend><b>3</b> Then</legend>
+        <div id="auto-actions"></div>
+        <div class="form-actions"><button type="button" class="btn btn-ghost btn-sm" data-add-action="story">${icon("story")}Add Story</button><button type="button" class="btn btn-ghost btn-sm" data-add-action="post">${icon("send")}Add Post</button></div>
+      </fieldset>
+      <p class="field-error" id="auto-error" hidden></p>
+    </form>`;
+  }
+
+  function actionEditor(action, index) {
+    const story = action.type === "story";
+    const channels = state.connections.filter((channel) => channel.mode === "api" && channel.key !== "devto");
+    return `<div class="action-card" data-action-index="${index}">
+      <div class="action-head">
+        <div class="segmented"><button type="button" class="${story ? "is-active" : ""}" data-action-type="story">${icon("story")}Story</button><button type="button" class="${story ? "" : "is-active"}" data-action-type="post">${icon("send")}Post</button></div>
+        <button type="button" class="icon-btn sm danger" data-action-remove aria-label="Remove action">${icon("trash")}</button>
+      </div>
+      <div class="channel-picker compact">${channels.map((channel) => {
+        const allowed = !story || channel.capabilities?.story;
+        const checked = action.channels.includes(channel.key);
+        return `<label class="channel-toggle ${checked ? "is-checked" : ""} ${allowed ? "" : "is-disabled"}" title="${allowed ? (channel.configured ? "Connected" : "Not connected yet — will be skipped") : `${channel.label} has no Stories API`}"><input type="checkbox" value="${esc(channel.key)}" ${checked ? "checked" : ""} ${allowed ? "" : "disabled"} />${channelIcon(channel.key, { size: "xs" })}<span>${esc(channel.label)}</span><i class="readiness ${channel.configured ? "ready" : "setup"}"></i></label>`;
+      }).join("")}</div>
+      <div class="field-row">
+        <label class="field"><span>Media</span><select data-action-media>
+          <option value="post" ${action.media === "post" ? "selected" : ""}>The post's image or video</option>
+          <option value="poster" ${action.media === "poster" ? "selected" : ""}>Video cover image (if the post is a video)</option>
+          ${story ? "" : `<option value="none" ${action.media === "none" ? "selected" : ""}>No media (text only)</option>`}
+        </select></label>
+      </div>
+      ${story ? `<p class="field-hint">Stories show the image or video only — platforms don't allow captions or link stickers through their API.</p>` : `
+        <label class="field"><span>Text</span><textarea rows="3" data-action-text dir="auto" placeholder="Coming up at {{time}}: {{title}}">${esc(action.text || "")}</textarea></label>
+        <div class="editor-toolbar flat"><span>Insert</span>${["{{title}}", "{{excerpt}}", "{{time}}", "{{date}}", "{{site}}", "{{pricing}}"].map((token) => `<button type="button" class="token-btn" data-action-token="${token}">${token}</button>`).join("")}</div>`}
+    </div>`;
+  }
+
+  function openAutomationModal(existing = null, preset = null) {
+    const draft = JSON.parse(JSON.stringify(existing || preset || { name: "", trigger: { event: "published", minutes: 0 }, filter: {}, actions: [{ type: "story", channels: ["facebook", "instagram"], media: "post" }] }));
+    const readForm = () => {
+      const unit = Number($("#auto-unit").value);
+      draft.name = $("#auto-name").value.trim();
+      draft.trigger = { event: $("#auto-event").value, minutes: Math.round(Number($("#auto-amount").value || 0) * unit) };
+      draft.filter = {
+        tags: $("#auto-tags").value.split(",").map((tag) => tag.trim()).filter(Boolean),
+        language: $("#auto-lang").value,
+        pillars: $$("#auto-pillars input:checked").map((input) => input.value),
+        keyword: $("#auto-keyword").value.trim(),
+      };
+      $$("#auto-actions .action-card").forEach((card) => {
+        const action = draft.actions[Number(card.dataset.actionIndex)];
+        action.channels = $$(".channel-picker input:checked", card).map((input) => input.value);
+        action.media = $("[data-action-media]", card).value;
+        const text = $("[data-action-text]", card);
+        if (text) action.text = text.value;
+      });
+      return draft;
+    };
+    const renderActions = () => {
+      $("#auto-actions").innerHTML = draft.actions.map(actionEditor).join("") || `<p class="field-hint">Add at least one action.</p>`;
+      updateSentence();
+    };
+    const updateSentence = () => {
+      readForm();
+      $("#auto-sentence").textContent = draft.actions.length && draft.actions.every((action) => action.channels.length) ? automationSentence(draft) : "Pick when it runs, which posts, and what to share.";
+      $("#auto-delay-label").textContent = draft.trigger.event === "before" ? "How long before" : "Delay (0 = right away)";
+    };
+    openModal({
+      title: existing ? "Edit automation" : "New automation",
+      wide: true,
+      body: automationForm(draft),
+      actions: [
+        { label: "Cancel", className: "btn-ghost" },
+        {
+          label: existing ? "Save" : "Create automation",
+          className: "btn-primary",
+          stay: true,
+          onClick: async (button) => {
+            readForm();
+            try {
+              await withBusy(button, async () => {
+                const body = { ...draft, enabled: existing ? existing.enabled : true };
+                if (existing) await api(`/api/automations/${encodeURIComponent(existing.id)}`, { method: "PUT", body: jsonBody(body) });
+                else await api("/api/automations", { method: "POST", body: jsonBody(body) });
+              });
+              toast(existing ? "Automation saved." : "Automation created. Use Test to preview it.", "success");
+              state.automations = null;
+              if (state.view === "automations") renderAutomations();
+              return false;
+            } catch (error) {
+              $("#auto-error").textContent = error.message;
+              $("#auto-error").hidden = false;
+              return true;
+            }
+          },
+        },
+      ],
+      onOpen: () => {
+        renderActions();
+        const form = $("#auto-form");
+        form.addEventListener("input", updateSentence);
+        form.addEventListener("change", (event) => {
+          const pick = event.target.closest(".pick, .channel-toggle");
+          if (pick) pick.classList.toggle("is-checked", event.target.checked);
+          updateSentence();
+        });
+        form.addEventListener("click", (event) => {
+          const add = event.target.closest("[data-add-action]");
+          if (add) {
+            readForm();
+            draft.actions.push(add.dataset.addAction === "story" ? { type: "story", channels: ["facebook", "instagram"], media: "post" } : { type: "post", channels: [], media: "none", text: "" });
+            renderActions();
+          }
+          const card = event.target.closest(".action-card");
+          if (!card) return;
+          const index = Number(card.dataset.actionIndex);
+          if (event.target.closest("[data-action-remove]")) {
+            readForm();
+            draft.actions.splice(index, 1);
+            renderActions();
+          }
+          const type = event.target.closest("[data-action-type]");
+          if (type) {
+            readForm();
+            const action = draft.actions[index];
+            action.type = type.dataset.actionType;
+            if (action.type === "story") {
+              action.channels = action.channels.filter((key) => ["facebook", "instagram"].includes(key));
+              if (!action.channels.length) action.channels = ["facebook", "instagram"];
+              if (action.media === "none") action.media = "post";
+            }
+            renderActions();
+          }
+          const token = event.target.closest("[data-action-token]");
+          if (token) {
+            const textarea = $("[data-action-text]", card);
+            insertAtCursor(textarea, token.dataset.actionToken);
+          }
+        });
+      },
+    });
+  }
+
+  function automationMenu(anchor, id) {
+    const rule = state.automations?.automations.find((item) => item.id === id);
+    if (!rule) return;
+    openMenu(anchor, [
+      { label: "Test (dry run)", icon: "play", onClick: () => testAutomation(id) },
+      { label: "Run now on next post…", icon: "bolt", disabled: !state.overview?.live, hint: state.overview?.live ? "" : "live locked", onClick: () => testAutomation(id, { live: true }) },
+      { label: "Duplicate", icon: "copy", onClick: () => openAutomationModal(null, { ...rule, name: `${rule.name} (copy)` }) },
+      { divider: true },
+      {
+        label: "Delete",
+        icon: "trash",
+        danger: true,
+        onClick: async () => {
+          const ok = await confirmDialog({ title: "Delete automation", message: `Delete <strong>${esc(rule.name)}</strong>? Past runs stay in the log.`, confirmLabel: "Delete", danger: true });
+          if (!ok) return;
+          try {
+            await api(`/api/automations/${encodeURIComponent(id)}`, { method: "DELETE" });
+            toast("Automation deleted.", "success");
+            state.automations = null;
+            renderAutomations();
+          } catch (error) {
+            toast(error.message, "error");
+          }
+        },
+      },
+    ]);
+  }
+
+  async function toggleAutomation(id, enabled) {
+    const rule = state.automations?.automations.find((item) => item.id === id);
+    if (!rule) return;
+    try {
+      await api(`/api/automations/${encodeURIComponent(id)}`, { method: "PUT", body: jsonBody({ ...rule, enabled }) });
+      rule.enabled = enabled;
+      toast(enabled ? `“${rule.name}” is on.` : `“${rule.name}” is paused.`, "success");
+      renderAutomations();
+    } catch (error) {
+      toast(error.message, "error");
+      renderAutomations();
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Content health
+   * ------------------------------------------------------------------ */
+
+  const ISSUE_LABEL = {
+    repeat: "Repeated message",
+    "ig-link": "Link in Instagram caption",
+    "no-hashtags": "No hashtags",
+    "too-long": "Too long for a channel",
+    "no-media": "No media",
+    "no-alt": "No alt text",
+    "no-cta": "No call to action",
+  };
+
+  async function renderHealth() {
+    if (!state.audit) {
+      $("#view").innerHTML = `<div class="card card-pad"><div class="skeleton" style="width:30%"></div><div class="skeleton" style="width:70%;margin-top:14px"></div></div>`;
+      try {
+        state.audit = await api("/api/content/audit");
+      } catch (error) {
+        $("#view").innerHTML = `<div class="card">${emptyState("Content audit unavailable", error.message)}</div>`;
+        return;
+      }
+      if (state.view !== "health") return;
+    }
+    const audit = state.audit;
+    const tone = audit.score >= 80 ? "lime" : audit.score >= 60 ? "amber" : "rose";
+    const flagged = Object.entries(audit.issues || {})
+      .map(([id, issues]) => ({ post: state.posts.find((post) => post.id === id), issues }))
+      .filter((item) => item.post)
+      .sort((a, b) => b.issues.filter((i) => i.level === "error").length - a.issues.filter((i) => i.level === "error").length || b.issues.filter((i) => i.level === "warn").length - a.issues.filter((i) => i.level === "warn").length || String(a.post.scheduledAt).localeCompare(String(b.post.scheduledAt)));
+    const totalMix = Math.max(1, Object.values(audit.pillarMix || {}).reduce((sum, n) => sum + n, 0));
+    const actionFor = (code, item = {}) => ({
+      caps: `<button class="btn btn-primary btn-sm" data-apply-recommended>Apply recommended caps</button>`,
+      "link-in-bio": `<button class="btn btn-primary btn-sm" data-rules="instagram">Set up Instagram rules</button>`,
+      hashtags: (item.channels || ["Instagram", "LinkedIn"]).map((label) => {
+        const channel = state.connections.find((entry) => entry.label === label);
+        return channel ? `<button class="btn btn-outline btn-sm" data-rules="${esc(channel.key)}">${esc(label)} hashtags</button>` : "";
+      }).join(" "),
+      repeat: `<button class="btn btn-ghost btn-sm" data-health-filter="repeat">Show posts</button>`,
+      "too-long": `<button class="btn btn-ghost btn-sm" data-health-filter="too-long">Show posts</button>`,
+    }[code] || "");
+    const issueFilter = state.healthFilter || "";
+    const shown = issueFilter ? flagged.filter((item) => item.issues.some((issue) => issue.code === issueFilter)) : flagged;
+
+    $("#view").innerHTML = `
+      <div class="page-head">
+        <div><span class="eyebrow">Content health</span><h2>${plural(audit.upcoming, "upcoming post")} checked</h2><p>Checks the queue for what hurts reach: repeated copy, over-posting, links Instagram can't open, missing hashtags and posts that are too long.</p></div>
+        <div class="page-head-actions"><button class="btn btn-ghost" data-health-refresh>${icon("refresh")}Re-check</button></div>
+      </div>
+      <div class="health-top">
+        <div class="card score-card ${tone}"><div class="score-ring" style="--score:${audit.score}"><strong>${audit.score}</strong><span>/ 100</span></div><div><strong>${audit.score >= 80 ? "Healthy" : audit.score >= 60 ? "Needs work" : "At risk"}</strong><span>${fmtNumber(audit.counts.error)} errors · ${fmtNumber(audit.counts.warn)} warnings · ${fmtNumber(audit.counts.info)} tips</span><span>${fmtNumber(audit.uniqueMessages)} unique messages · ${fmtNumber(audit.questions)} posts ask a question</span></div></div>
+        <div class="card card-pad suggestions">
+          <div class="section-head"><h3>What to fix first</h3></div>
+          ${audit.suggestions.length ? audit.suggestions.map((item) => `<div class="suggestion">${icon("alert")}<p>${esc(item.text)}</p><div>${actionFor(item.code, item)}</div></div>`).join("") : emptyState("Looking good", "No major issues in the upcoming queue.")}
+        </div>
+      </div>
+      <div class="section two-col">
+        <div class="card">
+          <div class="card-pad pb-0"><div class="section-head"><h3>Posts per day by channel</h3><span>scheduled</span></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Channel</th><th class="num">Avg</th><th class="num">Busiest day</th><th class="num">Recommended</th><th>Cap</th><th></th></tr></thead><tbody>
+            ${audit.volume.map((row) => `<tr><td><div class="channel-name">${channelIcon(row.channel, { size: "xs" })}<strong>${esc(row.label)}</strong></div></td><td class="num">${row.avgPerDay}</td><td class="num ${row.over ? "text-rose" : ""}">${row.maxPerDay}</td><td class="num">${row.recommended || "—"}</td><td>${row.cap ? `<span class="chip purple">max ${row.cap}</span>` : `<span class="muted">none</span>`}</td><td><button class="link-btn" data-rules="${esc(row.channel)}">${row.cap ? "Edit" : "Set cap"}</button></td></tr>`).join("") || `<tr><td colspan="6" class="muted">Nothing scheduled.</td></tr>`}
+          </tbody></table></div>
+        </div>
+        <div class="card card-pad">
+          <div class="section-head"><h3>Mix</h3><span>upcoming</span></div>
+          <div class="lang-split"><span style="width:${((audit.languageMix.en || 0) / totalMix) * 100}%">EN ${fmtNumber(audit.languageMix.en || 0)}</span><span style="width:${((audit.languageMix.ar || 0) / totalMix) * 100}%">AR ${fmtNumber(audit.languageMix.ar || 0)}</span></div>
+          <div class="bar-chart" style="margin-top:14px">${Object.entries(audit.pillarMix || {}).sort((a, b) => b[1] - a[1]).map(([pillar, count]) => `<div class="bar-row"><label>${esc(pillarLabel(pillar))}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((count / totalMix) * 100)}%"></div></div><strong>${Math.round((count / totalMix) * 100)}%</strong></div>`).join("")}</div>
+        </div>
+      </div>
+      <div class="card section">
+        <div class="card-pad pb-0"><div class="section-head"><h3>Posts with issues</h3>
+          <select id="health-filter" aria-label="Issue type"><option value="">All issues (${flagged.length})</option>${Object.entries(audit.byCode || {}).map(([code, count]) => `<option value="${esc(code)}" ${issueFilter === code ? "selected" : ""}>${esc(ISSUE_LABEL[code] || code)} (${count})</option>`).join("")}</select></div></div>
+        ${shown.length ? `<div class="issue-list">${shown.slice(0, 60).map(({ post, issues }) => `
+          <div class="issue-row">
+            <div class="issue-post"><button class="title-link" data-edit="${esc(post.id)}" dir="auto">${esc(post.title)}</button><span>${esc(fmtWall(post.scheduledAt, { year: false }))} · ${esc(String(post.language).toUpperCase())} · ${statusChip(post.status)}</span></div>
+            <ul>${issues.filter((issue) => !issueFilter || issue.code === issueFilter).map((issue) => `<li class="lvl-${issue.level}">${esc(issue.message)}</li>`).join("")}</ul>
+          </div>`).join("")}</div>${shown.length > 60 ? `<p class="field-hint card-pad">Showing 60 of ${shown.length}.</p>` : ""}` : emptyState("No issues", "Nothing flagged for this filter.")}
+      </div>
+    `;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Trash
+   * ------------------------------------------------------------------ */
+
+  async function renderTrash() {
+    if (!state.trash) {
+      $("#view").innerHTML = `<div class="card card-pad"><div class="skeleton" style="width:30%"></div></div>`;
+      try {
+        state.trash = (await api("/api/trash")).items || [];
+      } catch (error) {
+        $("#view").innerHTML = `<div class="card">${emptyState("Trash unavailable", error.message)}</div>`;
+        return;
+      }
+      if (state.view !== "trash") return;
+    }
+    const items = state.trash;
+    $("#view").innerHTML = `
+      <div class="page-head">
+        <div><span class="eyebrow">Trash</span><h2>${plural(items.length, "deleted post")}</h2><p>Deleted posts stay here for 30 days. Restored posts come back as drafts so nothing publishes by surprise.</p></div>
+        <div class="page-head-actions"><a class="btn btn-ghost" href="#/content">Back to content</a>${items.length ? `<button class="btn btn-danger" data-trash-empty>${icon("trash")}Empty trash</button>` : ""}</div>
+      </div>
+      <div class="card">${items.length ? `<div class="table-wrap"><table><thead><tr><th>Post</th><th>Was</th><th>Deleted</th><th></th></tr></thead><tbody>
+        ${items.map((item) => `<tr><td><div class="cell-title"><strong dir="auto">${esc(item.post.title)}</strong><span>${esc(fmtWall(item.post.scheduledAt, { year: false }))} · ${esc(String(item.post.language || "en").toUpperCase())}</span></div></td><td>${statusChip(item.post.status)}</td><td>${esc(relativeInstant(item.deletedAt))}</td>
+          <td class="col-actions"><div class="row-actions"><button class="btn btn-outline btn-sm" data-trash-restore="${esc(item.post.id)}">Restore</button><button class="icon-btn sm danger" data-trash-delete="${esc(item.post.id)}" title="Delete forever" aria-label="Delete forever">${icon("trash")}</button></div></td></tr>`).join("")}
+      </tbody></table></div>` : emptyState("Trash is empty", "Deleted posts appear here for 30 days.")}</div>
+    `;
+  }
+
+  async function trashAction(kind, id) {
+    try {
+      if (kind === "restore") {
+        const result = await api(`/api/trash/${encodeURIComponent(id)}/restore`, { method: "POST", body: jsonBody({}) });
+        toast(`Restored “${result.post.title}” as a draft.`, "success", { action: { label: "Open", onClick: () => openEditor(state.posts.find((post) => post.id === result.post.id) || result.post) } });
+      } else if (kind === "delete") {
+        const ok = await confirmDialog({ title: "Delete forever?", message: "This post can't be recovered afterwards.", confirmLabel: "Delete forever", danger: true });
+        if (!ok) return;
+        await api(`/api/trash/${encodeURIComponent(id)}`, { method: "DELETE" });
+        toast("Deleted forever.", "success");
+      } else if (kind === "empty") {
+        const ok = await confirmDialog({ title: "Empty trash?", message: `Permanently delete ${plural(state.trash.length, "post")}? This can't be undone.`, confirmLabel: "Empty trash", danger: true });
+        if (!ok) return;
+        await api("/api/trash", { method: "DELETE" });
+        toast("Trash emptied.", "success");
+      }
+      state.trash = null;
+      await loadPosts();
+    } catch (error) {
+      toast(error.message, "error");
+    }
   }
 
   /* ------------------------------------------------------------------ *
    * Analytics and reports
    * ------------------------------------------------------------------ */
 
+  function metricCell(metrics, key) {
+    const value = metricValue(metrics?.[key], metrics?.lastUpdated);
+    const scope = metrics?.windows?.[key];
+    return scope && value !== "—" ? `<span class="has-tip" title="${esc(scope)}">${value}</span>` : value;
+  }
+
+  function delta(value) {
+    if (value === null || value === undefined) return `<span class="muted">—</span>`;
+    if (value === 0) return `<span class="muted">0</span>`;
+    return `<span class="${value > 0 ? "text-lime" : "text-rose"}">${value > 0 ? "+" : ""}${fmtNumber(value)}</span>`;
+  }
+
+  function followerSparkline(series, channel = null) {
+    const points = (series || []).map((entry) => (channel ? entry.followers[channel] : Object.values(entry.followers).reduce((sum, n) => sum + n, 0))).filter((n) => Number.isFinite(n));
+    if (points.length < 2) return `<p class="field-hint">Follower history starts with the first metrics sync; the trend appears after two days of data.</p>`;
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const span = Math.max(1, max - min);
+    const w = 600;
+    const h = 90;
+    const coords = points.map((n, i) => `${(i / (points.length - 1)) * w},${h - ((n - min) / span) * (h - 10) - 5}`).join(" ");
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Followers over ${points.length} days, from ${fmtNumber(points[0])} to ${fmtNumber(points.at(-1))}"><polyline points="${coords}" /></svg>
+      <div class="spark-legend"><span>${esc(series[0].date)}</span><span>${fmtNumber(points[0])} → <strong>${fmtNumber(points.at(-1))}</strong></span><span>${esc(series.at(-1).date)}</span></div>`;
+  }
+
   function renderAnalytics() {
     const o = state.overview;
     const metrics = o.metrics?.channels || {};
     const totals = o.metrics?.totals || {};
+    const growth = o.metrics?.growth || { channels: {} };
     const traffic = o.traffic || {};
     const channels = state.connections;
-    const withData = channels.filter((channel) => metrics[channel.key]?.lastUpdated);
+    const withData = channels.filter((channel) => metrics[channel.key]?.lastUpdated && metrics[channel.key]?.followers !== null);
     const maxFollowers = Math.max(1, ...withData.map((channel) => Number(metrics[channel.key]?.followers || 0)));
     const maxSource = Math.max(1, ...(traffic.sources || []).map((item) => Number(item.visitors || 0)));
     const firstParty = traffic.provider === "first-party";
-    const lastSync = withData.map((channel) => metrics[channel.key].lastUpdated).sort().pop();
+    const lastSync = channels.map((channel) => metrics[channel.key]?.lastUpdated).filter(Boolean).sort().pop();
+    const growth7 = Object.values(growth.channels || {}).reduce((sum, row) => (row.d7 === null ? sum : (sum ?? 0) + row.d7), null);
 
     $("#view").innerHTML = `
       <div class="page-head">
-        <div><span class="eyebrow">Analytics</span><h2>Channel performance</h2><p>Ingested from platform APIs only. A dash means the platform does not expose that metric or is not connected — never a fake zero.${lastSync ? ` Last sync ${esc(relativeInstant(lastSync))}.` : ""}</p></div>
+        <div><span class="eyebrow">Analytics</span><h2>Channel performance</h2><p>Numbers come straight from each platform's API. A dash means the platform doesn't provide that number or the channel isn't connected — never a guessed zero. Hover a number to see exactly what it covers.${lastSync ? ` Last sync ${esc(relativeInstant(lastSync))}.` : ""}</p></div>
         <div class="page-head-actions"><button class="btn btn-primary" data-sync-metrics>${icon("refresh")}Sync metrics</button></div>
       </div>
       <div class="grid metric-grid">
-        <div class="card metric-card"><span>Followers</span><strong>${totals.available?.followers ? fmtNumber(totals.followers) : "—"}</strong><em>${plural(totals.available?.followers || 0, "channel")}</em></div>
-        <div class="card metric-card"><span>Reach</span><strong>${totals.available?.reach ? fmtNumber(totals.reach) : "—"}</strong><em>${plural(totals.available?.reach || 0, "channel")}</em></div>
-        <div class="card metric-card"><span>Engagement</span><strong>${totals.available?.engagement ? fmtNumber(totals.engagement) : "—"}</strong><em>${plural(totals.available?.engagement || 0, "channel")}</em></div>
+        <div class="card metric-card"><span>Followers</span><strong>${totals.available?.followers ? fmtNumber(totals.followers) : "—"}</strong><em>${plural(totals.available?.followers || 0, "channel")}${growth7 !== null ? ` · ${delta(growth7)} in 7 days` : ""}</em></div>
+        <div class="card metric-card"><span>Reach</span><strong>${totals.available?.reach ? fmtNumber(totals.reach) : "—"}</strong><em class="has-tip" title="Each platform measures reach over a different window; see the table.">sum of ${plural(totals.available?.reach || 0, "channel")} · windows differ</em></div>
+        <div class="card metric-card"><span>Engagement</span><strong>${totals.available?.engagement ? fmtNumber(totals.engagement) : "—"}</strong><em class="has-tip" title="Likes, comments, reposts and clicks over each platform's own window; see the table.">sum of ${plural(totals.available?.engagement || 0, "channel")} · windows differ</em></div>
         <div class="card metric-card"><span>Landing visitors · 30d</span><strong>${traffic.configured && !traffic.error ? fmtNumber(traffic.visitors) : "—"}</strong><em>${traffic.configured ? (firstParty ? "first-party counter" : "Plausible") : "not connected"}</em></div>
       </div>
       <div class="section two-col">
         <div class="card card-pad">
-          <div class="section-head"><h3>Audience by channel</h3><span>followers</span></div>
-          ${withData.length ? `<div class="bar-chart">${withData.sort((a, b) => Number(metrics[b.key]?.followers || 0) - Number(metrics[a.key]?.followers || 0)).map((channel) => {
+          <div class="section-head"><h3>Followers over time</h3><span>${growth.days ? `${plural(growth.days, "day")} of history` : "no history yet"}</span></div>
+          ${followerSparkline(growth.series)}
+          ${withData.length ? `<div class="bar-chart" style="margin-top:14px">${withData.sort((a, b) => Number(metrics[b.key]?.followers || 0) - Number(metrics[a.key]?.followers || 0)).map((channel) => {
             const followers = Number(metrics[channel.key]?.followers || 0);
-            return `<div class="bar-row"><label>${channelIcon(channel.key, { size: "xs" })}${esc(channel.label)}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((followers / maxFollowers) * 100)}%"></div></div><strong>${metricValue(metrics[channel.key]?.followers, metrics[channel.key]?.lastUpdated)}</strong></div>`;
+            return `<div class="bar-row"><label>${channelIcon(channel.key, { size: "xs" })}${esc(channel.label)}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((followers / maxFollowers) * 100)}%"></div></div><strong>${fmtNumber(followers)}</strong></div>`;
           }).join("")}</div>` : emptyState("No channel data yet", "Connect a channel and run Sync metrics.")}
         </div>
         <div class="card card-pad">
           <div class="section-head"><h3>Landing traffic</h3><span>${traffic.configured ? (firstParty ? "First-party · 30 days" : "Plausible · 30 days") : "not connected"}</span></div>
           ${traffic.configured && !traffic.error ? `
             <div class="mini-stats"><div><span>Visitors</span><strong>${fmtNumber(traffic.visitors)}</strong></div><div><span>Pageviews</span><strong>${fmtNumber(traffic.pageviews)}</strong></div><div><span>Bounce</span><strong>${firstParty || !traffic.bounceRate ? "—" : `${fmtNumber(traffic.bounceRate)}%`}</strong></div></div>
+            ${firstParty ? `<p class="field-hint" style="margin-top:8px">Visitors are counted once per day per device (cookie-less), so the 30-day figure can count a returning person more than once. Bounce rate isn't measured by the first-party counter.</p>` : ""}
             ${(traffic.sources || []).length ? `<div class="section-head" style="margin-top:18px"><h3 class="h-sm">By source</h3><span>UTM</span></div><div class="bar-chart">${traffic.sources.slice(0, 8).map((source) => `<div class="bar-row"><label>${esc(source.source)}</label><div class="bar-track"><div class="bar-fill cyan" style="width:${Math.round((Number(source.visitors || 0) / maxSource) * 100)}%"></div></div><strong>${fmtNumber(source.visitors)}</strong></div>`).join("")}</div>` : ""}`
             : emptyState(traffic.error ? "Traffic sync failed" : "Connect analytics", traffic.error || "Deploy stats.php on the landing page or set PLAUSIBLE_SITE_ID and PLAUSIBLE_API_KEY.")}
         </div>
       </div>
-      <div class="card section"><div class="table-wrap"><table><thead><tr><th>Channel</th><th>Status</th><th class="num">Followers</th><th class="num">Reach</th><th class="num">Engagement</th><th class="num">Clicks</th><th class="num">Posts</th><th>Last sync</th></tr></thead><tbody>
-        ${channels.map((channel) => {
+      <div class="card section"><div class="table-wrap"><table><thead><tr><th>Channel</th><th>Status</th><th class="num">Followers</th><th class="num">7 days</th><th class="num">30 days</th><th class="num">Reach</th><th class="num">Engagement</th><th class="num">Clicks</th><th class="num">Posts</th><th>Last sync</th></tr></thead><tbody>
+        ${channels.filter((channel) => channel.mode === "api" || metrics[channel.key]?.lastUpdated).map((channel) => {
           const m = metrics[channel.key] || {};
-          return `<tr><td><div class="channel-name">${channelIcon(channel.key)}<div><strong>${esc(channel.label)}</strong><span class="truncate" title="${esc(m.note || "")}">${esc(m.note || channel.mode)}</span></div></div></td><td>${channelStatusChip(channel)}</td><td class="num">${metricValue(m.followers, m.lastUpdated)}</td><td class="num">${metricValue(m.reach, m.lastUpdated)}</td><td class="num">${metricValue(m.engagement, m.lastUpdated)}</td><td class="num">${metricValue(m.clicks, m.lastUpdated)}</td><td class="num">${metricValue(m.posts, m.lastUpdated)}</td><td>${m.lastUpdated ? esc(relativeInstant(m.lastUpdated)) : "—"}</td></tr>`;
+          const g = growth.channels?.[channel.key] || {};
+          return `<tr><td><div class="channel-name">${channelIcon(channel.key)}<div><strong>${esc(channel.label)}</strong><span class="truncate" title="${esc(m.note || "")}">${esc(m.note || channel.mode)}</span></div></div></td><td>${channelStatusChip(channel)}</td><td class="num">${metricCell(m, "followers")}</td><td class="num">${delta(g.d7)}</td><td class="num">${delta(g.d30)}</td><td class="num">${metricCell(m, "reach")}</td><td class="num">${metricCell(m, "engagement")}</td><td class="num">${metricCell(m, "clicks")}</td><td class="num">${metricCell(m, "posts")}</td><td>${m.lastUpdated ? esc(relativeInstant(m.lastUpdated)) : "—"}</td></tr>`;
         }).join("")}
-      </tbody></table></div></div>
+      </tbody></table></div>
+      <div class="card-pad"><p class="field-hint">Hover a number with a dotted underline to see its window (for example, Instagram reach covers the last 28 days and Bluesky engagement the latest 30 posts). Facebook reach adds up per-post unique viewers, so someone who saw two posts counts twice.</p></div></div>
     `;
   }
 
@@ -1915,11 +2615,7 @@
         const warnings = result.warnings || [];
         toast(`Synced ${plural(result.synced?.length || 0, "channel")}${warnings.length ? ` · ${plural(warnings.length, "warning")}` : ""}.`, "success");
         if (warnings.length) {
-          openModal({
-            title: "Sync warnings",
-            body: `<ul class="plain-list">${warnings.map((warning) => `<li>${esc(warning)}</li>`).join("")}</ul>`,
-            actions: [{ label: "Close", className: "btn-ghost" }],
-          });
+          openModal({ title: "Sync warnings", body: `<ul class="plain-list">${warnings.map((warning) => `<li>${esc(warning)}</li>`).join("")}</ul>`, actions: [{ label: "Close", className: "btn-ghost" }] });
         }
         await loadAll();
       } catch (error) {
@@ -1943,20 +2639,17 @@
     const posts = report.posts || {};
     const metrics = report.metrics?.totals || {};
     const traffic = report.traffic || {};
+    const delivery = Object.entries(report.delivery || {}).sort((a, b) => b[1].published - a[1].published);
     const channelCounts = report.channelCounts || {};
     const maxChannel = Math.max(1, ...Object.values(channelCounts));
-    const pillarCounts = {};
-    const langCounts = { en: 0, ar: 0 };
-    for (const post of state.posts) {
-      pillarCounts[post.pillar] = (pillarCounts[post.pillar] || 0) + 1;
-      langCounts[post.language] = (langCounts[post.language] || 0) + 1;
-    }
-    const maxPillar = Math.max(1, ...Object.values(pillarCounts));
-    const totalLang = Math.max(1, langCounts.en + langCounts.ar);
+    const top = report.topPosts || [];
+    const runs = report.automationRuns || [];
+    const totalsDelivery = delivery.reduce((sum, [, row]) => ({ published: sum.published + row.published, failed: sum.failed + row.failed }), { published: 0, failed: 0 });
+    const successRate = totalsDelivery.published + totalsDelivery.failed ? Math.round((totalsDelivery.published / (totalsDelivery.published + totalsDelivery.failed)) * 100) : null;
 
     $("#view").innerHTML = `
       <div class="page-head">
-        <div><span class="eyebrow">Reports</span><h2>Performance summary</h2><p>Generated ${esc(relativeInstant(report.generatedAt))} from the portal queue, metrics and traffic.</p></div>
+        <div><span class="eyebrow">Reports</span><h2>Performance summary</h2><p>Generated ${esc(relativeInstant(report.generatedAt))}. Delivery counts what each platform actually accepted in the last 30 days.</p></div>
         <div class="page-head-actions">
           <a class="btn btn-ghost" href="${esc(withToken(`${API_BASE}/api/reports/export?format=csv`))}" download>${icon("download")}CSV</a>
           <a class="btn btn-ghost" href="${esc(withToken(`${API_BASE}/api/reports/export?format=json`))}" download>${icon("download")}JSON</a>
@@ -1964,35 +2657,44 @@
         </div>
       </div>
       <div class="grid kpis">
-        ${kpi("Published · 30d", fmtNumber(posts.published30), `${fmtNumber(posts.published)} all time`)}
-        ${kpi("Scheduled", fmtNumber(posts.scheduled), `${fmtNumber(posts.total)} posts in portal`)}
-        ${kpi("Followers", metrics.available?.followers ? fmtNumber(metrics.followers) : "—", metrics.available?.engagement ? `${fmtNumber(metrics.engagement)} engagements` : "no engagement data")}
-        ${kpi("Landing visitors", traffic.configured && !traffic.error ? fmtNumber(traffic.visitors) : "—", traffic.configured ? (traffic.provider === "first-party" ? "first-party · 30 days" : "Plausible · 30 days") : "connect analytics")}
+        ${kpi("Posts published · 30d", fmtNumber(posts.published30), `${fmtNumber(posts.published)} all time`)}
+        ${kpi("Channel deliveries · 30d", fmtNumber(totalsDelivery.published), successRate === null ? "no attempts yet" : `${successRate}% success · ${fmtNumber(totalsDelivery.failed)} failed`, { tone: successRate !== null && successRate < 80 ? "tone-blue" : "" })}
+        ${kpi("Followers", metrics.available?.followers ? fmtNumber(metrics.followers) : "—", metrics.available?.engagement ? `${fmtNumber(metrics.engagement)} engagements (windows differ)` : "no engagement data")}
+        ${kpi("Landing visitors · 30d", traffic.configured && !traffic.error ? fmtNumber(traffic.visitors) : "—", traffic.configured ? (traffic.provider === "first-party" ? "first-party counter" : "Plausible") : "connect analytics")}
+      </div>
+      <div class="card section">
+        <div class="card-pad pb-0"><div class="section-head"><h3>Delivery by channel · 30 days</h3><span>from publish results</span></div></div>
+        ${delivery.length ? `<div class="table-wrap"><table><thead><tr><th>Channel</th><th class="num">Published</th><th class="num">Failed</th><th class="num">Skipped</th><th class="num">Daily cap</th><th>Success</th></tr></thead><tbody>
+          ${delivery.map(([channel, row]) => `<tr><td><div class="channel-name">${channelIcon(channel, { size: "xs" })}<strong>${esc(channelLabel(channel))}</strong></div></td><td class="num">${fmtNumber(row.published)}</td><td class="num ${row.failed ? "text-rose" : ""}">${fmtNumber(row.failed)}</td><td class="num">${fmtNumber(row.skipped)}</td><td class="num">${fmtNumber(row.capped)}</td><td>${row.successRate === null ? "—" : `<div class="rate"><div class="bar-track"><div class="bar-fill ${row.successRate < 80 ? "rose" : ""}" style="width:${row.successRate}%"></div></div><strong>${row.successRate}%</strong></div>`}</td></tr>`).join("")}
+        </tbody></table></div>` : `<div class="card-pad">${emptyState("No deliveries yet", "Delivery appears after posts publish.")}</div>`}
       </div>
       <div class="section report-grid">
+        <div class="card card-pad">
+          <div class="section-head"><h3>Top posts</h3><span>by engagement</span></div>
+          ${top.length ? `<ol class="top-posts">${top.map((item) => `<li><button class="link-btn" data-edit="${esc(item.id)}" dir="auto">${esc(item.title)}</button><span>${fmtNumber(item.engagement)} engagements${item.reach ? ` · ${fmtNumber(item.reach)} reach` : ""} · ${Object.keys(item.byChannel).map(channelLabel).join(", ")}</span></li>`).join("")}</ol>` : emptyState("No post-level data yet", "After posts publish, Sync metrics attaches platform numbers to each post.")}
+        </div>
         <div class="card card-pad">
           <div class="section-head"><h3>Recommendations</h3><span>rule-based</span></div>
           ${(report.recommendations || []).length ? `<div class="report-list">${report.recommendations.map((item) => `<div class="report-item">${icon("alert")}<span>${esc(item)}</span></div>`).join("")}</div>` : emptyState("No blockers", "Keep publishing and syncing metrics.")}
-        </div>
-        <div class="card card-pad">
-          <div class="section-head"><h3>Content mix</h3><span>${plural(state.posts.length, "post")}</span></div>
-          <div class="lang-split"><span style="width:${(langCounts.en / totalLang) * 100}%">EN ${Math.round((langCounts.en / totalLang) * 100)}%</span><span style="width:${(langCounts.ar / totalLang) * 100}%">AR ${Math.round((langCounts.ar / totalLang) * 100)}%</span></div>
-          <div class="bar-chart" style="margin-top:14px">${Object.entries(pillarCounts).sort((a, b) => b[1] - a[1]).map(([key, count]) => `<div class="bar-row"><label>${esc(pillarLabel(key))}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round((count / maxPillar) * 100)}%"></div></div><strong>${fmtNumber(count)}</strong></div>`).join("")}</div>
+          <a class="btn btn-ghost btn-sm" href="#/health" style="margin-top:12px">Open content health</a>
         </div>
       </div>
       <div class="section report-grid">
         <div class="card card-pad">
-          <div class="section-head"><h3>Posts by channel</h3></div>
+          <div class="section-head"><h3>Planned posts by channel</h3><span>all posts, any status</span></div>
           <div class="bar-chart">${Object.entries(channelCounts).sort((a, b) => b[1] - a[1]).map(([key, count]) => `<div class="bar-row"><label>${channelIcon(key, { size: "xs" })}${esc(channelLabel(key))}</label><div class="bar-track"><div class="bar-fill cyan" style="width:${Math.round((count / maxChannel) * 100)}%"></div></div><strong>${fmtNumber(count)}</strong></div>`).join("")}</div>
         </div>
         <div class="card card-pad">
-          <div class="section-head"><h3>Latest automation report</h3><span>${report.latestReport ? "reports/" : "none yet"}</span></div>
-          ${report.latestReport ? `<pre class="report-pre">${esc(report.latestReport)}</pre>` : emptyState("No weekly report", "Run the marketing growth report to create one.")}
+          <div class="section-head"><h3>Automation runs</h3><a class="link-btn" href="#/automations">Automations</a></div>
+          ${runs.length ? `<ul class="plain-runs">${runs.slice(0, 8).map((run) => `<li><strong>${esc(run.ruleName)}</strong><span>${esc(relativeInstant(run.at))} · ${run.ok}/${run.total} ok · ${esc(run.postTitle)}</span></li>`).join("")}</ul>` : emptyState("No automation runs", "Runs appear once a rule fires.")}
         </div>
+      </div>
+      <div class="card card-pad section">
+        <div class="section-head"><h3>Latest automation report</h3><span>${report.latestReport ? "reports/" : "none yet"}</span></div>
+        ${report.latestReport ? `<pre class="report-pre">${esc(report.latestReport)}</pre>` : emptyState("No weekly report", "Run the marketing growth report to create one.")}
       </div>
     `;
   }
-
   /* ------------------------------------------------------------------ *
    * Activity
    * ------------------------------------------------------------------ */
@@ -2349,6 +3051,9 @@
       posterPublicUrl: state.editor.poster?.publicUrl || "",
       posterName: state.editor.poster?.name || "",
       notes: $("#post-notes").value.trim(),
+      overrides: Object.fromEntries(
+        Object.entries(state.editor.overrides || {}).filter(([channel, text]) => text && text.trim() && $$("#channel-picker input:checked").some((input) => input.value === channel))
+      ),
     };
   }
 
@@ -2496,6 +3201,10 @@
     editor.preview = [];
     editor.side = "preview";
     const source = { ...(post || {}), ...(prefill || {}) };
+    editor.overrides = { ...(source.overrides || {}) };
+    editor.openOverrides = new Set(Object.keys(editor.overrides));
+    editor.issues = [];
+    editor.automations = [];
     $("#drawer-eyebrow").textContent = post?.id ? `Edit post · ${post.id}` : prefill?.title ? "New post from template" : "New post";
     $("#drawer-title").textContent = source.title || "Untitled post";
     $("#drawer-meta").innerHTML = editorMeta(post);
@@ -2541,6 +3250,8 @@
         const full = await api(`/api/posts/${encodeURIComponent(post.id)}`);
         if (state.editor.post?.id === post.id) {
           state.editor.post = full.post;
+          state.editor.issues = full.issues || [];
+          state.editor.automations = full.automations || [];
           $("#drawer-meta").innerHTML = editorMeta(full.post);
           renderSidePanel();
         }
@@ -2591,7 +3302,7 @@
     try {
       const data = await api("/api/preview", {
         method: "POST",
-        body: jsonBody({ id: $("#post-id").value || undefined, content: body.content, channels: body.channels, mediaUrl: body.mediaUrl, mediaKind: body.mediaKind, mediaPublicUrl: body.mediaPublicUrl, posterUrl: body.posterUrl }),
+        body: jsonBody({ id: $("#post-id").value || undefined, content: body.content, channels: body.channels, mediaUrl: body.mediaUrl, mediaKind: body.mediaKind, mediaPublicUrl: body.mediaPublicUrl, posterUrl: body.posterUrl, overrides: body.overrides, language: body.language }),
       });
       if (seq !== editor.previewSeq) return;
       editor.preview = data.channels || [];
@@ -2639,12 +3350,32 @@
         return;
       }
       const rtl = body.language === "ar";
-      panel.innerHTML = `<p class="field-hint">Exactly what each channel receives, with tracked links and the platform's own character counting.</p>
+      // While someone types in a per-channel box, update the cards in place so the box keeps focus.
+      if (panel.contains(document.activeElement) && document.activeElement.matches("[data-override]")) {
+        for (const item of preview) {
+          const card = panel.querySelector(`[data-preview-card="${item.channel}"]`);
+          if (!card) continue;
+          card.classList.toggle("is-over", item.over);
+          card.querySelector(".preview-text").textContent = item.text;
+          const text = card.querySelector(".limit-text");
+          if (text) text.textContent = item.limit ? `${fmtNumber(item.length)} / ${fmtNumber(item.limit)}` : `${fmtNumber(item.length)} chars`;
+          const bar = card.querySelector(".limit-bar span");
+          if (bar && item.limit) bar.style.width = `${Math.min(100, (item.length / item.limit) * 100)}%`;
+        }
+        return;
+      }
+      const issues = editor.issues || [];
+      panel.innerHTML = `${issues.length ? `<div class="checks"><h4 class="side-subhead">Checks (saved version)</h4>${issues.map((issue) => `<p class="check lvl-${issue.level}">${icon(issue.level === "info" ? "info" : "alert")}<span>${esc(issue.message)}</span></p>`).join("")}</div>` : ""}
+        <p class="field-hint">Exactly what each channel receives — tracked links, channel rules and the platform's own character counting. Use <strong>Customize</strong> to write a different version for one channel.</p>
         ${preview.map((item) => {
           const pct = item.limit ? Math.min(100, (item.length / item.limit) * 100) : 0;
           const readiness = item.mode !== "api" ? `<span class="chip muted">restricted</span>` : item.configured ? `<span class="chip lime">ready</span>` : `<span class="chip amber">not connected</span>`;
-          return `<article class="preview-card ${item.over ? "is-over" : ""}">
-            <header>${channelIcon(item.channel, { size: "xs" })}<strong>${esc(item.label)}</strong>${readiness}</header>
+          const open = editor.openOverrides?.has(item.channel);
+          return `<article class="preview-card ${item.over ? "is-over" : ""}" data-preview-card="${esc(item.channel)}">
+            <header>${channelIcon(item.channel, { size: "xs" })}<strong>${esc(item.label)}</strong>${item.custom || editor.overrides?.[item.channel] ? `<span class="chip purple">custom copy</span>` : ""}${(item.rules || []).map((rule) => `<span class="chip muted">${esc(rule)}</span>`).join("")}${readiness}
+              <button type="button" class="link-btn" data-override-toggle="${esc(item.channel)}">${open ? "Close" : editor.overrides?.[item.channel] ? "Edit custom copy" : "Customize"}</button></header>
+            ${open ? `<div class="override-box"><textarea rows="5" data-override="${esc(item.channel)}" dir="${rtl ? "rtl" : "auto"}" placeholder="Write the ${esc(item.label)} version…">${esc(editor.overrides?.[item.channel] ?? $("#post-content").value)}</textarea>
+              <div class="override-actions"><span class="field-hint">Placeholders like {{site}} work here too.</span><button type="button" class="link-btn" data-override-reset="${esc(item.channel)}">Use main copy</button></div></div>` : ""}
             <div class="preview-text" dir="${rtl ? "rtl" : "auto"}">${esc(item.text) || `<em class="muted">Empty</em>`}</div>
             ${body.mediaUrl ? `<div class="preview-media">${body.mediaKind === "video" ? `${body.posterUrl ? `<img src="${esc(body.posterUrl)}" alt="" loading="lazy" />` : ""}<span class="thumb-video overlay">${icon("play")}</span>` : `<img src="${esc(body.mediaUrl)}" alt="" loading="lazy" />`}</div>` : ""}
             <footer>
@@ -2665,6 +3396,10 @@
       let html = "";
       if (results.length) html += `<h4 class="side-subhead">Last publish${post.lastAttemptAt ? ` · ${esc(relativeInstant(post.lastAttemptAt))}` : ""}</h4>${resultsTable(post, results)}<button type="button" class="btn btn-outline btn-sm" data-side-status style="margin-top:10px">Open full results & retry</button>`;
       if (post.preview?.results?.length) html += `<h4 class="side-subhead">Last dry run · ${esc(relativeInstant(post.preview.at))}</h4>${resultsTable(post, post.preview.results, { dry: true })}`;
+      const autos = editor.automations || [];
+      if (autos.length) {
+        html += `<h4 class="side-subhead">Automations for this post</h4><ul class="auto-mini">${autos.map((rule) => `<li>${icon("bolt")}<span><strong>${esc(rule.name)}</strong> · ${rule.event === "before" ? `${durationText(rule.minutes)} before` : rule.event === "published" ? (rule.minutes ? `${durationText(rule.minutes)} after publishing` : "when it publishes") : "when scheduled"}${rule.enabled ? "" : " · paused"}${rule.ran ? ` · ran ${esc(relativeInstant(rule.ran.at))} (${rule.ran.ok}/${rule.ran.total})` : ""}</span></li>`).join("")}</ul>`;
+      }
       panel.innerHTML = html || emptyState("No attempts yet", "Use Dry run to simulate the publish. Nothing is sent.");
       return;
     }
@@ -3060,6 +3795,35 @@
       const restore = event.target.closest("[data-restore]");
       if (restore) restoreRevision(Number(restore.dataset.restore));
       if (event.target.closest("[data-side-status]") && state.editor.post?.id) showChannelStatus(state.editor.post.id);
+      const toggle = event.target.closest("[data-override-toggle]");
+      if (toggle) {
+        const channel = toggle.dataset.overrideToggle;
+        const open = state.editor.openOverrides || (state.editor.openOverrides = new Set());
+        if (open.has(channel)) open.delete(channel);
+        else {
+          open.add(channel);
+          if (!state.editor.overrides[channel]) state.editor.overrides[channel] = $("#post-content").value;
+        }
+        renderSidePanel();
+        if (open.has(channel)) $(`[data-override="${channel}"]`)?.focus();
+        schedulePreview(100);
+        updateDirty();
+      }
+      const reset = event.target.closest("[data-override-reset]");
+      if (reset) {
+        delete state.editor.overrides[reset.dataset.overrideReset];
+        state.editor.openOverrides?.delete(reset.dataset.overrideReset);
+        renderSidePanel();
+        schedulePreview(50);
+        updateDirty();
+      }
+    });
+    $("#side-panel").addEventListener("input", (event) => {
+      const box = event.target.closest("[data-override]");
+      if (!box) return;
+      state.editor.overrides[box.dataset.override] = box.value;
+      schedulePreview();
+      updateDirty();
     });
 
     // Keyboard
@@ -3181,6 +3945,35 @@
       if (d.templateUse) return useTemplate(d.templateUse);
       if (d.templateEdit) return openTemplateModal(state.templates.find((item) => item.id === d.templateEdit));
       if (d.templateDelete) return deleteTemplate(d.templateDelete);
+      if (d.autoNew !== undefined) return openAutomationModal();
+      if (d.autoPreset) {
+        const preset = AUTOMATION_PRESETS.find((item) => item.key === d.autoPreset);
+        if (preset) return openAutomationModal(null, preset.rule);
+        return;
+      }
+      if (d.autoTest) return testAutomation(d.autoTest);
+      if (d.autoEdit) return openAutomationModal(state.automations?.automations.find((item) => item.id === d.autoEdit));
+      if (d.autoMore) return automationMenu(target, d.autoMore);
+      if (d.autoRunDetail) {
+        const run = state.automations?.runs?.[Number(d.autoRunDetail)];
+        if (run) openModal({ title: `${run.ruleName} · ${fmtInstant(run.at)}`, wide: true, body: `<p class="prose">On <strong dir="auto">${esc(run.postTitle)}</strong> (${esc(run.source)}).</p>${outcomesTable(run.outcomes || [])}`, actions: [{ label: "Close", className: "btn-ghost" }] });
+        return;
+      }
+      if (d.applyRecommended !== undefined) return applyRecommendedRules(target);
+      if (d.rules) return openChannelSetup(d.rules, "rules");
+      if (d.healthRefresh !== undefined) {
+        state.audit = null;
+        return withBusy(target, renderHealth);
+      }
+      if (d.healthFilter) {
+        state.healthFilter = d.healthFilter;
+        renderHealth();
+        $(".issue-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (d.trashRestore) return trashAction("restore", d.trashRestore);
+      if (d.trashDelete) return trashAction("delete", d.trashDelete);
+      if (d.trashEmpty !== undefined) return trashAction("empty");
       if (d.connFilter) {
         state.connectionsFilter = d.connFilter;
         return renderConnections();
@@ -3243,6 +4036,11 @@
       if (id === "cal-lang" || id === "cal-channel") {
         state.calendar[id === "cal-lang" ? "lang" : "channel"] = event.target.value;
         return renderCalendar();
+      }
+      if (event.target.dataset.autoToggle) return toggleAutomation(event.target.dataset.autoToggle, event.target.checked);
+      if (id === "health-filter") {
+        state.healthFilter = event.target.value;
+        return renderHealth();
       }
       if (id === "activity-type") {
         state.activityView.type = event.target.value;

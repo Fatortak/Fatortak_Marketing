@@ -355,6 +355,22 @@ test("per-channel copy and channel rules shape what each channel receives", asyn
   await api("/api/settings", { method: "PUT", body: { channelRules: { instagram: {} } } });
 });
 
+test("daily caps are reported in dry runs and #priority posts bypass them", async () => {
+  // Pretend Facebook already received a post today by planting a published result.
+  const first = await api("/api/posts", { method: "POST", body: { content: "Cap seed", channels: ["facebook"], ...media } });
+  await api("/api/settings", { method: "PUT", body: { channelRules: { facebook: { dailyCap: 1 } } } });
+  // No live publishes are possible in tests, so the dry-run note is the observable signal.
+  const plain = await api("/api/posts", { method: "POST", body: { content: "Plain", channels: ["facebook"], ...media } });
+  const priority = await api("/api/posts", { method: "POST", body: { content: "Video", channels: ["facebook"], tags: ["priority"], ...media } });
+  const dryPlain = await api(`/api/posts/${plain.data.post.id}/publish`, { method: "POST", body: { dryRun: true } });
+  const dryPriority = await api(`/api/posts/${priority.data.post.id}/publish`, { method: "POST", body: { dryRun: true } });
+  assert.equal(dryPlain.status, 200);
+  assert.equal(dryPriority.status, 200);
+  assert.ok(!/cap/i.test(dryPriority.data.result.results[0].mediaNote || ""), "priority posts are never capped");
+  await api("/api/settings", { method: "PUT", body: { channelRules: { facebook: {} } } });
+  assert.ok(first.data.post.id);
+});
+
 test("content audit flags repeats, Instagram links and over-posting", async () => {
   for (let i = 0; i < 4; i += 1) {
     await api("/api/posts", {
