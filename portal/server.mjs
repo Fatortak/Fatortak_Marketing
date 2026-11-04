@@ -22,6 +22,11 @@ import {
   oauth1Header,
   publishStory,
   STORY_CHANNELS,
+  COMMENT_CHANNELS,
+  DM_CHANNELS,
+  fetchComments,
+  replyToComment,
+  sendDirectMessage,
 } from "./adapters.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -487,16 +492,27 @@ const CHANNEL_GUIDES = {
 };
 
 const CHANNEL_CAPABILITIES = {
-  facebook: { text: true, image: true, video: true, story: true, metrics: true },
-  instagram: { text: false, image: true, video: true, story: true, metrics: true },
-  x: { text: true, image: true, video: false, story: false, metrics: true },
-  linkedin: { text: true, image: true, video: false, story: false, metrics: false },
-  bluesky: { text: true, image: true, video: true, story: false, metrics: true },
-  mastodon: { text: true, image: true, video: true, story: false, metrics: true },
-  threads: { text: true, image: true, video: true, story: false, metrics: false },
-  telegram: { text: true, image: true, video: true, story: false, metrics: false },
-  discord: { text: true, image: true, video: true, story: false, metrics: false },
-  devto: { text: true, image: true, video: false, story: false, metrics: true },
+  facebook: { text: true, image: true, video: true, story: true, comments: true, dm: true, metrics: true },
+  instagram: { text: false, image: true, video: true, story: true, comments: true, dm: true, metrics: true },
+  x: { text: true, image: true, video: false, story: false, comments: false, dm: false, metrics: true },
+  linkedin: { text: true, image: true, video: false, story: false, comments: false, dm: false, metrics: false },
+  bluesky: { text: true, image: true, video: true, story: false, comments: true, dm: true, metrics: true },
+  mastodon: { text: true, image: true, video: true, story: false, comments: true, dm: true, metrics: true },
+  threads: { text: true, image: true, video: true, story: false, comments: false, dm: false, metrics: false },
+  telegram: { text: true, image: true, video: true, story: false, comments: false, dm: false, metrics: false },
+  discord: { text: true, image: true, video: true, story: false, comments: false, dm: false, metrics: false },
+  devto: { text: true, image: true, video: false, story: false, comments: false, dm: false, metrics: true },
+};
+
+// What each channel needs before comments and DMs work, shown in the inbox and rule builder.
+const ENGAGE_NOTES = {
+  facebook: "Comments need pages_read_engagement + pages_read_user_content. DMs are “private replies” and need pages_messaging (Meta app review), one per comment, within 7 days.",
+  instagram: "Comments need instagram_manage_comments. DMs are “private replies” and need instagram_manage_messages (Meta app review), one per comment, within 7 days.",
+  bluesky: "Replies are public. DMs need an app password created with “Allow access to your direct messages”, and the person must accept messages from you.",
+  mastodon: "DMs are posts with direct visibility that mention the person.",
+  x: "Reading replies and sending DMs need a paid X API tier.",
+  linkedin: "Comments need the Community Management API; LinkedIn has no DM API for pages.",
+  threads: "Replies need threads_read_replies (app review); Threads has no DM API.",
 };
 
 // What platforms typically reward for a brand account. Used by the content audit and as
@@ -756,6 +772,11 @@ function ensureDataShape(data) {
   data.templates = Array.isArray(data.templates) ? data.templates : defaultTemplates();
   data.automations = Array.isArray(data.automations) ? data.automations : [];
   data.automationRuns = Array.isArray(data.automationRuns) ? data.automationRuns.slice(0, 500) : [];
+  data.comments = Array.isArray(data.comments) ? data.comments.slice(0, 5000) : [];
+  data.commentRules = Array.isArray(data.commentRules) ? data.commentRules : [];
+  data.commentRuleSent = data.commentRuleSent && typeof data.commentRuleSent === "object" ? data.commentRuleSent : {};
+  data.savedReplies = Array.isArray(data.savedReplies) ? data.savedReplies : [];
+  data.commentsSyncedAt = data.commentsSyncedAt || null;
   data.metricsHistory = Array.isArray(data.metricsHistory) ? data.metricsHistory.slice(-180) : [];
   // Deleted posts stay restorable for 30 days.
   const trashCutoff = Date.now() - 30 * 86_400_000;
@@ -2293,6 +2314,269 @@ async function automationTick() {
 }
 
 /* ------------------------------------------------------------------ *
+ * Comments inbox and comment → DM rules
+ * ------------------------------------------------------------------ */
+
+const COMMENT_STATUSES = ["new", "read", "replied", "archived"];
+const DM_WINDOW_MS = 7 * 86_400_000;
+
+// Lowercase, drop Arabic diacritics and tatweel, unify alef/yaa/taa marbuta and Arabic digits,
+// so "السعر", "الســعر" and "السِّعر" all match the keyword "السعر".
+function normalizeForMatch(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[ً-ٰٟـ]/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[^\p{L}\p{N}#@]+/gu, " ")
+    .trim();
+}
+
+function commentRuleMatch(rule, comment) {
+  const f = rule.filter || {};
+  if (rule.channels?.length && !rule.channels.includes(comment.channel)) return null;
+  const post = DATA.posts.find((item) => item.id === comment.postId) || null;
+  if (f.postIds?.length && !f.postIds.includes(comment.postId)) return null;
+  if (f.tags?.length && !(post?.tags || []).some((tag) => f.tags.includes(tag))) return null;
+  const text = ` ${normalizeForMatch(comment.text)} `;
+  const keywords = (rule.keywords || []).map(normalizeForMatch).filter(Boolean);
+  if (!keywords.length) return rule.matchAll ? { keyword: "" } : null;
+  const hit = (keyword) => text.includes(` ${keyword} `) || (/[؀-ۿ]/.test(keyword) && text.includes(keyword));
+  if (rule.mode === "exact") {
+    const found = keywords.find((keyword) => normalizeForMatch(comment.text) === keyword);
+    return found ? { keyword: found } : null;
+  }
+  if (rule.mode === "all") return keywords.every(hit) ? { keyword: keywords.join(" + ") } : null;
+  const found = keywords.find(hit);
+  return found ? { keyword: found } : null;
+}
+
+function cleanCommentRule(body, existing = null) {
+  const name = String(body.name ?? existing?.name ?? "").trim().slice(0, 80);
+  if (!name) throw new Error("Give the rule a name.");
+  const channels = [...new Set((Array.isArray(body.channels) ? body.channels : existing?.channels || []).filter((key) => COMMENT_CHANNELS.includes(key)))];
+  if (!channels.length) throw new Error("Pick at least one channel that supports comments (Facebook, Instagram, Bluesky or Mastodon).");
+  const keywords = [...new Set((Array.isArray(body.keywords) ? body.keywords : String(body.keywords ?? (existing?.keywords || []).join(",")).split(","))
+    .map((keyword) => String(keyword).trim())
+    .filter(Boolean))].slice(0, 30);
+  const matchAll = Boolean(body.matchAll ?? existing?.matchAll);
+  if (!keywords.length && !matchAll) throw new Error("Add at least one keyword, or choose “every comment”.");
+  const mode = ["any", "all", "exact"].includes(body.mode) ? body.mode : existing?.mode || "any";
+  const dm = String(body.dm ?? existing?.dm ?? "").slice(0, 1000);
+  const reply = String(body.reply ?? existing?.reply ?? "").slice(0, 500);
+  if (!dm.trim() && !reply.trim()) throw new Error("Write the DM, a public reply, or both.");
+  const dmChannels = channels.filter((channel) => DM_CHANNELS.includes(channel));
+  if (dm.trim() && !dmChannels.length) throw new Error("None of the chosen channels can send DMs.");
+  const filterIn = body.filter || existing?.filter || {};
+  return {
+    id: existing?.id || `crule-${Date.now()}-${randomUUID().slice(0, 6)}`,
+    name,
+    enabled: body.enabled ?? existing?.enabled ?? true,
+    channels,
+    keywords,
+    mode,
+    matchAll,
+    filter: {
+      tags: cleanTags(filterIn.tags || []),
+      postIds: (Array.isArray(filterIn.postIds) ? filterIn.postIds : []).map(String).filter((id) => DATA.posts.some((post) => post.id === id)).slice(0, 50),
+    },
+    dm,
+    reply,
+    oncePerPerson: body.oncePerPerson ?? existing?.oncePerPerson ?? true,
+    markReplied: body.markReplied ?? existing?.markReplied ?? true,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    stats: existing?.stats || { matched: 0, sent: 0, failed: 0 },
+  };
+}
+
+function renderEngageText(template, comment, extra = {}) {
+  const post = DATA.posts.find((item) => item.id === comment.postId) || {};
+  const name = String(comment.author?.name || "").trim();
+  const text = String(template || "")
+    .replaceAll("{{name}}", name || "there")
+    .replaceAll("{{first_name}}", (name.split(/\s+/)[0] || "there"))
+    .replaceAll("{{keyword}}", extra.keyword || "")
+    .replaceAll("{{post}}", post.title || "");
+  return renderText(text, {
+    channel: comment.channel,
+    links: CONFIG.links,
+    utm: { campaign: "comment-dm", content: comment.postId || "comment", medium: "dm" },
+  });
+}
+
+function publicComment(comment) {
+  const post = DATA.posts.find((item) => item.id === comment.postId);
+  const matches = DATA.commentRules
+    .filter((rule) => rule.enabled)
+    .map((rule) => ({ rule, match: commentRuleMatch(rule, comment) }))
+    .filter((item) => item.match)
+    .map(({ rule, match }) => ({ id: rule.id, name: rule.name, keyword: match.keyword, ran: comment.ruleRuns?.[rule.id] || null }));
+  const ageMs = Date.now() - Date.parse(comment.createdAt);
+  return {
+    ...comment,
+    postTitle: post?.title || comment.postTitle || "",
+    matches,
+    dmAllowed: DM_CHANNELS.includes(comment.channel) && !comment.dm && (!["facebook", "instagram"].includes(comment.channel) || ageMs < DM_WINDOW_MS),
+    dmWindowEndsAt: ["facebook", "instagram"].includes(comment.channel) ? new Date(Date.parse(comment.createdAt) + DM_WINDOW_MS).toISOString() : null,
+  };
+}
+
+// Run every enabled rule on one comment. Real sends only in live mode; rules never touch comments
+// written before the rule existed, never DM the same person twice for a rule, and respect the
+// 7-day private-reply window on Facebook and Instagram.
+async function applyCommentRules(comment, { live }) {
+  const outcomes = [];
+  for (const rule of DATA.commentRules) {
+    if (!rule.enabled || comment.ruleRuns?.[rule.id]) continue;
+    if (Date.parse(comment.createdAt) < Date.parse(rule.createdAt)) continue;
+    const match = commentRuleMatch(rule, comment);
+    if (!match) continue;
+    const personKey = `${rule.id}:${comment.channel}:${comment.author?.id || comment.author?.handle || comment.platformId}`;
+    if (rule.oncePerPerson && DATA.commentRuleSent[personKey]) continue;
+    if (!live) {
+      outcomes.push({ rule: rule.name, dryRun: true });
+      continue;
+    }
+    const run = { at: new Date().toISOString(), keyword: match.keyword };
+    rule.stats = rule.stats || { matched: 0, sent: 0, failed: 0 };
+    rule.stats.matched += 1;
+    if (rule.dm.trim() && DM_CHANNELS.includes(comment.channel)) {
+      if (["facebook", "instagram"].includes(comment.channel) && Date.now() - Date.parse(comment.createdAt) > DM_WINDOW_MS) {
+        run.dm = { ok: false, skipped: true, reason: "Older than 7 days; Meta no longer allows a private reply." };
+      } else {
+        const text = renderEngageText(rule.dm, comment, match);
+        run.dm = { ...(await sendDirectMessage(comment.channel, comment, text)), text };
+        if (run.dm.ok) comment.dm = { at: run.at, text, ruleId: rule.id };
+      }
+    }
+    if (rule.reply.trim()) {
+      const text = renderEngageText(rule.reply, comment, match);
+      run.reply = { ...(await replyToComment(comment.channel, comment, text)), text };
+      if (run.reply.ok) comment.replies = [...(comment.replies || []), { at: run.at, text, by: `rule:${rule.name}` }];
+    }
+    const ok = (run.dm?.ok ?? true) && (run.reply?.ok ?? true);
+    if (ok) {
+      rule.stats.sent += 1;
+      DATA.commentRuleSent[personKey] = run.at;
+      if (rule.markReplied && comment.status === "new") comment.status = "replied";
+    } else {
+      rule.stats.failed += 1;
+    }
+    comment.ruleRuns = { ...(comment.ruleRuns || {}), [rule.id]: run };
+    addActivity(DATA, "engage", `Rule “${rule.name}” on a ${comment.channel} comment by ${comment.author?.name || "someone"}: ${ok ? "sent" : "failed"}.`, comment.postId);
+    outcomes.push({ rule: rule.name, ok, run });
+  }
+  return outcomes;
+}
+
+function commentFixture() {
+  const file = process.env.PORTAL_COMMENTS_FIXTURE;
+  if (!file) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+let commentSyncBusy = false;
+async function syncComments({ source = "manual" } = {}) {
+  if (commentSyncBusy) return { busy: true };
+  commentSyncBusy = true;
+  try {
+    const known = new Map(DATA.comments.map((comment) => [comment.id, comment]));
+    const fresh = [];
+    const warnings = [];
+    let checkedPosts = 0;
+    const ingest = (channel, post, item) => {
+      const id = `${channel}:${item.platformId}`;
+      const existing = known.get(id);
+      if (existing) {
+        existing.text = item.text;
+        return;
+      }
+      const comment = {
+        id,
+        channel,
+        platformId: String(item.platformId),
+        postId: post?.id || item.postId || "",
+        postTitle: post?.title || "",
+        author: item.author || { name: "Unknown" },
+        text: String(item.text || "").slice(0, 5000),
+        createdAt: item.createdAt || new Date().toISOString(),
+        parentId: item.parentId || "",
+        url: item.url || "",
+        raw: item.raw || null,
+        status: "new",
+        replies: [],
+        dm: null,
+        ruleRuns: {},
+        syncedAt: new Date().toISOString(),
+      };
+      DATA.comments.unshift(comment);
+      known.set(id, comment);
+      fresh.push(comment);
+    };
+
+    const fixture = commentFixture();
+    if (fixture) {
+      for (const item of fixture) ingest(item.channel, DATA.posts.find((post) => post.id === item.postId), item);
+    } else {
+      const cutoff = Date.now() - 30 * 86_400_000;
+      const targets = [];
+      for (const post of DATA.posts) {
+        for (const result of post.results || []) {
+          if (!COMMENT_CHANNELS.includes(result.channel) || !result.ok || result.dryRun || !result.id) continue;
+          const at = Date.parse(result.at || post.publishedAt || "");
+          if (at && at < cutoff) continue;
+          if (!connectionState(result.channel).configured) continue;
+          targets.push({ post, channel: result.channel, platformPostId: String(result.id) });
+        }
+      }
+      for (const target of targets.slice(0, 120)) {
+        checkedPosts += 1;
+        const fetched = await fetchComments(target.channel, target.platformPostId);
+        if (!fetched.ok) {
+          if (!fetched.skipped) warnings.push(`${target.channel}: ${fetched.error || fetched.reason}`);
+          continue;
+        }
+        for (const item of fetched.comments) ingest(target.channel, target.post, item);
+      }
+    }
+    DATA.comments = DATA.comments.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 5000);
+
+    const live = LIVE && !DATA.settings.dryRun;
+    let sent = 0;
+    let pending = 0;
+    // Recent comments (7 days) that no rule has handled yet, including ones that arrived while the
+    // portal was in dry run, so going live does not skip them. Oldest first.
+    const candidates = DATA.comments
+      .filter((comment) => comment.status !== "archived" && Date.now() - Date.parse(comment.createdAt) < DM_WINDOW_MS)
+      .reverse();
+    for (const comment of candidates) {
+      const outcomes = await applyCommentRules(comment, { live });
+      sent += outcomes.filter((o) => o.ok).length;
+      pending += outcomes.filter((o) => o.dryRun).length;
+    }
+    DATA.commentsSyncedAt = new Date().toISOString();
+    if (fresh.length || sent) addActivity(DATA, "engage", `Comments synced (${source}): ${fresh.length} new, ${sent} rule replies sent${pending ? `, ${pending} waiting for live mode` : ""}.`);
+    saveData();
+    return { new: fresh.length, checkedPosts, sent, pendingDryRun: pending, warnings: [...new Set(warnings)].slice(0, 10) };
+  } finally {
+    commentSyncBusy = false;
+  }
+}
+
+function commentCounts() {
+  const counts = { new: 0, read: 0, replied: 0, archived: 0, total: DATA.comments.length };
+  for (const comment of DATA.comments) counts[comment.status] = (counts[comment.status] || 0) + 1;
+  return counts;
+}
+
+/* ------------------------------------------------------------------ *
  * Content audit
  * ------------------------------------------------------------------ */
 
@@ -2437,6 +2721,7 @@ function overview() {
     delivery: deliveryStats(30),
     automations: { total: DATA.automations.length, enabled: DATA.automations.filter((rule) => rule.enabled).length },
     trash: DATA.trash.length,
+    comments: { ...commentCounts(), rules: DATA.commentRules.filter((rule) => rule.enabled).length, syncedAt: DATA.commentsSyncedAt },
     activity: DATA.activity.slice(0, 12),
   };
 }
@@ -3036,6 +3321,179 @@ async function handleApi(req, res, url) {
     }
   }
 
+  if (pathname === "/api/comments" && method === "GET") {
+    const status = url.searchParams.get("status");
+    const channel = url.searchParams.get("channel");
+    const postId = url.searchParams.get("postId");
+    const q = normalizeForMatch(url.searchParams.get("q") || "");
+    const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit")) || 50));
+    const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+    let items = DATA.comments;
+    if (status === "open") items = items.filter((comment) => comment.status === "new" || comment.status === "read");
+    else if (status) items = items.filter((comment) => comment.status === status);
+    if (channel) items = items.filter((comment) => comment.channel === channel);
+    if (postId) items = items.filter((comment) => comment.postId === postId);
+    if (q) items = items.filter((comment) => normalizeForMatch(`${comment.text} ${comment.author?.name} ${comment.author?.handle}`).includes(q));
+    return json(res, 200, {
+      items: items.slice(offset, offset + limit).map(publicComment),
+      total: items.length,
+      offset,
+      limit,
+      counts: commentCounts(),
+      syncedAt: DATA.commentsSyncedAt,
+      channels: COMMENT_CHANNELS.map((key) => ({ key, configured: connectionState(key).configured, dm: DM_CHANNELS.includes(key), note: ENGAGE_NOTES[key] || "" })),
+      unsupported: ["x", "linkedin", "threads"].map((key) => ({ key, note: ENGAGE_NOTES[key] })),
+      live: LIVE && !DATA.settings.dryRun,
+    });
+  }
+
+  if (pathname === "/api/comments/sync" && method === "POST") {
+    try {
+      return json(res, 200, await syncComments({ source: "manual" }));
+    } catch (error) {
+      return json(res, 500, { error: error.message });
+    }
+  }
+
+  if (pathname === "/api/comments/bulk" && method === "POST") {
+    try {
+      const body = await readBody(req);
+      if (!COMMENT_STATUSES.includes(body.status)) throw new Error("Invalid status");
+      const ids = new Set((Array.isArray(body.ids) ? body.ids : []).map(String));
+      let updated = 0;
+      for (const comment of DATA.comments) {
+        if (!ids.has(comment.id) || comment.status === body.status) continue;
+        comment.status = body.status;
+        updated += 1;
+      }
+      saveData();
+      return json(res, 200, { updated, counts: commentCounts() });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
+  }
+
+  const commentMatch = pathname.match(/^\/api\/comments\/([^/]+)(?:\/(reply|dm))?$/);
+  if (commentMatch && !["sync", "bulk"].includes(commentMatch[1])) {
+    const comment = DATA.comments.find((item) => item.id === decodeURIComponentSafe(commentMatch[1]));
+    if (!comment) return json(res, 404, { error: "Comment not found" });
+    const action = commentMatch[2];
+    try {
+      if (method === "PUT" && !action) {
+        const body = await readBody(req);
+        if (!COMMENT_STATUSES.includes(body.status)) throw new Error("Invalid status");
+        comment.status = body.status;
+        saveData();
+        return json(res, 200, { comment: publicComment(comment), counts: commentCounts() });
+      }
+      if (method === "POST" && (action === "reply" || action === "dm")) {
+        const body = await readBody(req);
+        const raw = String(body.text || "").trim();
+        if (!raw) throw new Error("Write a message first.");
+        if (!LIVE) return json(res, 403, { error: "Sending is locked. Set MARKETING_LIVE=true on the portal server." });
+        const text = renderEngageText(raw, comment);
+        let result;
+        if (action === "dm") {
+          if (!DM_CHANNELS.includes(comment.channel)) throw new Error(`${comment.channel} has no API for DMs to commenters.`);
+          if (comment.dm) throw new Error("This person already got a DM for this comment.");
+          if (["facebook", "instagram"].includes(comment.channel) && Date.now() - Date.parse(comment.createdAt) > DM_WINDOW_MS) {
+            throw new Error("This comment is older than 7 days; Meta no longer allows a private reply to it.");
+          }
+          result = await sendDirectMessage(comment.channel, comment, text);
+          if (result.ok) comment.dm = { at: new Date().toISOString(), text, by: "manual" };
+        } else {
+          result = await replyToComment(comment.channel, comment, text);
+          if (result.ok) comment.replies = [...(comment.replies || []), { at: new Date().toISOString(), text, by: "manual" }];
+        }
+        if (result.ok) comment.status = "replied";
+        addActivity(DATA, "engage", `${action === "dm" ? "DM" : "Reply"} to ${comment.author?.name || "a commenter"} on ${comment.channel}: ${result.ok ? "sent" : "failed"}.`, comment.postId);
+        saveData();
+        if (!result.ok) return json(res, 502, { error: result.reason || result.error || "The platform refused the message.", result });
+        return json(res, 200, { comment: publicComment(comment), result, counts: commentCounts() });
+      }
+      return json(res, 405, { error: "Method not allowed" });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
+  }
+
+  if (pathname === "/api/comment-rules" || pathname.startsWith("/api/comment-rules/")) {
+    const rest = pathname.slice("/api/comment-rules".length).replace(/^\//, "");
+    const [rawId, verb] = rest.split("/");
+    const id = rawId ? decodeURIComponentSafe(rawId) : "";
+    const rule = id ? DATA.commentRules.find((item) => item.id === id) : null;
+    if (id && !rule) return json(res, 404, { error: "Rule not found" });
+    try {
+      if (method === "GET" && !id) return json(res, 200, { rules: DATA.commentRules, channels: COMMENT_CHANNELS, dmChannels: DM_CHANNELS, notes: ENGAGE_NOTES });
+      if (method === "POST" && !id) {
+        const created = cleanCommentRule(await readBody(req));
+        DATA.commentRules.push(created);
+        addActivity(DATA, "engage", `Created comment rule “${created.name}”.`);
+        saveData();
+        return json(res, 201, { rule: created });
+      }
+      if (method === "PUT" && rule && !verb) {
+        Object.assign(rule, cleanCommentRule(await readBody(req), rule));
+        addActivity(DATA, "engage", `Updated comment rule “${rule.name}”${rule.enabled ? "" : " (paused)"}.`);
+        saveData();
+        return json(res, 200, { rule });
+      }
+      if (method === "DELETE" && rule && !verb) {
+        DATA.commentRules = DATA.commentRules.filter((item) => item !== rule);
+        addActivity(DATA, "engage", `Deleted comment rule “${rule.name}”.`);
+        saveData();
+        return json(res, 200, { ok: true });
+      }
+      if (method === "POST" && rule && verb === "test") {
+        const body = await readBody(req);
+        const sample = {
+          id: "test",
+          channel: COMMENT_CHANNELS.includes(body.channel) ? body.channel : rule.channels[0],
+          text: String(body.text || ""),
+          author: { name: String(body.name || "Sara Ahmed") },
+          postId: String(body.postId || ""),
+          createdAt: new Date().toISOString(),
+        };
+        const match = commentRuleMatch(rule, sample);
+        return json(res, 200, {
+          match: Boolean(match),
+          keyword: match?.keyword || "",
+          dm: match && rule.dm.trim() && DM_CHANNELS.includes(sample.channel) ? renderEngageText(rule.dm, sample, match) : "",
+          reply: match && rule.reply.trim() ? renderEngageText(rule.reply, sample, match) : "",
+          channel: sample.channel,
+        });
+      }
+      return json(res, 405, { error: "Method not allowed" });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
+  }
+
+  if (pathname === "/api/saved-replies" || pathname.startsWith("/api/saved-replies/")) {
+    const id = decodeURIComponentSafe(pathname.slice("/api/saved-replies".length).replace(/^\//, ""));
+    try {
+      if (method === "GET" && !id) return json(res, 200, { items: DATA.savedReplies });
+      if (method === "POST" && !id) {
+        const body = await readBody(req);
+        const text = String(body.text || "").trim().slice(0, 1000);
+        const title = String(body.title || text.slice(0, 40)).trim().slice(0, 60);
+        if (!text) throw new Error("Write the reply text.");
+        const item = { id: `reply-${Date.now()}-${randomUUID().slice(0, 4)}`, title, text, createdAt: new Date().toISOString() };
+        DATA.savedReplies.unshift(item);
+        saveData();
+        return json(res, 201, { item });
+      }
+      if (method === "DELETE" && id) {
+        DATA.savedReplies = DATA.savedReplies.filter((item) => item.id !== id);
+        saveData();
+        return json(res, 200, { ok: true });
+      }
+      return json(res, 405, { error: "Method not allowed" });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
+  }
+
   if (pathname === "/api/trash" || pathname.startsWith("/api/trash/")) {
     const rest = pathname.slice("/api/trash".length).replace(/^\//, "");
     const [rawId, verb] = rest.split("/");
@@ -3450,6 +3908,12 @@ function moveToTrash(post) {
 
 setInterval(schedulerTick, 60_000);
 setTimeout(schedulerTick, 5_000);
+// Comments are read every 5 minutes on the live server (reading is safe even in dry run;
+// rule DMs are only sent when dry run is off). Locally, use the Sync button.
+setInterval(() => {
+  if (!LIVE || !AUTO_PUBLISH) return;
+  syncComments({ source: "scheduler" }).catch((error) => console.error(`Comment sync failed: ${error.message}`));
+}, 5 * 60 * 1000);
 setInterval(() => {
   syncMetrics().catch((error) => console.error(`Metrics sync failed: ${error.message}`));
 }, 6 * 60 * 60 * 1000);

@@ -53,6 +53,8 @@ The portal seeds itself from `content/queue.json` on first run. State is stored 
 | **Calendar** | Month grid in the portal timezone; drag a post to another day to reschedule (with Undo); "+N more" day view; create a post on a given day; language/channel filters |
 | **Media** | Uploads and the brand library with usage counts, drag-and-drop multi-upload with progress, copy URL, "new post from this", and delete (refused while unpublished posts use the file) |
 | **Templates** | Reusable copy with default language, pillar and channels; create, edit, delete, and start a post from a template |
+| **Inbox** | Comments on published posts from Facebook, Instagram, Bluesky and Mastodon (synced every 5 minutes on the live server, or with **Sync comments**). Tabs (open / new / replied / archived), channel filter, search (Arabic-aware), bulk mark read/archive, public reply, private DM, saved replies, matched comment rules and the 7-day DM window shown on each comment, "create a rule from this comment" |
+| **Comment → DM rules** (Automations tab) | When a comment contains (any / all / exactly) keywords — Arabic or English — on chosen channels (optionally only posts with a tag), send a DM and/or a public reply from a template (`{{first_name}}`, `{{name}}`, `{{keyword}}`, `{{post}}`, link placeholders). Once per person, mark as replied, live tester, recipes (price, link, demo), stats |
 | **Automations** | Rules that run around posts: **before** a post (N minutes), **after** it publishes (with optional delay), or **when it is scheduled** (e.g. a new offer). Filter by tag, pillar, language, channel or keyword. Actions: **Story** on Facebook/Instagram, or a **Post** (teaser, announcement, follow-up) on any connected channel from a template with `{{title}}`, `{{excerpt}}`, `{{time}}`, `{{date}}` and link placeholders. Recipes, dry-run Test, Run now, pause, run log |
 | **Content health** | Score and fixes for the upcoming queue: repeated messages within 3 days, posts per day per channel vs recommended, Instagram links nobody can click, missing hashtags, too-long posts, missing media/alt text, question share, pillar and language mix; one-click recommended rules |
 | **Trash** | Deleted posts kept 30 days; restore (as draft) or delete forever |
@@ -76,6 +78,10 @@ Keyboard: `N` new post, `/` search, `R` refresh, `G` then `O/C/K/M/T/A/S/R` to s
 - **Stories exist on Facebook and Instagram only.** No other platform offers a Stories API; use a Post action for the rest. Stories carry media only (no captions or link stickers through the API). Instagram stories need a public https JPEG/MP4.
 - **Automations run only in live mode** (`MARKETING_LIVE=true`, scheduler on, dry run off), act on each post at most once per rule, and never fire for events that happened before the rule was created.
 - **Deleting moves to Trash.** Restored posts come back as drafts so nothing publishes by surprise.
+- **Comments and DMs.** Reading comments is always safe; replies and DMs need `MARKETING_LIVE=true`, and rule DMs also need dry run off. Rules only act on comments written after the rule was created, at most once per comment and (by default) once per person. Facebook and Instagram DMs are official "private replies": they need `pages_messaging` / `instagram_manage_messages` (Meta app review), one per comment, within 7 days. Bluesky DMs need an app password with DM access; Mastodon DMs are direct-visibility posts. X, LinkedIn and Threads have no comment/DM API available to the portal.
+- **Design.** Light theme on CSS tokens in `public/styles.css` (`--primary: #0099cc`). Change colours there, never inline.
+
+See [ROADMAP.md](ROADMAP.md) for the competitive gap review and the phased plan.
 
 ### Metric windows
 
@@ -263,6 +269,16 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 | GET/POST | `/api/templates` | List / create templates |
 | PUT/DELETE | `/api/templates/:id` | Update / delete a template |
 | GET | `/api/activity` | Paginated audit trail (`type`, `q`, `postId`, `limit`, `offset`) |
+| GET | `/api/comments` | Inbox (`status`=open/new/read/replied/archived, `channel`, `q`, `postId`, `limit`, `offset`) with matched rules and DM window |
+| POST | `/api/comments/sync` | Fetch new comments now and run comment rules |
+| PUT | `/api/comments/:id` | Set status |
+| POST | `/api/comments/bulk` | Set status on many (`{ ids, status }`) |
+| POST | `/api/comments/:id/reply` | Public reply (requires `MARKETING_LIVE`) |
+| POST | `/api/comments/:id/dm` | Private message to the commenter (requires `MARKETING_LIVE`) |
+| GET/POST | `/api/comment-rules` | List / create comment → DM rules |
+| PUT/DELETE | `/api/comment-rules/:id` | Update (incl. pause) / delete |
+| POST | `/api/comment-rules/:id/test` | Try a sample comment (`{ text, channel, name }`); nothing is sent |
+| GET/POST/DELETE | `/api/saved-replies[/:id]` | Saved replies for the inbox |
 | GET/POST | `/api/automations` | List rules, recent runs and story/post channels / create a rule |
 | PUT/DELETE | `/api/automations/:id` | Update (incl. pause) / delete a rule |
 | POST | `/api/automations/:id/test` | Dry-run a rule on the next matching post (or `{ postId }`) |

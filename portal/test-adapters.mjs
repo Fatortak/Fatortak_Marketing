@@ -2,7 +2,7 @@
 // without calling a real social platform. Run with `npm test`.
 
 import assert from "node:assert/strict";
-import { publishToChannel, publishStory, setHttpTransport } from "./adapters.mjs";
+import { publishToChannel, publishStory, fetchComments, replyToComment, sendDirectMessage, setHttpTransport } from "./adapters.mjs";
 
 const json = (data, status = 200, headers = {}) => ({
   ok: status < 400,
@@ -21,6 +21,30 @@ globalThis.fetch = async (url, init = {}) => {
   const target = String(url);
   const method = init.method || "GET";
   calls.push({ url: target, method });
+  if (target.includes("/comments") && method === "GET") {
+    return json({
+      data: [
+        { id: "c1", from: { id: "u1", name: "Sara", username: "sara" }, username: "sara", message: "price?", text: "price?", created_time: "2026-11-04T10:00:00+0000", timestamp: "2026-11-04T10:00:00+0000" },
+        { id: "c2", from: { id: "page-1", name: "Fatortak" }, message: "Thanks!", created_time: "2026-11-04T10:05:00+0000" },
+      ],
+    });
+  }
+  if (target.includes("/comments") && method === "POST") return json({ id: "fb-reply-1" });
+  if (target.includes("/replies") && method === "POST") return json({ id: "ig-reply-1" });
+  if (target.includes("/messages")) return json({ recipient_id: "u1", message_id: "m-1" });
+  if (target.includes("getPostThread")) {
+    return json({
+      thread: {
+        post: { uri: "at://did:plc:test/app.bsky.feed.post/1", cid: "root-cid" },
+        replies: [{ post: { uri: "at://did:plc:ali/app.bsky.feed.post/9", cid: "c-cid", author: { did: "did:plc:ali", handle: "ali.bsky.social", displayName: "Ali" }, record: { text: "info please", createdAt: "2026-11-04T10:00:00Z" } } }],
+      },
+    });
+  }
+  if (target.includes("getConvoForMembers")) return json({ convo: { id: "convo-1" } });
+  if (target.includes("chat.bsky.convo.sendMessage")) return json({ id: "chat-msg-1" });
+  if (target.includes("/context")) {
+    return json({ descendants: [{ id: "s1", account: { id: "a1", acct: "bob@m.example", display_name: "Bob" }, content: "<p>Link &amp; price?</p>", created_at: "2026-11-04T10:00:00Z", in_reply_to_id: "mast-1", url: "https://m.example/s1" }] });
+  }
   if (target.includes("video_stories")) {
     return String(init.body || "").includes("upload_phase=finish")
       ? json({ post_id: "fb-video-story-1" })
@@ -160,6 +184,31 @@ for (const [channel, label, attachment] of [
   const noPublic = await publishStory("instagram", { media: { ...media, publicUrl: "" } });
   if (noPublic.ok) failures.push("Instagram story without public URL should be skipped");
   else console.log(`ok  Instagram story without public URL skipped`);
+}
+
+for (const [channel, postId, expectedText] of [
+  ["facebook", "post-1", "price?"],
+  ["instagram", "ig-media-1", "price?"],
+  ["bluesky", "at://did:plc:test/app.bsky.feed.post/1", "info please"],
+  ["mastodon", "mast-1", "Link & price?"],
+]) {
+  const fetched = await fetchComments(channel, postId);
+  const first = fetched.comments?.[0];
+  if (!fetched.ok || !first || first.text !== expectedText) {
+    failures.push(`${channel} comments: ${fetched.error || fetched.reason || JSON.stringify(fetched.comments)}`);
+    continue;
+  }
+  if (channel === "facebook" && fetched.comments.some((comment) => comment.author.id === "page-1")) failures.push("facebook comments: the page's own comments must be skipped");
+  const reply = await replyToComment(channel, first, "Thanks — check your messages.");
+  const dm = await sendDirectMessage(channel, first, "Here are the prices: https://fatortak.test");
+  if (!reply.ok) failures.push(`${channel} reply: ${reply.error || reply.reason}`);
+  else if (!dm.ok) failures.push(`${channel} DM: ${dm.error || dm.reason}`);
+  else console.log(`ok  ${channel} comments → reply ${reply.id} → DM ${dm.id}`);
+}
+{
+  const dm = await sendDirectMessage("linkedin", { platformId: "x" }, "hi");
+  if (dm.ok || !dm.skipped) failures.push("LinkedIn DM should be a clear skip");
+  else console.log(`ok  LinkedIn DM skipped -> ${dm.reason}`);
 }
 
 console.log(`\n${calls.length} mocked HTTP calls`);

@@ -5,8 +5,8 @@ Two agents share this checkout (`main`). Read this before editing.
 ## Ownership
 
 - **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/public/*`, `portal/test-*.mjs`,
-  `portal/README.md`): Claude Code is editing these now** (comments inbox, comment → DM rules, light
-  redesign). Please don't edit them until this line says they are free; put requests under "Requests".
+  `portal/README.md`, `portal/ROADMAP.md`): free to edit again.** Claude Code finished the comments
+  inbox, comment → DM rules and the light redesign. Run `npm test` in `portal/` before committing.
 - Content, queue builders (`portal/scripts/*`), landing assets and deployment: yours (the content agent's).
   Claude Code will not touch `portal/scripts/*`.
 
@@ -23,10 +23,18 @@ Two agents share this checkout (`main`). Read this before editing.
 
 - New data in `portal.json` (created automatically on load): `automations`, `automationRuns`,
   `trash`, `metricsHistory`, `settings.channelRules`, per-post `overrides`, `metrics`, `automationRuns`.
+- More new data: `comments`, `commentRules`, `commentRuleSent`, `savedReplies`, `commentsSyncedAt`.
 - Deploy copies `server.mjs`, `adapters.mjs` and `public/*` as before; no new files are needed at runtime.
-- Asset cache keys bumped to `?v=20261104-3`.
-- Nothing changes in production behaviour until someone turns it on: no channel rules and no
-  automations exist by default. Deleting now moves posts to Trash.
+- Asset cache keys bumped to `?v=20261104-4`.
+- The dashboard is now a **light theme with primary `#0099CC`**; all colours are tokens in
+  `public/styles.css`.
+- On the live server the portal now **reads comments every 5 minutes** (read-only). No comment rule
+  exists by default, so no DM is sent until someone creates one and live mode is on.
+- For DMs on Facebook/Instagram the Meta app needs `pages_messaging` / `instagram_manage_messages`
+  (app review). Comment reading needs `pages_read_user_content` / `instagram_manage_comments`.
+  Optional env `INSTAGRAM_USERNAME` lets the inbox skip the account's own Instagram replies.
+- Nothing else changes until someone turns it on: no channel rules, automations or comment rules
+  exist by default. Deleting moves posts to Trash.
 
 ## Requests for the content agent
 
@@ -112,4 +120,9 @@ Make every card in three sizes from the same design source, same base name with 
 
 ## Requests
 
-(none)
+- **For the deployment owner:** the production login and "Portal is starting" pages in
+  `portal/deploy/index.php` still use the old dark colours inline. Restyle them to the new light
+  theme (white card on `#f4f7fa`, text `#0f1d2a`, primary button `#0099CC`, focus ring
+  `rgba(0,153,204,.22)`) so sign-in matches the dashboard. Claude Code did not touch `deploy/`.
+- **Roadmap:** `portal/ROADMAP.md` has the competitive review and the phased plan. Pick items only
+  after the owner chooses them.

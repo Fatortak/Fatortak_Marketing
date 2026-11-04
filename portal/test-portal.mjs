@@ -12,6 +12,17 @@ import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "fatortak-portal-test-"));
+// Comments the "platforms" return during sync (no real API is called in tests).
+const commentsFixture = path.join(dataDir, "comments.json");
+const recent = new Date(Date.now() + 60_000).toISOString();
+fs.writeFileSync(
+  commentsFixture,
+  JSON.stringify([
+    { channel: "instagram", platformId: "ig-c1", author: { id: "u1", name: "Sara Ahmed", handle: "sara" }, text: "What's the PRICE please?", createdAt: recent },
+    { channel: "facebook", platformId: "fb-c1", author: { id: "u2", name: "محمد علي" }, text: "بكام السِّعر؟", createdAt: recent },
+    { channel: "mastodon", platformId: "m-c1", author: { id: "u3", name: "Bob", handle: "bob@m.example" }, text: "Nice update!", createdAt: recent },
+  ])
+);
 
 const port = await new Promise((resolve) => {
   const probe = net.createServer().listen(0, "127.0.0.1", () => {
@@ -30,6 +41,7 @@ const child = spawn(process.execPath, [path.join(HERE, "server.mjs")], {
     // Never read or write the real credentials: portal/.env and automation/.env stay untouched.
     PORTAL_ENV_FILE: path.join(dataDir, "test.env"),
     PORTAL_ISOLATED: "1",
+    PORTAL_COMMENTS_FIXTURE: commentsFixture,
     MARKETING_LIVE: "false",
     PORTAL_AUTO_PUBLISH: "false",
   },
@@ -460,6 +472,72 @@ test("reports expose delivery per channel and follower growth", async () => {
   assert.equal(typeof report.data.delivery, "object");
   assert.ok(Array.isArray(report.data.topPosts));
   assert.equal(typeof report.data.growth, "object");
+});
+
+test("comment rules validate, match Arabic and English keywords, and wait for live mode", async () => {
+  const noChannel = await api("/api/comment-rules", { method: "POST", body: { name: "X only", channels: ["x"], keywords: ["price"], dm: "hi" } });
+  assert.equal(noChannel.status, 400);
+  const noMessage = await api("/api/comment-rules", { method: "POST", body: { name: "Empty", channels: ["instagram"], keywords: ["price"] } });
+  assert.equal(noMessage.status, 400);
+  const created = await api("/api/comment-rules", {
+    method: "POST",
+    body: {
+      name: "Price DM",
+      channels: ["instagram", "facebook"],
+      keywords: "price, السعر, بكام",
+      dm: "Hi {{first_name}}! Our plans: {{pricing}}",
+      reply: "Sent you a DM 📩",
+    },
+  });
+  assert.equal(created.status, 201, created.text);
+  const id = created.data.rule.id;
+  assert.deepEqual(created.data.rule.keywords, ["price", "السعر", "بكام"]);
+
+  const en = await api(`/api/comment-rules/${id}/test`, { method: "POST", body: { text: "how much is the Price?", channel: "instagram", name: "Sara Ahmed" } });
+  assert.equal(en.data.match, true);
+  assert.match(en.data.dm, /^Hi Sara! Our plans: https:\/\/fatortak\.rabbeh\.com\/\?utm_source=instagram&utm_medium=dm&utm_campaign=comment-dm/);
+  assert.equal(en.data.reply, "Sent you a DM 📩");
+  const ar = await api(`/api/comment-rules/${id}/test`, { method: "POST", body: { text: "الســعر كام؟", channel: "facebook" } });
+  assert.equal(ar.data.match, true, "Arabic tatweel/diacritics are ignored");
+  const miss = await api(`/api/comment-rules/${id}/test`, { method: "POST", body: { text: "priceless content", channel: "instagram" } });
+  assert.equal(miss.data.match, false, "keywords match whole words only");
+
+  const sync = await api("/api/comments/sync", { method: "POST" });
+  assert.equal(sync.status, 200, sync.text);
+  assert.equal(sync.data.new, 3);
+  assert.equal(sync.data.sent, 0, "nothing is sent while live publishing is locked");
+  assert.equal(sync.data.pendingDryRun, 2);
+  const again = await api("/api/comments/sync", { method: "POST" });
+  assert.equal(again.data.new, 0, "sync is idempotent");
+
+  const inbox = await api("/api/comments?status=new");
+  assert.equal(inbox.data.total, 3);
+  assert.equal(inbox.data.counts.new, 3);
+  const sara = inbox.data.items.find((item) => item.platformId === "ig-c1");
+  assert.equal(sara.matches[0].name, "Price DM");
+  assert.equal(sara.dmAllowed, true);
+  const bob = inbox.data.items.find((item) => item.platformId === "m-c1");
+  assert.equal(bob.matches.length, 0);
+  const arabic = await api(`/api/comments?q=${encodeURIComponent("السعر")}`);
+  assert.equal(arabic.data.total, 1, "search uses the same Arabic normalisation");
+
+  const read = await api(`/api/comments/${encodeURIComponent(bob.id)}`, { method: "PUT", body: { status: "archived" } });
+  assert.equal(read.data.comment.status, "archived");
+  const bulk = await api("/api/comments/bulk", { method: "POST", body: { ids: [sara.id], status: "read" } });
+  assert.equal(bulk.data.updated, 1);
+  const locked = await api(`/api/comments/${encodeURIComponent(sara.id)}/dm`, { method: "POST", body: { text: "hello" } });
+  assert.equal(locked.status, 403, "manual DMs need MARKETING_LIVE");
+
+  const paused = await api(`/api/comment-rules/${id}`, { method: "PUT", body: { enabled: false } });
+  assert.equal(paused.data.rule.enabled, false);
+  assert.equal((await api(`/api/comment-rules/${id}`, { method: "DELETE" })).status, 200);
+});
+
+test("saved replies CRUD", async () => {
+  const created = await api("/api/saved-replies", { method: "POST", body: { text: "Thanks! Check {{site}}" } });
+  assert.equal(created.status, 201);
+  assert.ok((await api("/api/saved-replies")).data.items.some((item) => item.id === created.data.item.id));
+  assert.equal((await api(`/api/saved-replies/${created.data.item.id}`, { method: "DELETE" })).status, 200);
 });
 
 test("CSV export neutralizes formulas", async () => {

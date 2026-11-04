@@ -640,6 +640,236 @@ export async function publishStory(channel, { media } = {}) {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Comments, replies and DMs
+ *
+ * Read: Facebook, Instagram, Bluesky, Mastodon. X needs a paid API tier;
+ * LinkedIn needs the Community Management API; Threads needs app review.
+ * DMs to a commenter:
+ *  - Facebook / Instagram: "private reply" to the comment (Messenger /
+ *    Instagram messaging). Needs pages_messaging / instagram_manage_messages,
+ *    one per comment, within 7 days of the comment.
+ *  - Bluesky: chat API; the app password must allow direct messages and the
+ *    person must accept messages from you.
+ *  - Mastodon: a direct-visibility post mentioning the person.
+ * ------------------------------------------------------------------ */
+
+export const COMMENT_CHANNELS = ["facebook", "instagram", "bluesky", "mastodon"];
+export const DM_CHANNELS = ["facebook", "instagram", "bluesky", "mastodon"];
+
+function stripHtml(html) {
+  return String(html || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+async function blueskySession() {
+  const identifier = env("BLUESKY_HANDLE");
+  const password = env("BLUESKY_APP_PASSWORD");
+  if (!identifier || !password) return null;
+  const service = env("BLUESKY_SERVICE", "https://bsky.social").replace(/\/$/, "");
+  const session = await jsonPost(`${service}/xrpc/com.atproto.server.createSession`, { identifier, password });
+  return { ...session, service };
+}
+
+export async function fetchComments(channel, platformPostId) {
+  try {
+    if (!platformPostId) return missing("No platform post id.");
+    if (channel === "facebook") {
+      const pageId = env("FACEBOOK_PAGE_ID");
+      const token = env("FACEBOOK_PAGE_ACCESS_TOKEN");
+      if (!pageId || !token) return missing("Facebook is not connected.");
+      const url = new URL(`https://graph.facebook.com/v21.0/${platformPostId}/comments`);
+      url.searchParams.set("fields", "id,from{id,name},message,created_time,parent{id},permalink_url");
+      url.searchParams.set("filter", "stream");
+      url.searchParams.set("limit", "100");
+      url.searchParams.set("access_token", token);
+      const data = await fetchJson(url);
+      return {
+        ok: true,
+        comments: (data.data || [])
+          .filter((item) => item.from?.id !== pageId)
+          .map((item) => ({
+            platformId: item.id,
+            author: { id: item.from?.id || "", name: item.from?.name || "Facebook user", handle: "" },
+            text: item.message || "",
+            createdAt: item.created_time ? new Date(item.created_time).toISOString() : new Date().toISOString(),
+            parentId: item.parent?.id || "",
+            url: item.permalink_url || "",
+          })),
+      };
+    }
+    if (channel === "instagram") {
+      const token = env("INSTAGRAM_ACCESS_TOKEN");
+      if (!env("INSTAGRAM_USER_ID") || !token) return missing("Instagram is not connected.");
+      const url = new URL(`https://graph.facebook.com/v21.0/${platformPostId}/comments`);
+      url.searchParams.set("fields", "id,text,timestamp,username,from{id,username}");
+      url.searchParams.set("limit", "100");
+      url.searchParams.set("access_token", token);
+      const data = await fetchJson(url);
+      const own = String(env("INSTAGRAM_USERNAME", "") || "").toLowerCase();
+      return {
+        ok: true,
+        comments: (data.data || [])
+          .filter((item) => !own || String(item.username || "").toLowerCase() !== own)
+          .map((item) => ({
+            platformId: item.id,
+            author: { id: item.from?.id || "", name: item.username || item.from?.username || "Instagram user", handle: item.username || item.from?.username || "" },
+            text: item.text || "",
+            createdAt: item.timestamp ? new Date(item.timestamp).toISOString() : new Date().toISOString(),
+            parentId: "",
+            url: "",
+          })),
+      };
+    }
+    if (channel === "bluesky") {
+      const handle = env("BLUESKY_HANDLE");
+      const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(platformPostId)}&depth=2`;
+      const data = await fetchJson(url);
+      const root = data.thread?.post;
+      const comments = [];
+      const walk = (node, parent) => {
+        for (const reply of node?.replies || []) {
+          const post = reply.post;
+          if (!post) continue;
+          if (post.author?.handle !== handle) {
+            const rkey = String(post.uri || "").split("/").pop();
+            comments.push({
+              platformId: post.uri,
+              author: { id: post.author?.did || "", name: post.author?.displayName || post.author?.handle || "Bluesky user", handle: post.author?.handle || "" },
+              text: post.record?.text || "",
+              createdAt: post.record?.createdAt || post.indexedAt || new Date().toISOString(),
+              parentId: parent?.uri || "",
+              url: post.author?.handle && rkey ? `https://bsky.app/profile/${post.author.handle}/post/${rkey}` : "",
+              raw: { uri: post.uri, cid: post.cid, rootUri: root?.uri, rootCid: root?.cid },
+            });
+          }
+          walk(reply, post);
+        }
+      };
+      walk(data.thread, root);
+      return { ok: true, comments };
+    }
+    if (channel === "mastodon") {
+      const instance = env("MASTODON_INSTANCE", "https://mastodon.social").replace(/\/$/, "");
+      const token = env("MASTODON_ACCESS_TOKEN");
+      const own = String(env("MASTODON_ACCOUNT", "") || "").toLowerCase().replace(/^@/, "");
+      const data = await fetchJson(`${instance}/api/v1/statuses/${platformPostId}/context`, token ? { Authorization: `Bearer ${token}` } : {});
+      return {
+        ok: true,
+        comments: (data.descendants || [])
+          .filter((status) => !own || !own.startsWith(String(status.account?.acct || "").toLowerCase()))
+          .map((status) => ({
+            platformId: status.id,
+            author: { id: status.account?.id || "", name: status.account?.display_name || status.account?.acct || "Mastodon user", handle: status.account?.acct || "" },
+            text: stripHtml(status.content),
+            createdAt: status.created_at || new Date().toISOString(),
+            parentId: status.in_reply_to_id || "",
+            url: status.url || "",
+          })),
+      };
+    }
+    return missing(`${channel}: reading comments is not supported.`);
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+export async function replyToComment(channel, comment, text) {
+  try {
+    if (channel === "facebook") {
+      const token = env("FACEBOOK_PAGE_ACCESS_TOKEN");
+      if (!token) return missing("Facebook is not connected.");
+      const data = await formPost(`https://graph.facebook.com/v21.0/${comment.platformId}/comments`, { message: text, access_token: token });
+      return { ok: true, id: data.id };
+    }
+    if (channel === "instagram") {
+      const token = env("INSTAGRAM_ACCESS_TOKEN");
+      if (!token) return missing("Instagram is not connected.");
+      const data = await formPost(`https://graph.facebook.com/v21.0/${comment.platformId}/replies`, { message: text, access_token: token });
+      return { ok: true, id: data.id };
+    }
+    if (channel === "bluesky") {
+      const session = await blueskySession();
+      if (!session) return missing("Bluesky is not connected.");
+      const raw = comment.raw || {};
+      if (!raw.uri || !raw.cid) return missing("This Bluesky comment is missing its thread reference; sync comments again.");
+      const record = {
+        $type: "app.bsky.feed.post",
+        text,
+        createdAt: new Date().toISOString(),
+        reply: { root: { uri: raw.rootUri || raw.uri, cid: raw.rootCid || raw.cid }, parent: { uri: raw.uri, cid: raw.cid } },
+      };
+      const data = await jsonPost(`${session.service}/xrpc/com.atproto.repo.createRecord`, { repo: session.did, collection: "app.bsky.feed.post", record }, { Authorization: `Bearer ${session.accessJwt}` });
+      return { ok: true, id: data.uri };
+    }
+    if (channel === "mastodon") {
+      const instance = env("MASTODON_INSTANCE", "https://mastodon.social").replace(/\/$/, "");
+      const token = env("MASTODON_ACCESS_TOKEN");
+      if (!token) return missing("Mastodon is not connected.");
+      const mention = comment.author?.handle ? `@${comment.author.handle} ` : "";
+      const data = await jsonPost(`${instance}/api/v1/statuses`, { status: `${mention}${text}`, in_reply_to_id: comment.platformId, visibility: "public" }, { Authorization: `Bearer ${token}` });
+      return { ok: true, id: data.id, url: data.url };
+    }
+    return missing(`${channel}: replying is not supported.`);
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+export async function sendDirectMessage(channel, comment, text) {
+  try {
+    if (channel === "facebook") {
+      const pageId = env("FACEBOOK_PAGE_ID");
+      const token = env("FACEBOOK_PAGE_ACCESS_TOKEN");
+      if (!pageId || !token) return missing("Facebook is not connected.");
+      const data = await jsonPost(`https://graph.facebook.com/v21.0/${pageId}/messages?access_token=${encodeURIComponent(token)}`, {
+        recipient: { comment_id: comment.platformId },
+        message: { text },
+        messaging_type: "RESPONSE",
+      });
+      return { ok: true, id: data.message_id || data.recipient_id, kind: "private_reply" };
+    }
+    if (channel === "instagram") {
+      const token = env("INSTAGRAM_ACCESS_TOKEN");
+      if (!token) return missing("Instagram is not connected.");
+      const data = await jsonPost(`https://graph.facebook.com/v21.0/me/messages?access_token=${encodeURIComponent(token)}`, {
+        recipient: { comment_id: comment.platformId },
+        message: { text },
+      });
+      return { ok: true, id: data.message_id || data.recipient_id, kind: "private_reply" };
+    }
+    if (channel === "bluesky") {
+      const session = await blueskySession();
+      if (!session) return missing("Bluesky is not connected.");
+      if (!comment.author?.id) return missing("Bluesky comment has no author id.");
+      const proxy = { Authorization: `Bearer ${session.accessJwt}`, "atproto-proxy": "did:web:api.bsky.chat#bsky_chat" };
+      const convo = await fetchJson(`${session.service}/xrpc/chat.bsky.convo.getConvoForMembers?members=${encodeURIComponent(comment.author.id)}`, proxy);
+      if (!convo.convo?.id) return { ok: false, error: "Bluesky did not open a conversation (the person may not accept messages)." };
+      const data = await jsonPost(`${session.service}/xrpc/chat.bsky.convo.sendMessage`, { convoId: convo.convo.id, message: { text } }, proxy);
+      return { ok: true, id: data.id, kind: "dm" };
+    }
+    if (channel === "mastodon") {
+      const instance = env("MASTODON_INSTANCE", "https://mastodon.social").replace(/\/$/, "");
+      const token = env("MASTODON_ACCESS_TOKEN");
+      if (!token) return missing("Mastodon is not connected.");
+      if (!comment.author?.handle) return missing("Mastodon comment has no author handle.");
+      const data = await jsonPost(`${instance}/api/v1/statuses`, { status: `@${comment.author.handle} ${text}`, visibility: "direct" }, { Authorization: `Bearer ${token}` });
+      return { ok: true, id: data.id, kind: "dm" };
+    }
+    return missing(`${channel} has no API for direct messages to commenters.`);
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
 const MANUAL = {
   tiktok: "TikTok Content Posting API requires a developer app audit and a video asset.",
   youtube: "YouTube publishing requires OAuth, a video asset and API quota/audit.",

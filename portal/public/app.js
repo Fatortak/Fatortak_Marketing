@@ -37,12 +37,18 @@
     activityView: { type: "", q: "", offset: 0, limit: 50 },
     connectionsFilter: "all",
     automations: null,
+    autoTab: "posts",
+    commentRules: null,
+    inbox: null,
+    inboxView: { status: "open", channel: "", q: "", offset: 0, limit: 30 },
+    inboxSelected: new Set(),
+    savedReplies: null,
     audit: null,
     trash: null,
     editor: { post: null, snapshot: "", preview: [], side: "preview", previewSeq: 0, saving: false, overrides: {}, issues: [], automations: [] },
   };
 
-  const VIEWS = ["overview", "content", "calendar", "media", "templates", "automations", "health", "trash", "connections", "analytics", "reports", "activity", "settings"];
+  const VIEWS = ["overview", "inbox", "content", "calendar", "media", "templates", "automations", "health", "trash", "connections", "analytics", "reports", "activity", "settings"];
   const LEGACY_VIEWS = { queue: "content", composer: "templates" };
 
   const PAGE_META = {
@@ -51,7 +57,8 @@
     calendar: ["Calendar", "Drag posts between days to reschedule them."],
     media: ["Media", "Uploaded files and the brand screenshot library."],
     templates: ["Templates", "Reusable copy to start new posts fast."],
-    automations: ["Automations", "Stories, teasers and follow-ups that run on their own."],
+    inbox: ["Inbox", "Comments from every channel, with replies and DMs."],
+    automations: ["Automations", "Stories, teasers, follow-ups and comment → DM rules."],
     health: ["Content health", "What will hurt reach, and one-click fixes."],
     trash: ["Trash", "Deleted posts are kept for 30 days."],
     connections: ["Connections", "Connect channels and set how each one publishes."],
@@ -698,6 +705,8 @@
     state.audit = null;
     state.trash = null;
     state.automations = null;
+    state.commentRules = null;
+    state.inbox = null;
     pruneSelection();
     renderChrome();
     renderView();
@@ -854,6 +863,12 @@
     aBadge.hidden = !autos;
     aBadge.textContent = String(autos);
     aBadge.title = `${autos} active automation${autos === 1 ? "" : "s"}`;
+
+    const unread = overview.comments?.new || 0;
+    const iBadge = $("#badge-inbox");
+    iBadge.hidden = !unread;
+    iBadge.textContent = unread > 99 ? "99+" : String(unread);
+    iBadge.title = `${unread} new comment${unread === 1 ? "" : "s"}`;
   }
 
   function renderView() {
@@ -863,6 +878,7 @@
     }
     const renderers = {
       overview: renderOverview,
+      inbox: renderInbox,
       content: renderContent,
       calendar: renderCalendar,
       media: renderMedia,
@@ -2102,7 +2118,24 @@
     return state.automations;
   }
 
+  function automationTabs() {
+    const ruleCount = state.overview?.comments?.rules || 0;
+    return `<div class="segmented section-gap" role="tablist" aria-label="Automation type">
+      <button type="button" class="${state.autoTab === "posts" ? "is-active" : ""}" data-auto-tab="posts">${icon("bolt")}Post automations</button>
+      <button type="button" class="${state.autoTab === "comments" ? "is-active" : ""}" data-auto-tab="comments">${icon("story")}Comment → DM<em>${ruleCount || ""}</em></button>
+    </div>`;
+  }
+
   async function renderAutomations() {
+    const tab = parseHash().params.get("tab");
+    if (tab === "comments" || tab === "posts") state.autoTab = tab;
+    if (state.autoTab === "comments") {
+      $("#view").innerHTML = `<div class="page-head"><div><span class="eyebrow">Automations</span><h2>Comment → DM rules</h2><p>Answer common comments automatically: send a private message and, if you like, a short public reply.</p></div></div>${automationTabs()}<div class="card card-pad"><div class="skeleton" style="width:40%"></div></div>`;
+      const html = await renderCommentRules();
+      if (state.view !== "automations" || state.autoTab !== "comments") return;
+      $("#view").innerHTML = `<div class="page-head"><div><span class="eyebrow">Automations</span><h2>Comment → DM rules <small>${plural((state.commentRules?.rules || []).filter((rule) => rule.enabled).length, "active rule")}</small></h2><p>Answer common comments automatically: send a private message and, if you like, a short public reply.</p></div><div class="page-head-actions"><button class="btn btn-primary" data-crule-new>${icon("plus")}New comment rule</button></div></div>${automationTabs()}${html}`;
+      return;
+    }
     if (!state.automations) {
       $("#view").innerHTML = `<div class="card card-pad"><div class="skeleton" style="width:30%"></div><div class="skeleton" style="width:70%;margin-top:14px"></div></div>`;
       try {
@@ -2121,6 +2154,7 @@
         <div><span class="eyebrow">Automations</span><h2>${plural(rules.filter((rule) => rule.enabled).length, "active rule")} <small>of ${rules.length}</small></h2><p>Share Stories, teasers, offers and follow-ups automatically around your posts.</p></div>
         <div class="page-head-actions"><button class="btn btn-primary" data-auto-new>${icon("plus")}New automation</button></div>
       </div>
+      ${automationTabs()}
       <div class="alert ${data.live ? "lime" : "amber"}">${icon(data.live ? "bolt" : "info")}<div><strong>${data.live ? "Automations are running" : "Automations are paused while the portal is in dry run"}</strong><span>${data.live ? "Rules are checked every minute together with the scheduler." : "Use Test to see exactly what a rule would do. They start running when live publishing and the scheduler are on."}</span></div></div>
       <div class="inline-alert info-note">${icon("story")}<span><strong>Stories</strong> can be published to Facebook and Instagram only — no other platform offers a Stories API. For X, LinkedIn, Bluesky, Mastodon, Threads, Telegram and Discord use a <strong>Post</strong> action (teaser, announcement or follow-up).</span></div>
       ${rules.length ? `<div class="auto-list section">${rules.map((rule) => `
@@ -2524,6 +2558,440 @@
     }
   }
 
+  /* ------------------------------------------------------------------ *
+   * Inbox (comments) and comment → DM rules
+   * ------------------------------------------------------------------ */
+
+  const ENGAGE_TOKENS = ["{{first_name}}", "{{name}}", "{{keyword}}", "{{post}}", "{{site}}", "{{pricing}}", "{{demo}}"];
+
+  const COMMENT_RULE_PRESETS = [
+    {
+      key: "price",
+      title: "“Price” → send pricing",
+      text: "Anyone who comments price / السعر / بكام gets your plans by DM and a public “check your DMs”.",
+      rule: { name: "Pricing by DM", channels: ["instagram", "facebook"], keywords: ["price", "prices", "pricing", "السعر", "سعر", "بكام", "الاسعار"], mode: "any", dm: "Hi {{first_name}} 👋 Thanks for asking! Here are our plans: {{pricing}}", reply: "Sent you the details by DM 📩" },
+    },
+    {
+      key: "link",
+      title: "“Link” → send the link",
+      text: "Comment LINK (or لينك / الرابط) to receive the link privately — great with “comment LINK” posts.",
+      rule: { name: "Link by DM", channels: ["instagram", "facebook"], keywords: ["link", "لينك", "الرابط", "رابط"], mode: "any", dm: "Here you go {{first_name}}: {{site}}", reply: "Check your DMs 📩" },
+    },
+    {
+      key: "demo",
+      title: "“Demo” → book a demo",
+      text: "Comments asking for a demo get the booking link by DM.",
+      rule: { name: "Demo by DM", channels: ["instagram", "facebook", "bluesky", "mastodon"], keywords: ["demo", "trial", "تجربة", "ديمو"], mode: "any", dm: "Hi {{first_name}}, happy to show you Fatortak! Book a demo here: {{demo}}", reply: "" },
+    },
+  ];
+
+  async function loadInbox() {
+    const v = state.inboxView;
+    const params = new URLSearchParams({ status: v.status, limit: String(v.limit), offset: String(v.offset) });
+    if (v.channel) params.set("channel", v.channel);
+    if (v.q) params.set("q", v.q);
+    const [inbox, saved] = await Promise.all([api(`/api/comments?${params}`), state.savedReplies ? Promise.resolve({ items: state.savedReplies }) : api("/api/saved-replies")]);
+    state.inbox = inbox;
+    state.savedReplies = saved.items || [];
+    return inbox;
+  }
+
+  function initials(name) {
+    return String(name || "?").trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "?";
+  }
+
+  async function renderInbox() {
+    if (!state.inbox) {
+      $("#view").innerHTML = `<div class="card card-pad"><div class="skeleton" style="width:30%"></div><div class="skeleton" style="width:80%;margin-top:14px"></div></div>`;
+      try {
+        await loadInbox();
+      } catch (error) {
+        $("#view").innerHTML = `<div class="card">${emptyState("Inbox unavailable", error.message)}</div>`;
+        return;
+      }
+      if (state.view !== "inbox") return;
+    }
+    const data = state.inbox;
+    const v = state.inboxView;
+    const counts = data.counts || {};
+    const selected = state.inboxSelected;
+    const tabs = [["open", "Open", (counts.new || 0) + (counts.read || 0)], ["new", "New", counts.new || 0], ["replied", "Replied", counts.replied || 0], ["archived", "Archived", counts.archived || 0], ["", "All", counts.total || 0]];
+    const pages = Math.max(1, Math.ceil(data.total / v.limit));
+    const page = Math.floor(v.offset / v.limit) + 1;
+    $("#view").innerHTML = `
+      <div class="page-head">
+        <div><span class="eyebrow">Inbox</span><h2>${plural(counts.new || 0, "new comment")} <small>${data.syncedAt ? `· synced ${esc(relativeInstant(data.syncedAt))}` : "· not synced yet"}</small></h2><p>Comments on your published posts, in one place. Reply publicly or send a private message without opening each app.</p></div>
+        <div class="page-head-actions">
+          <a class="btn btn-ghost" href="#/automations?tab=comments">${icon("bolt")}Comment → DM rules</a>
+          <button class="btn btn-primary" data-inbox-sync>${icon("refresh")}Sync comments</button>
+        </div>
+      </div>
+      ${data.live ? "" : `<div class="alert amber">${icon("info")}<div><strong>Replies and DMs are locked</strong><span>Comments still sync. Rule DMs go out once live publishing is on (MARKETING_LIVE=true and dry run off).</span></div></div>`}
+      <div class="engage-support">
+        ${data.channels.map((channel) => `<span class="support-chip ${channel.configured ? "on" : "off"}" title="${esc(channel.note)}">${channelIcon(channel.key, { size: "xs" })}${esc(channelLabel(channel.key))}<em>${channel.configured ? "comments + DM" : "not connected"}</em></span>`).join("")}
+        ${data.unsupported.map((channel) => `<span class="support-chip off" title="${esc(channel.note)}">${channelIcon(channel.key, { size: "xs" })}${esc(channelLabel(channel.key))}<em>not available</em></span>`).join("")}
+      </div>
+      <div class="tabs" role="tablist">${tabs.map(([key, label, count]) => `<button type="button" class="tab ${v.status === key ? "is-active" : ""}" data-inbox-tab="${key}">${label}<em>${fmtNumber(count)}</em></button>`).join("")}</div>
+      <div class="card toolbar">
+        <div class="search"><svg><use href="#i-search"></use></svg><input id="inbox-q" type="search" placeholder="Search comments or people…" value="${esc(v.q)}" aria-label="Search comments" /></div>
+        <select id="inbox-channel" aria-label="Channel"><option value="">All channels</option>${data.channels.map((channel) => `<option value="${esc(channel.key)}" ${v.channel === channel.key ? "selected" : ""}>${esc(channelLabel(channel.key))}</option>`).join("")}</select>
+        ${selected.size ? `<span class="foot-spacer"></span><strong class="sel-count">${selected.size} selected</strong><button class="btn btn-ghost btn-sm" data-inbox-bulk="read">Mark read</button><button class="btn btn-ghost btn-sm" data-inbox-bulk="archived">Archive</button><button class="icon-btn sm" data-inbox-bulk="clear" aria-label="Clear selection">${icon("close")}</button>` : ""}
+      </div>
+      ${data.items.length ? `<div class="inbox-list">${data.items.map((comment) => commentCard(comment)).join("")}</div>
+        ${data.total > v.limit ? `<div class="pager card"><span>Page ${page} / ${pages}</span><span class="foot-spacer"></span><button class="icon-btn sm" data-inbox-page="prev" ${page <= 1 ? "disabled" : ""}>‹</button><button class="icon-btn sm" data-inbox-page="next" ${page >= pages ? "disabled" : ""}>›</button></div>` : ""}`
+        : `<div class="card">${emptyState(counts.total ? "Nothing here" : "No comments yet", counts.total ? "Try another tab or clear the search." : "Press Sync comments after your posts get replies. Facebook, Instagram, Bluesky and Mastodon are supported.")}</div>`}
+    `;
+  }
+
+  function commentCard(comment) {
+    const selected = state.inboxSelected.has(comment.id);
+    const windowNote = comment.dmWindowEndsAt && !comment.dm
+      ? Date.parse(comment.dmWindowEndsAt) > Date.now() ? `DM possible until ${fmtInstant(comment.dmWindowEndsAt, { time: false })}` : "DM window closed (7 days)"
+      : "";
+    return `<article class="card comment-card status-${esc(comment.status)} ${selected ? "is-selected" : ""}" data-comment="${esc(comment.id)}">
+      <input type="checkbox" class="comment-check" data-comment-select="${esc(comment.id)}" ${selected ? "checked" : ""} aria-label="Select comment" />
+      <div class="avatar" aria-hidden="true">${esc(initials(comment.author?.name))}</div>
+      <div class="comment-main">
+        <div class="comment-meta">
+          <strong dir="auto">${esc(comment.author?.name || "Unknown")}</strong>
+          ${comment.author?.handle ? `<span>@${esc(comment.author.handle)}</span>` : ""}
+          ${channelIcon(comment.channel, { size: "xs" })}
+          <span>${esc(relativeInstant(comment.createdAt))}</span>
+          ${comment.status === "new" ? `<span class="chip blue-chip">new</span>` : ""}
+        </div>
+        <p class="comment-text" dir="auto">${esc(comment.text)}</p>
+        <div class="comment-context">
+          ${comment.postId ? `<button class="link-btn" data-edit="${esc(comment.postId)}" dir="auto">On: ${esc(comment.postTitle || "post")}</button>` : ""}
+          ${comment.matches.map((match) => `<span class="chip purple" title="Keyword: ${esc(match.keyword)}">${icon("bolt")}${esc(match.name)}${match.ran ? ` · ${match.ran.dm?.ok || match.ran.reply?.ok ? "sent" : "failed"}` : " · waiting"}</span>`).join("")}
+          ${comment.dm ? `<span class="chip lime">DM sent ${esc(relativeInstant(comment.dm.at))}</span>` : windowNote ? `<span class="chip muted">${esc(windowNote)}</span>` : ""}
+        </div>
+        ${(comment.replies || []).length ? `<div class="reply-thread">${comment.replies.map((reply) => `<p dir="auto"><b>You</b> ${esc(reply.text)} <span>${esc(relativeInstant(reply.at))}</span></p>`).join("")}</div>` : ""}
+        ${comment.dm ? `<div class="reply-thread dm"><p dir="auto"><b>DM</b> ${esc(comment.dm.text)}</p></div>` : ""}
+        <div class="composer" data-composer="${esc(comment.id)}" hidden></div>
+      </div>
+      <div class="comment-actions">
+        <button class="btn btn-ghost btn-sm" data-comment-reply="${esc(comment.id)}">${icon("send")}Reply</button>
+        <button class="btn btn-ghost btn-sm" data-comment-dm="${esc(comment.id)}" ${comment.dmAllowed ? "" : "disabled"} title="${comment.dmAllowed ? "Send a private message" : comment.dm ? "Already sent a DM" : "DMs aren't possible for this comment"}">${icon("story")}DM</button>
+        <button class="icon-btn sm" data-comment-more="${esc(comment.id)}" aria-label="More" aria-haspopup="menu">${icon("more")}</button>
+      </div>
+    </article>`;
+  }
+
+  function findComment(id) {
+    return state.inbox?.items.find((item) => item.id === id) || null;
+  }
+
+  function openComposer(id, mode) {
+    const comment = findComment(id);
+    if (!comment) return;
+    $$(".composer").forEach((box) => {
+      if (box.dataset.composer !== id) {
+        box.hidden = true;
+        box.innerHTML = "";
+      }
+    });
+    const box = $(`[data-composer="${CSS.escape(id)}"]`);
+    if (!box) return;
+    const dm = mode === "dm";
+    box.hidden = false;
+    box.innerHTML = `
+      <div class="composer-head"><strong>${dm ? `Private message to ${esc(comment.author?.name || "")}` : "Public reply"}</strong>${dm && comment.dmWindowEndsAt ? `<span class="field-hint">Meta allows one private reply within 7 days.</span>` : ""}</div>
+      <textarea rows="3" dir="auto" data-composer-text placeholder="${dm ? "Hi {{first_name}}, here are the details…" : "Thanks for the comment!"}"></textarea>
+      <div class="composer-tools">
+        <div class="editor-toolbar flat">${ENGAGE_TOKENS.slice(0, 4).map((token) => `<button type="button" class="token-btn" data-composer-token="${token}">${token}</button>`).join("")}</div>
+        <span class="foot-spacer"></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-saved-menu>Saved replies ▾</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-composer-cancel>Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" data-composer-send="${dm ? "dm" : "reply"}" ${state.inbox?.live ? "" : "disabled title=\"Live publishing is locked\""}>${icon("send")}${dm ? "Send DM" : "Reply"}</button>
+      </div>`;
+    box.querySelector("textarea").focus();
+  }
+
+  async function sendComposer(id, kind, button) {
+    const box = $(`[data-composer="${CSS.escape(id)}"]`);
+    const text = box?.querySelector("[data-composer-text]").value.trim();
+    if (!text) return toast("Write a message first.", "error");
+    await withBusy(button, async () => {
+      try {
+        await api(`/api/comments/${encodeURIComponent(id)}/${kind}`, { method: "POST", body: jsonBody({ text }) });
+        toast(kind === "dm" ? "DM sent." : "Reply posted.", "success");
+        state.inbox = null;
+        await renderInbox();
+        loadPosts().catch(() => {});
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+  }
+
+  async function setCommentStatus(ids, status) {
+    try {
+      if (ids.length === 1) await api(`/api/comments/${encodeURIComponent(ids[0])}`, { method: "PUT", body: jsonBody({ status }) });
+      else await api("/api/comments/bulk", { method: "POST", body: jsonBody({ ids, status }) });
+      state.inboxSelected.clear();
+      state.inbox = null;
+      await renderInbox();
+      refreshInboxBadge();
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  function refreshInboxBadge() {
+    api("/api/overview").then((overview) => {
+      state.overview = overview;
+      renderChrome();
+    }).catch(() => {});
+  }
+
+  function commentMenu(anchor, id) {
+    const comment = findComment(id);
+    if (!comment) return;
+    openMenu(anchor, [
+      comment.status !== "read" ? { label: "Mark as read", icon: "check", onClick: () => setCommentStatus([id], "read") } : { label: "Mark as new", icon: "info", onClick: () => setCommentStatus([id], "new") },
+      { label: "Mark as replied", icon: "send", onClick: () => setCommentStatus([id], "replied") },
+      comment.status !== "archived" ? { label: "Archive", icon: "trash", onClick: () => setCommentStatus([id], "archived") } : { label: "Move back to inbox", icon: "refresh", onClick: () => setCommentStatus([id], "read") },
+      { divider: true },
+      comment.url ? { label: "Open on platform", icon: "external", onClick: () => window.open(comment.url, "_blank", "noopener") } : null,
+      { label: "Create a rule from this comment", icon: "bolt", onClick: () => openCommentRuleModal(null, { name: `Reply to “${comment.text.slice(0, 20)}”`, channels: [comment.channel], keywords: comment.text.split(/\s+/).filter((word) => word.length > 2).slice(0, 2), mode: "any", dm: "", reply: "" }) },
+    ]);
+  }
+
+  function savedRepliesMenu(anchor, textarea) {
+    const items = state.savedReplies || [];
+    openMenu(anchor, [
+      ...(items.length ? items.map((item) => ({ label: item.title, onClick: () => insertAtCursor(textarea, item.text) })) : [{ label: "No saved replies yet", disabled: true }]),
+      { divider: true },
+      {
+        label: "Save current text…",
+        icon: "plus",
+        disabled: !textarea.value.trim(),
+        onClick: async () => {
+          const title = await promptDialog({ title: "Save reply", label: "Name", value: textarea.value.trim().slice(0, 40), confirmLabel: "Save" });
+          if (!title) return;
+          try {
+            const result = await api("/api/saved-replies", { method: "POST", body: jsonBody({ title, text: textarea.value.trim() }) });
+            state.savedReplies = [result.item, ...(state.savedReplies || [])];
+            toast("Saved reply added.", "success");
+          } catch (error) {
+            toast(error.message, "error");
+          }
+        },
+      },
+    ]);
+  }
+
+  async function syncInbox(button) {
+    await withBusy(button, async () => {
+      try {
+        const result = await api("/api/comments/sync", { method: "POST", body: jsonBody({}) });
+        toast(`${plural(result.new || 0, "new comment")}${result.sent ? ` · ${result.sent} rule replies sent` : ""}${result.pendingDryRun ? ` · ${result.pendingDryRun} waiting for live mode` : ""}.`, "success");
+        if (result.warnings?.length) openModal({ title: "Sync warnings", body: `<ul class="plain-list">${result.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>`, actions: [{ label: "Close", className: "btn-ghost" }] });
+        state.inbox = null;
+        await renderInbox();
+        refreshInboxBadge();
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+  }
+
+  /* Comment → DM rules (shown as a tab on the Automations page) */
+
+  async function loadCommentRules() {
+    state.commentRules = await api("/api/comment-rules");
+    return state.commentRules;
+  }
+
+  function commentRuleSentence(rule) {
+    const words = rule.matchAll ? "any comment" : `a comment ${rule.mode === "exact" ? "that is exactly" : rule.mode === "all" ? "containing all of" : "containing"} ${rule.keywords.map((keyword) => `“${keyword}”`).join(rule.mode === "all" ? " and " : " or ")}`;
+    const where = rule.channels.map(channelLabel).join(" or ");
+    const actions = [rule.dm?.trim() ? "send them a DM" : "", rule.reply?.trim() ? "reply publicly" : ""].filter(Boolean).join(" and ");
+    return `When someone leaves ${words} on ${where}${rule.filter?.tags?.length ? ` (posts tagged ${rule.filter.tags.map((tag) => `#${tag}`).join(", ")})` : ""}, ${actions}${rule.oncePerPerson ? " — once per person" : ""}.`;
+  }
+
+  async function renderCommentRules() {
+    if (!state.commentRules) {
+      try {
+        await loadCommentRules();
+      } catch (error) {
+        return `<div class="card">${emptyState("Rules unavailable", error.message)}</div>`;
+      }
+    }
+    const data = state.commentRules;
+    const rules = data.rules || [];
+    return `
+      <div class="inline-alert info-note">${icon("info")}<span>DMs to commenters work on <strong>Facebook and Instagram</strong> (official “private reply”, needs Meta messaging permission, within 7 days, one per comment), <strong>Bluesky</strong> (app password with DM access) and <strong>Mastodon</strong> (direct post). X, LinkedIn and Threads have no API for this.</span></div>
+      ${rules.length ? `<div class="auto-list section">${rules.map((rule) => `
+        <article class="card auto-card ${rule.enabled ? "" : "is-paused"}">
+          <label class="switch" title="${rule.enabled ? "Pause" : "Turn on"}"><input type="checkbox" data-crule-toggle="${esc(rule.id)}" ${rule.enabled ? "checked" : ""} /><span></span></label>
+          <div class="auto-main">
+            <strong>${esc(rule.name)}</strong>
+            <p>${esc(commentRuleSentence(rule))}</p>
+            <div class="chips">${rule.dm ? `<span class="chip purple" dir="auto" title="${esc(rule.dm)}">DM: ${esc(rule.dm.slice(0, 50))}${rule.dm.length > 50 ? "…" : ""}</span>` : ""}${rule.reply ? `<span class="chip cyan" dir="auto">Reply: ${esc(rule.reply.slice(0, 40))}</span>` : ""}<span class="chip muted">${fmtNumber(rule.stats?.matched || 0)} matched · ${fmtNumber(rule.stats?.sent || 0)} sent${rule.stats?.failed ? ` · ${fmtNumber(rule.stats.failed)} failed` : ""}</span></div>
+          </div>
+          <div class="auto-actions">
+            <button class="btn btn-outline btn-sm" data-crule-test="${esc(rule.id)}">${icon("play")}Test</button>
+            <button class="btn btn-ghost btn-sm" data-crule-edit="${esc(rule.id)}">Edit</button>
+            <button class="icon-btn sm danger" data-crule-delete="${esc(rule.id)}" aria-label="Delete rule">${icon("trash")}</button>
+          </div>
+        </article>`).join("")}</div>` : ""}
+      <div class="section">
+        <div class="section-head"><h3>${rules.length ? "Add from a recipe" : "Start from a recipe"}</h3><button class="btn btn-primary btn-sm" data-crule-new>${icon("plus")}New comment rule</button></div>
+        <div class="preset-grid">${COMMENT_RULE_PRESETS.map((preset) => `<button type="button" class="card preset" data-crule-preset="${preset.key}"><strong>${esc(preset.title)}</strong><span>${esc(preset.text)}</span></button>`).join("")}</div>
+      </div>`;
+  }
+
+  function openCommentRuleModal(existing = null, preset = null) {
+    const rule = existing || preset || { name: "", channels: ["instagram", "facebook"], keywords: [], mode: "any", dm: "", reply: "", oncePerPerson: true, markReplied: true };
+    const engageChannels = ["facebook", "instagram", "bluesky", "mastodon"];
+    openModal({
+      title: existing ? "Edit comment rule" : "New comment rule",
+      wide: true,
+      body: `<form id="crule-form" class="auto-form">
+        <p class="auto-sentence" id="crule-sentence"></p>
+        <label class="field"><span>Name</span><input id="crule-name" maxlength="80" value="${esc(rule.name || "")}" placeholder="Pricing by DM" autofocus /></label>
+        <fieldset class="auto-step"><legend><b>1</b> When someone comments on</legend>
+          <div class="channel-picker compact" id="crule-channels">${state.connections.filter((channel) => channel.mode === "api" && channel.key !== "devto").map((channel) => {
+            const ok = engageChannels.includes(channel.key);
+            const checked = (rule.channels || []).includes(channel.key);
+            return `<label class="channel-toggle ${checked ? "is-checked" : ""} ${ok ? "" : "is-disabled"}" title="${ok ? (channel.configured ? "Connected" : "Not connected yet") : `${channel.label}: no comment/DM API`}"><input type="checkbox" value="${esc(channel.key)}" ${checked ? "checked" : ""} ${ok ? "" : "disabled"} />${channelIcon(channel.key, { size: "xs" })}<span>${esc(channel.label)}</span></label>`;
+          }).join("")}</div>
+          <label class="field" style="margin-top:10px"><span>Only on posts tagged (optional)</span><input id="crule-tags" list="tag-options" value="${esc((rule.filter?.tags || []).join(", "))}" placeholder="offer, launch" /></label>
+        </fieldset>
+        <fieldset class="auto-step"><legend><b>2</b> And the comment</legend>
+          <div class="field-row">
+            <label class="field"><span>Match</span><select id="crule-mode"><option value="any" ${rule.mode === "any" && !rule.matchAll ? "selected" : ""}>contains any keyword</option><option value="all" ${rule.mode === "all" ? "selected" : ""}>contains all keywords</option><option value="exact" ${rule.mode === "exact" ? "selected" : ""}>is exactly a keyword</option><option value="every" ${rule.matchAll ? "selected" : ""}>every comment</option></select></label>
+            <label class="field" id="crule-keywords-wrap"><span>Keywords (comma separated, Arabic or English)</span><input id="crule-keywords" dir="auto" value="${esc((rule.keywords || []).join(", "))}" placeholder="price, السعر, بكام" /></label>
+          </div>
+          <p class="field-hint">Matching ignores capital letters, Arabic diacritics and elongation (ـ), and different alef/yaa forms. Keywords match whole words.</p>
+        </fieldset>
+        <fieldset class="auto-step"><legend><b>3</b> Then</legend>
+          <label class="field"><span>Send this DM</span><textarea id="crule-dm" rows="3" dir="auto" placeholder="Hi {{first_name}}! Here are our plans: {{pricing}}">${esc(rule.dm || "")}</textarea></label>
+          <div class="editor-toolbar flat">${ENGAGE_TOKENS.map((token) => `<button type="button" class="token-btn" data-crule-token="crule-dm" data-token="${token}">${token}</button>`).join("")}</div>
+          <label class="field" style="margin-top:10px"><span>And reply publicly (optional)</span><input id="crule-reply" dir="auto" value="${esc(rule.reply || "")}" placeholder="Sent you a DM 📩" /></label>
+          <div class="chips">${["Sent you a DM 📩", "Check your messages 📩", "تم إرسال التفاصيل في الرسائل 📩"].map((text) => `<button type="button" class="chip pick-chip" data-crule-reply-preset="${esc(text)}" dir="auto">${esc(text)}</button>`).join("")}</div>
+          <div class="setting-row"><div><strong>Once per person</strong><span>Don't DM the same person twice for this rule.</span></div><label class="switch"><input type="checkbox" id="crule-once" ${rule.oncePerPerson !== false ? "checked" : ""} /><span></span></label></div>
+          <div class="setting-row"><div><strong>Mark as replied</strong><span>Move handled comments out of “New”.</span></div><label class="switch"><input type="checkbox" id="crule-mark" ${rule.markReplied !== false ? "checked" : ""} /><span></span></label></div>
+        </fieldset>
+        <p class="field-error" id="crule-error" hidden></p>
+      </form>`,
+      actions: [
+        { label: "Cancel", className: "btn-ghost" },
+        {
+          label: existing ? "Save" : "Create rule",
+          className: "btn-primary",
+          stay: true,
+          onClick: async (button) => {
+            const body = readCommentRuleForm();
+            try {
+              await withBusy(button, async () => {
+                if (existing) await api(`/api/comment-rules/${encodeURIComponent(existing.id)}`, { method: "PUT", body: jsonBody({ ...body, enabled: existing.enabled }) });
+                else await api("/api/comment-rules", { method: "POST", body: jsonBody(body) });
+              });
+              toast(existing ? "Rule saved." : "Rule created. Use Test to try a comment.", "success");
+              state.commentRules = null;
+              if (state.view === "automations") renderAutomations();
+              return false;
+            } catch (error) {
+              $("#crule-error").textContent = error.message;
+              $("#crule-error").hidden = false;
+              return true;
+            }
+          },
+        },
+      ],
+      onOpen: () => {
+        const update = () => {
+          const body = readCommentRuleForm();
+          $("#crule-keywords-wrap").hidden = body.matchAll;
+          $("#crule-sentence").textContent = body.channels.length && (body.matchAll || body.keywords.length) && (body.dm || body.reply) ? commentRuleSentence(body) : "Pick channels, keywords and what to send.";
+        };
+        const form = $("#crule-form");
+        form.addEventListener("input", update);
+        form.addEventListener("change", (event) => {
+          event.target.closest(".channel-toggle")?.classList.toggle("is-checked", event.target.checked);
+          update();
+        });
+        form.addEventListener("click", (event) => {
+          const token = event.target.closest("[data-crule-token]");
+          if (token) insertAtCursor($(`#${token.dataset.cruleToken}`), token.dataset.token);
+          const preset = event.target.closest("[data-crule-reply-preset]");
+          if (preset) {
+            $("#crule-reply").value = preset.dataset.cruleReplyPreset;
+            update();
+          }
+        });
+        update();
+      },
+    });
+  }
+
+  function readCommentRuleForm() {
+    const mode = $("#crule-mode").value;
+    return {
+      name: $("#crule-name").value.trim(),
+      channels: $$("#crule-channels input:checked").map((input) => input.value),
+      keywords: $("#crule-keywords").value.split(",").map((keyword) => keyword.trim()).filter(Boolean),
+      mode: mode === "every" ? "any" : mode,
+      matchAll: mode === "every",
+      filter: { tags: $("#crule-tags").value.split(",").map((tag) => tag.trim()).filter(Boolean) },
+      dm: $("#crule-dm").value,
+      reply: $("#crule-reply").value,
+      oncePerPerson: $("#crule-once").checked,
+      markReplied: $("#crule-mark").checked,
+    };
+  }
+
+  function testCommentRule(id) {
+    const rule = state.commentRules?.rules.find((item) => item.id === id);
+    if (!rule) return;
+    openModal({
+      title: `Test · ${rule.name}`,
+      wide: true,
+      body: `<p class="prose">Type a comment as a follower would. Nothing is sent.</p>
+        <div class="field-row"><label class="field"><span>Comment</span><input id="ctest-text" dir="auto" value="${esc(rule.keywords[0] ? `How much is the ${rule.keywords[0]}?` : "Nice post!")}" autofocus /></label>
+        <label class="field"><span>Channel</span><select id="ctest-channel">${rule.channels.map((key) => `<option value="${esc(key)}">${esc(channelLabel(key))}</option>`).join("")}</select></label></div>
+        <label class="field"><span>Commenter name</span><input id="ctest-name" value="Sara Ahmed" /></label>
+        <div id="ctest-result" class="ctest-result"></div>`,
+      actions: [{ label: "Close", className: "btn-ghost" }],
+      onOpen: () => {
+        const run = debounce(async () => {
+          try {
+            const result = await api(`/api/comment-rules/${encodeURIComponent(id)}/test`, { method: "POST", body: jsonBody({ text: $("#ctest-text").value, channel: $("#ctest-channel").value, name: $("#ctest-name").value }) });
+            $("#ctest-result").innerHTML = result.match
+              ? `<div class="connect-result ok">Matches${result.keyword ? ` on “${esc(result.keyword)}”` : ""}.</div>${result.dm ? `<div class="bubble dm"><span>DM</span><p dir="auto">${esc(result.dm)}</p></div>` : ""}${result.reply ? `<div class="bubble"><span>Public reply</span><p dir="auto">${esc(result.reply)}</p></div>` : ""}`
+              : `<div class="connect-result">No match — this comment would be left for you to answer.</div>`;
+          } catch (error) {
+            $("#ctest-result").innerHTML = `<div class="connect-result error">${esc(error.message)}</div>`;
+          }
+        }, 250);
+        ["#ctest-text", "#ctest-channel", "#ctest-name"].forEach((selector) => $(selector).addEventListener("input", run));
+        $("#ctest-channel").addEventListener("change", run);
+        run();
+      },
+    });
+  }
+
+  async function commentRuleAction(kind, id, enabled) {
+    const rule = state.commentRules?.rules.find((item) => item.id === id);
+    if (!rule) return;
+    try {
+      if (kind === "toggle") {
+        await api(`/api/comment-rules/${encodeURIComponent(id)}`, { method: "PUT", body: jsonBody({ ...rule, enabled }) });
+        toast(enabled ? `“${rule.name}” is on.` : `“${rule.name}” is paused.`, "success");
+      } else if (kind === "delete") {
+        const ok = await confirmDialog({ title: "Delete comment rule", message: `Delete <strong>${esc(rule.name)}</strong>?`, confirmLabel: "Delete", danger: true });
+        if (!ok) return;
+        await api(`/api/comment-rules/${encodeURIComponent(id)}`, { method: "DELETE" });
+        toast("Rule deleted.", "success");
+      }
+      state.commentRules = null;
+      renderAutomations();
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
   /* ------------------------------------------------------------------ *
    * Analytics and reports
    * ------------------------------------------------------------------ */
@@ -3945,6 +4413,53 @@
       if (d.templateUse) return useTemplate(d.templateUse);
       if (d.templateEdit) return openTemplateModal(state.templates.find((item) => item.id === d.templateEdit));
       if (d.templateDelete) return deleteTemplate(d.templateDelete);
+      // Inbox
+      if (d.inboxSync !== undefined) return syncInbox(target);
+      if (d.inboxTab !== undefined) {
+        Object.assign(state.inboxView, { status: d.inboxTab, offset: 0 });
+        state.inboxSelected.clear();
+        state.inbox = null;
+        return renderInbox();
+      }
+      if (d.inboxPage) {
+        const v = state.inboxView;
+        v.offset = Math.max(0, v.offset + (d.inboxPage === "next" ? v.limit : -v.limit));
+        state.inbox = null;
+        return renderInbox();
+      }
+      if (d.inboxBulk) {
+        if (d.inboxBulk === "clear") {
+          state.inboxSelected.clear();
+          return renderInbox();
+        }
+        return setCommentStatus([...state.inboxSelected], d.inboxBulk);
+      }
+      if (d.commentReply) return openComposer(d.commentReply, "reply");
+      if (d.commentDm) return openComposer(d.commentDm, "dm");
+      if (d.commentMore) return commentMenu(target, d.commentMore);
+      if (d.composerCancel !== undefined) {
+        const box = target.closest(".composer");
+        box.hidden = true;
+        box.innerHTML = "";
+        return;
+      }
+      if (d.composerToken) return insertAtCursor(target.closest(".composer").querySelector("textarea"), d.composerToken);
+      if (d.savedMenu !== undefined) return savedRepliesMenu(target, target.closest(".composer").querySelector("textarea"));
+      if (d.composerSend) return sendComposer(target.closest(".composer").dataset.composer, d.composerSend, target);
+      // Comment → DM rules
+      if (d.autoTab) {
+        state.autoTab = d.autoTab;
+        history.replaceState(null, "", `#/automations?tab=${d.autoTab}`);
+        return renderAutomations();
+      }
+      if (d.cruleNew !== undefined) return openCommentRuleModal();
+      if (d.crulePreset) {
+        const preset = COMMENT_RULE_PRESETS.find((item) => item.key === d.crulePreset);
+        return preset && openCommentRuleModal(null, preset.rule);
+      }
+      if (d.cruleTest) return testCommentRule(d.cruleTest);
+      if (d.cruleEdit) return openCommentRuleModal(state.commentRules?.rules.find((item) => item.id === d.cruleEdit));
+      if (d.cruleDelete) return commentRuleAction("delete", d.cruleDelete);
       if (d.autoNew !== undefined) return openAutomationModal();
       if (d.autoPreset) {
         const preset = AUTOMATION_PRESETS.find((item) => item.key === d.autoPreset);
@@ -4038,6 +4553,17 @@
         return renderCalendar();
       }
       if (event.target.dataset.autoToggle) return toggleAutomation(event.target.dataset.autoToggle, event.target.checked);
+      if (event.target.dataset.cruleToggle) return commentRuleAction("toggle", event.target.dataset.cruleToggle, event.target.checked);
+      if (event.target.dataset.commentSelect) {
+        if (event.target.checked) state.inboxSelected.add(event.target.dataset.commentSelect);
+        else state.inboxSelected.delete(event.target.dataset.commentSelect);
+        return renderInbox();
+      }
+      if (id === "inbox-channel") {
+        Object.assign(state.inboxView, { channel: event.target.value, offset: 0 });
+        state.inbox = null;
+        return renderInbox();
+      }
       if (id === "health-filter") {
         state.healthFilter = event.target.value;
         return renderHealth();
@@ -4075,6 +4601,17 @@
         input.focus();
         input.setSelectionRange(caret, caret);
       }
+      if (target.id === "inbox-q") {
+        Object.assign(state.inboxView, { q: target.value, offset: 0 });
+        state.inbox = null;
+        renderInbox().then(() => {
+          const input = $("#inbox-q");
+          if (input) {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+          }
+        });
+      }
       if (target.id === "activity-q") {
         state.activityView.q = target.value;
         state.activityView.offset = 0;
@@ -4089,7 +4626,7 @@
       }
     }, 220);
     view.addEventListener("input", (event) => {
-      if (["filter-q", "media-q", "activity-q"].includes(event.target.id)) searchInput(event.target);
+      if (["filter-q", "media-q", "activity-q", "inbox-q"].includes(event.target.id)) searchInput(event.target);
     });
 
     // Calendar drag & drop
