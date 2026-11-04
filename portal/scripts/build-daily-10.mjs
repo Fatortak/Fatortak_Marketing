@@ -18,7 +18,8 @@ const VIDEOS = path.join(MARKETING_ROOT, "landing/assets/videos");
 const CONFIG = JSON.parse(fs.readFileSync(path.join(MARKETING_ROOT, "config.example.json"), "utf8"));
 const INPUT = process.argv[2];
 const OUTPUT = process.argv[3] || path.join(MARKETING_ROOT, "portal/data/portal-daily-10.json");
-if (!INPUT) throw new Error("Usage: node build-daily-10.mjs <input-portal.json> [output.json]");
+const CUTOFF = process.argv[4] || "9999-12-31T23:59:59";
+if (!INPUT) throw new Error("Usage: node build-daily-10.mjs <input-portal.json> [output.json] [cutoff-local-iso]");
 
 const START = "2026-11-04T00:00:00";
 const TIMES = ["08:00", "09:30", "11:00", "12:30", "14:00", "15:30", "17:00", "18:30", "20:00", "21:30"];
@@ -155,7 +156,260 @@ const NEW_THEMES_AR = [
   },
 ];
 
-const enThemes = [...NEW_THEMES_EN];
+const VIDEO_COPY = {
+  en: {
+    ui: {
+      title: "See the new interface.",
+      core: "A calmer workspace, the same ledger. Reports, invoices and projects in one place.",
+    },
+    reports: {
+      title: "13 reports. 30 seconds.",
+      core: "Filter a report, export CSV or PDF, and trace every number to the same ledger.",
+    },
+    import: {
+      title: "Your Excel file, mapped.",
+      core: "Upload customers, suppliers or items, review the suggested columns, and validate before anything is saved.",
+    },
+    platform: {
+      title: "Every company. One console.",
+      core: "Tenants, users, invoices and collections across the installation in one view.",
+    },
+    onboarding: {
+      title: "Zero to first invoice.",
+      core: "A guided checklist for your company, accounts, customer, item and first invoice.",
+    },
+    templates: {
+      title: "Six invoices. Your brand.",
+      core: "Pick a template, set your logo and colour, preview print and the public link.",
+    },
+  },
+  ar: {
+    ui: {
+      title: "شاهد الواجهة الجديدة.",
+      core: "مساحة أهدأ ونفس الدفتر. التقارير والفواتير والمشاريع في مكان واحد.",
+    },
+    reports: {
+      title: "13 تقريرًا في 30 ثانية.",
+      core: "صفِّ التقرير وصدّره CSV أو PDF وتتبّع كل رقم إلى نفس الدفتر.",
+    },
+    import: {
+      title: "ملف إكسل مربوط.",
+      core: "ارفع العملاء أو الموردين أو الأصناف، راجع الأعمدة المقترحة، وتحقق قبل الحفظ.",
+    },
+    platform: {
+      title: "كل شركة. لوحة واحدة.",
+      core: "الشركات والمستخدمون والفواتير والتحصيل لكل التثبيت في نظرة واحدة.",
+    },
+    onboarding: {
+      title: "من الصفر إلى أول فاتورة.",
+      core: "قائمة بدء للشركة والحسابات والعميل والصنف وأول فاتورة.",
+    },
+    templates: {
+      title: "ستة قوالب. هويتك.",
+      core: "اختر القالب، حدد الشعار واللون، وعاين الطباعة والرابط العام.",
+    },
+  },
+};
+
+const ANGLES_EN = [
+  {
+    key: "angle-month-end",
+    title: "Month-end close should not take a week.",
+    core: "Invoices, payments, expenses and payroll post to the same ledger, so the trial balance and P&L are ready when the month ends.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "income-statement.png",
+  },
+  {
+    key: "angle-receivables",
+    title: "Who owes you right now?",
+    core: "A receivables view with invoice dates, partial payments and aging. Follow up before the cash gets tight.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-v2-06-receivables.png",
+  },
+  {
+    key: "angle-project-margin",
+    title: "Project margin is a ledger number.",
+    core: "Link invoices, expenses, purchases and payroll to the project. The margin comes from the same books, not a side spreadsheet.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "project-profitability.png",
+  },
+  {
+    key: "angle-invoice-language",
+    title: "Invoice in the customer's language.",
+    core: "Arabic and English invoices, with the same totals and VAT, reduce payment friction.",
+    pillar: "tip",
+    link: "{{site}}",
+    media: "social-v2-01-vat.png",
+  },
+  {
+    key: "angle-reconcile-weekly",
+    title: "Reconcile weekly, not monthly.",
+    core: "Thirty-day-old surprises are harder to fix. Match receipts and payments while the details are fresh.",
+    pillar: "tip",
+    link: "{{site}}",
+    media: "social-v2-19-cashflow.png",
+  },
+  {
+    key: "angle-excel-database",
+    title: "Excel is not a database.",
+    core: "A shared file breaks when two people edit it. One ledger with roles and an audit trail keeps the numbers consistent.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-v2-18-spreadsheet.png",
+  },
+  {
+    key: "angle-agencies",
+    title: "Agencies: know client profit.",
+    core: "Retainers, project fees, freelance costs and expenses in one place. See which client is profitable before the quarterly review.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-13-agencies.png",
+  },
+  {
+    key: "angle-retail",
+    title: "Retail: stock and VAT together.",
+    core: "Items, purchase costs, sales invoices and VAT in one system. Know the margin per SKU and per customer.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-14-retail.png",
+  },
+  {
+    key: "angle-contracting",
+    title: "Contracting: variations and progress bills.",
+    core: "Contract value, variations, project costs and progress invoices. Stop rebuilding project cost from WhatsApp threads.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-23-projects.png",
+  },
+  {
+    key: "angle-accounting-firms",
+    title: "Accounting firms: one workspace per client.",
+    core: "Separate books, consolidated access for your team, and reports from the same ledger. Less re-keying, more advisory work.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-07-clients.png",
+  },
+  {
+    key: "angle-payroll-ledger",
+    title: "Payroll belongs in the same ledger.",
+    core: "Salaries, deductions and attendance post to the books. Payroll reports and the P&L agree.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-payroll.png",
+  },
+  {
+    key: "angle-arabic-first",
+    title: "Arabic-first, not translated later.",
+    core: "RTL layouts, Arabic invoices and Arabic reports are designed together, not mirrored from an English product.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-v2-11-arabic.png",
+  },
+];
+
+const ANGLES_AR = [
+  {
+    key: "angle-month-end",
+    title: "إغلاق الشهر لا يحتاج أسبوعًا.",
+    core: "الفواتير والمدفوعات والمصروفات والرواتب ترحّل إلى نفس الدفتر، فيكون ميزان المراجعة وقائمة الأرباح جاهزين بنهاية الشهر.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "income-statement.png",
+  },
+  {
+    key: "angle-receivables",
+    title: "من عليه المبلغ الآن؟",
+    core: "نظرة على المستحقات بتواريخ الفواتير والمدفوعات الجزئية والأعمار. تابع قبل أن يضيق النقد.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-v2-06-receivables.png",
+  },
+  {
+    key: "angle-project-margin",
+    title: "هامش المشروع رقم من الدفتر.",
+    core: "اربط الفواتير والمصروفات والمشتريات والرواتب بالمشروع. الهامش يأتي من نفس الدفاتر لا من ملف جانبي.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "project-profitability.png",
+  },
+  {
+    key: "angle-invoice-language",
+    title: "أصدر الفاتورة بلغة العميل.",
+    core: "فواتير عربية وإنجليزية بنفس الإجماليات والضريبة، لتقليل احتكاك الدفع.",
+    pillar: "tip",
+    link: "{{site}}",
+    media: "social-v2-01-vat.png",
+  },
+  {
+    key: "angle-reconcile-weekly",
+    title: "طابق الحسابات أسبوعيًا، لا شهريًا.",
+    core: "المفاجآت بعد ثلاثين يومًا أصعب في الإصلاح. طابق المقبوضات والمدفوعات والتفاصيل طازجة.",
+    pillar: "tip",
+    link: "{{site}}",
+    media: "social-v2-19-cashflow.png",
+  },
+  {
+    key: "angle-excel-database",
+    title: "إكسل ليس قاعدة بيانات.",
+    core: "الملف المشترك يتعارض عند تعديل شخصين. دفتر واحد بأدوار وسجل تدقيق يحافظ على اتساق الأرقام.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-v2-18-spreadsheet.png",
+  },
+  {
+    key: "angle-agencies",
+    title: "الوكالات: اعرف ربح كل عميل.",
+    core: "الاشتراكات وأتعاب المشاريع وتكاليف المستقلين والمصروفات في مكان واحد. اعرف العميل المربح قبل المراجعة الربعية.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-13-agencies.png",
+  },
+  {
+    key: "angle-retail",
+    title: "التجزئة: المخزون والضريبة معًا.",
+    core: "الأصناف وتكاليف الشراء وفواتير البيع والضريبة في نظام واحد. اعرف الهامش لكل صنف ولكل عميل.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-14-retail.png",
+  },
+  {
+    key: "angle-contracting",
+    title: "المقاولات: التغييرات والفواتير المرحلية.",
+    core: "قيمة العقد والتغييرات وتكاليف المشروع والفواتير المرحلية. لا تعِد بناء تكلفة المشروع من محادثات واتساب.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-23-projects.png",
+  },
+  {
+    key: "angle-accounting-firms",
+    title: "مكاتب المحاسبة: مساحة لكل عميل.",
+    core: "دفاتر منفصلة ووصول موحّد لفريقك وتقارير من نفس الدفتر. إدخال أقل وعمل استشاري أكثر.",
+    pillar: "use-case",
+    link: "{{site}}",
+    media: "social-v2-07-clients.png",
+  },
+  {
+    key: "angle-payroll-ledger",
+    title: "الرواتب جزء من نفس الدفتر.",
+    core: "الرواتب والخصومات والحضور ترحّل إلى الدفاتر. تقارير الرواتب وقائمة الأرباح تتفقان.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-payroll.png",
+  },
+  {
+    key: "angle-arabic-first",
+    title: "عربي أولاً، لا ترجمة لاحقة.",
+    core: "تخطيط RTL وفواتير وتقارير عربية مصممة معًا، لا نسخ معكوس من منتج إنجليزي.",
+    pillar: "insight",
+    link: "{{site}}",
+    media: "social-v2-28-arabicreports.png",
+  },
+];
+
+const enThemes = [...ANGLES_EN];
 for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
   const feature = features[i];
   enThemes.push({ key: `feature-${i}`, title: feature.title, core: feature.detail, pillar: "product", link: "{{site}}" });
@@ -172,10 +426,10 @@ for (const i of [0, 1, 2]) {
   const item = oss[i];
   enThemes.push({ key: `oss-${i}`, title: firstLine(item), core: item, pillar: "open-source", link: "{{repo}}" });
 }
-enThemes.push({ key: "commercial-0", title: firstLine(commercial[0]), core: commercial[0], pillar: "commercial", link: "{{site}}" });
-enThemes.push({ key: "pricing", title: "Pricing", core: PRICING_EN, pillar: "commercial", link: "{{site}}" });
+enThemes.push({ key: "commercial-0", title: firstLine(commercial[0]), core: commercial[0], pillar: "commercial", link: "{{site}}", tags: ["offer"] });
+enThemes.push({ key: "pricing", title: "Pricing", core: PRICING_EN, pillar: "commercial", link: "{{site}}", tags: ["offer"] });
 
-const arThemes = [...NEW_THEMES_AR];
+const arThemes = [...ANGLES_AR];
 for (let i = 0; i < 14; i += 1) {
   const feature = features[i];
   arThemes.push({ key: `feature-${i}`, title: firstLine(feature.ar), core: feature.ar, pillar: "arabic", link: "{{site}}" });
@@ -184,14 +438,34 @@ for (let i = 0; i < 9; i += 1) {
   const text = arabic[i];
   arThemes.push({ key: `arabic-${i}`, title: firstLine(text), core: text, pillar: "arabic", link: "{{site}}" });
 }
-arThemes.push({ key: "pricing", title: "الأسعار", core: PRICING_AR, pillar: "commercial", link: "{{site}}" });
+arThemes.push({ key: "pricing", title: "الأسعار", core: PRICING_AR, pillar: "commercial", link: "{{site}}", tags: ["offer"] });
 
-if (enThemes.length !== 30 || arThemes.length !== 30) {
+if (enThemes.length !== 36 || arThemes.length !== 36) {
   throw new Error(`Theme count mismatch: en=${enThemes.length}, ar=${arThemes.length}`);
 }
 
 const EN_HOOKS = ["", "One system: ", "No spreadsheets: ", "For real numbers: ", "Built for MENA: "];
 const AR_HOOKS = ["", "نظام واحد: ", "بدون إكسل: ", "للأرقام الحقيقية: ", "بالعربي: "];
+const PROMPTS_EN = [
+  "Which one would save your team the most time?",
+  "What would you fix first?",
+  "How does your team handle this today?",
+  "Would this work for your business?",
+  "What is the hardest part of this for you?",
+];
+const PROMPTS_AR = [
+  "أي واحدة ستوفر وقت فريقك أكثر؟",
+  "ما أول شيء ستصلحه؟",
+  "كيف يتعامل فريقك مع هذا اليوم؟",
+  "هل يناسب هذا عملك؟",
+  "ما أصعب جزء في هذا بالنسبة لك؟",
+];
+
+function withPrompt(content, language, index) {
+  if (index % 5 !== 0) return content;
+  const prompts = language === "ar" ? PROMPTS_AR : PROMPTS_EN;
+  return `${content}\n\n${prompts[Math.floor(index / 5) % prompts.length]}`;
+}
 const CTA_VARIANTS = ["{{site}}", "{{repo}}", "{{demo}}", "{{site}}", "{{repo}}"];
 const USE_CASE_CTAS = [
   "https://fatortak.rabbeh.com/",
@@ -250,7 +524,9 @@ try {
 } catch (error) {
   throw new Error(`Cannot read portal data at ${INPUT}: ${error.message}`);
 }
-const history = (Array.isArray(data.posts) ? data.posts : []).filter((post) => String(post.scheduledAt || "") < START);
+const history = (Array.isArray(data.posts) ? data.posts : []).filter(
+  (post) => String(post.scheduledAt || "") < START || String(post.scheduledAt || "") <= CUTOFF
+);
 const usedTitles = new Set(history.map((post) => post.title));
 const posts = [];
 const xLengths = [];
@@ -304,6 +580,7 @@ function fitForX(content, id) {
 }
 
 const start = new Date(Date.UTC(2026, 10, 4));
+let videoCursor = 0;
 for (let day = 0; day < 30; day += 1) {
   const date = new Date(start);
   date.setUTCDate(start.getUTCDate() + day);
@@ -312,10 +589,13 @@ for (let day = 0; day < 30; day += 1) {
   const variantIndex = Math.floor(day / 6);
   for (let slot = 0; slot < 10; slot += 1) {
     const language = LANGUAGES[slot];
-    const themeIndex = (day * 5 + Math.floor(slot / 2)) % 30;
-    const theme = language === "ar" ? arThemes[themeIndex] : enThemes[themeIndex];
+    const languageThemes = language === "ar" ? arThemes : enThemes;
+    const themeIndex = (day * 5 + Math.floor(slot / 2)) % languageThemes.length;
+    const theme = languageThemes[themeIndex];
+    const scheduledAt = `${dayIso}T${TIMES[slot]}:00`;
+    if (scheduledAt <= CUTOFF) continue;
     const id = `queue-${dayIso.replace(/-/g, "")}-${String(slot + 1).padStart(2, "0")}`;
-    const rawContent = makeContent(theme, language, variantIndex);
+    const rawContent = withPrompt(makeContent(theme, language, variantIndex), language, posts.length);
     const fitted = fitForX(rawContent, id);
     if (fitted.adjusted) adjustedForX += 1;
     xLengths.push(fitted.length);
@@ -337,7 +617,8 @@ for (let day = 0; day < 30; day += 1) {
       channels: CHANNELS,
       language,
       pillar: theme.pillar,
-      scheduledAt: `${dayIso}T${TIMES[slot]}:00`,
+      tags: [...(theme.tags || [])],
+      scheduledAt,
       status: "scheduled",
       mediaUrl: `/portal/index.php/media/landing/${mediaFile}`,
       mediaPublicUrl: `https://fatortak.rabbeh.com/assets/screenshots/${mediaBase}.jpg`,
@@ -355,15 +636,19 @@ for (let day = 0; day < 30; day += 1) {
     });
   }
 
-  const videoThemeIndex = (day + 5) % 6;
+  const videoThemeIndex = videoCursor;
+  videoCursor = (videoCursor + 1) % 6;
   const videoSlots = [
     { language: "en", theme: NEW_THEMES_EN[videoThemeIndex], time: "10:15", suffix: "v1" },
     { language: "ar", theme: NEW_THEMES_AR[videoThemeIndex], time: "16:15", suffix: "v2" },
   ];
   for (const slot of videoSlots) {
     const { language, theme, time, suffix } = slot;
+    const scheduledAt = `${dayIso}T${time}:00`;
+    if (scheduledAt <= CUTOFF) continue;
     const id = `queue-${dayIso.replace(/-/g, "")}-${suffix}`;
-    const rawContent = makeContent(theme, language, variantIndex);
+    const videoTheme = { ...theme, ...(VIDEO_COPY[language]?.[theme.key] || {}) };
+    const rawContent = withPrompt(makeContent(videoTheme, language, variantIndex), language, posts.length);
     const fitted = fitForX(rawContent, id);
     if (fitted.adjusted) adjustedForX += 1;
     xLengths.push(fitted.length);
@@ -382,7 +667,8 @@ for (let day = 0; day < 30; day += 1) {
       channels: CHANNELS,
       language,
       pillar: "product",
-      scheduledAt: `${dayIso}T${time}:00`,
+      tags: [...new Set(["priority", "launch", ...(theme.tags || [])])],
+      scheduledAt,
       status: "scheduled",
       mediaUrl: videoUrl,
       mediaPublicUrl: videoUrl,
@@ -433,10 +719,35 @@ for (const post of posts) {
   byDay[day][post.language] += 1;
   if (post.mediaKind === "video") byDay[day].video += 1;
 }
-const badDays = Object.entries(byDay).filter(
-  ([, value]) => value.total !== 12 || value.en !== 6 || value.ar !== 6 || value.video !== 2
-);
+const today = CUTOFF.slice(0, 10);
+const badDays = Object.entries(byDay).filter(([day, value]) => {
+  if (day === today) return value.total > 12 || value.en > 6 || value.ar > 6 || value.video > 2;
+  return value.total !== 12 || value.en !== 6 || value.ar !== 6 || value.video !== 2;
+});
 if (badDays.length) throw new Error(`Day balance failed: ${JSON.stringify(badDays.slice(0, 3))}`);
+const scheduleKeys = [...history, ...posts].map((post) => post.scheduledAt);
+const duplicateSlots = scheduleKeys.filter((slot, index) => scheduleKeys.indexOf(slot) !== index);
+if (duplicateSlots.length) throw new Error(`Duplicate scheduled slots: ${[...new Set(duplicateSlots)].slice(0, 5).join(", ")}`);
+
+data.settings = data.settings || {};
+data.settings.channelRules = {
+  ...(data.settings.channelRules || {}),
+  facebook: { ...(data.settings.channelRules?.facebook || {}), dailyCap: 2 },
+  instagram: {
+    ...(data.settings.channelRules?.instagram || {}),
+    dailyCap: 2,
+    linkInBio: true,
+    hashtags: "#Fatortak #Accounting #Invoicing #ERP",
+  },
+  linkedin: {
+    ...(data.settings.channelRules?.linkedin || {}),
+    dailyCap: 1,
+    hashtags: "#Fatortak #Accounting #ERP #MENA",
+  },
+  x: { ...(data.settings.channelRules?.x || {}), dailyCap: 6 },
+  bluesky: { ...(data.settings.channelRules?.bluesky || {}), dailyCap: 6 },
+  mastodon: { ...(data.settings.channelRules?.mastodon || {}), dailyCap: 4 },
+};
 
 data.posts = [...history, ...posts].sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)));
 data.activity = Array.isArray(data.activity) ? data.activity : [];
@@ -452,6 +763,7 @@ fs.writeFileSync(OUTPUT, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 
 console.log(JSON.stringify({
   output: OUTPUT,
+  cutoff: CUTOFF,
   totalPosts: data.posts.length,
   newPosts: posts.length,
   history: history.length,
