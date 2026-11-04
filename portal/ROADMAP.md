@@ -33,7 +33,7 @@ Scoring: **Impact** for a small MENA marketing team (H/M/L), **Effort** (S ≤ 2
 | # | Gap | Who has it | Impact | Effort | Blocker |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Team accounts, roles and approval workflow | All | H | L | none |
-| 2 | AI writing assistant (draft, rewrite per channel, translate AR↔EN, hashtags) | All | H | M | API key/cost |
+| 2 | AI writing assistant (draft, rewrite per channel, translate AR↔EN, hashtags); provider chosen in Settings, enabled only after its key is verified | All | H | M | user's own API key |
 | 3 | Posting slots + evergreen categories ("queue" mode) | Buffer, SocialBee | H | M | none |
 | 4 | Best time to post (from our own results) | Later, Sprout, Metricool | H | S | needs post metrics |
 | 5 | Incoming DM inbox (not only comments), assignment, internal notes | Agorapulse, Sprout | H | M | Meta messaging review |
@@ -73,11 +73,16 @@ Scoring: **Impact** for a small MENA marketing team (H/M/L), **Effort** (S ≤ 2
 
 ### Phase 2 — Create faster (weeks 3–6)
 
-**4. AI assistant** (#2)
-- Server endpoint `/api/ai/write` using the Claude API (latest Sonnet-class model for cost); prompt includes brand voice, banned claims, pricing facts and the channel's limits.
-- Actions in the editor: Draft from an idea, Shorten for X, Rewrite for LinkedIn, Translate EN↔AR (Egyptian/MSA toggle), Suggest 5 hashtags, Write alt text from the image, Make it a question.
-- UX: a "✨ Assist" button above the copy box opening a small menu; results appear as a suggestion card with Insert / Replace / Try again, never overwriting silently. Per-channel "Customize" cards get "Adapt with AI".
-- Guardrails: banned-terms check (reuse `build-daily-10.mjs` list), no invented numbers, monthly cost cap in Settings.
+**4. AI assistant** (#2) — owner decision 4 Nov 2026: AI is **off by default and switched on in Settings**, with the user's own provider and key.
+- **Settings → AI assistant**, in three steps:
+  1. **Choose a provider.** Gateways: Command Code, OpenCode Zen, OpenRouter. Model labs: Claude (Anthropic), ChatGPT (OpenAI), Gemini, DeepSeek, Mistral, Grok (xAI), Qwen, Kimi (Moonshot), Cohere, Perplexity. Fast/open: Groq, Together. Local/custom: Ollama, any OpenAI-compatible URL.
+  2. **Paste the API key** (stored in the portal env file as `AI_KEY_<PROVIDER>`, never returned to the browser or written to `portal.json`) and pick a model (suggestions + "Load models" from the provider).
+  3. **Check key.** A real call to that provider with that model must succeed.
+- **AI can be enabled only after the key check passes.** The server refuses `enabled: true` otherwise; changing provider, model, base URL or key turns AI off until it is checked again.
+- One server module (`ai.mjs`, no dependencies): Claude through the native Messages API (default `claude-opus-5-5`, server-side refusal fallback), every other provider through its OpenAI-compatible endpoint.
+- Actions in the editor: Draft from an idea, Improve, Shorten, Make it a question, Suggest hashtags, Translate (Egyptian Arabic / MSA / English), Alt text, and "Adapt with AI" per channel within its character limit. Inbox: "Suggest reply". Analytics: "Ask AI about your results".
+- UX: a "✨ AI" menu next to the copy box; results appear as a suggestion card with Replace / Insert below / Copy / Discard — never applied or published automatically. Controls are hidden while AI is off.
+- Guardrails: brand voice, banned terms (warned when they appear in output), no invented customers, numbers, ratings or "#1" claims, daily request limit and usage counter in Settings.
 
 **5. Posting slots and evergreen categories** (#3)
 - Data: `slots[]` per weekday/time/channel set; `categories[]` (Product, Tips, Offers…) each with a share of slots; posts can be `evergreen` with a minimum gap (e.g. 30 days) before reuse.

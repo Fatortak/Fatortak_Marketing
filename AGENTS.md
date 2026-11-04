@@ -4,8 +4,11 @@ Two agents share this checkout (`main`). Read this before editing.
 
 ## Ownership
 
-- **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/public/*`, `portal/test-*.mjs`,
-  `portal/README.md`): free to edit again.** Claude Code added `channelMedia` / `storyMedia`:
+- **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/ai.mjs`, `portal/public/*`,
+  `portal/test-*.mjs`, `portal/README.md`, `portal/ROADMAP.md`, `portal/package.json`): CLAIMED by
+  Claude Code (4 Nov 2026) to implement `portal/ROADMAP.md` phase by phase, starting with the AI
+  assistant.** Don't edit these files until this line says "free" again; put portal requests in
+  "Requests" below. Earlier: Claude Code added `channelMedia` / `storyMedia`:
   `post.channelMedia = { instagram: {mediaUrl, mediaPublicUrl, mediaKind, mediaName, mediaAlt}, facebook: {...} }`
   replaces the main media for those channels only; `post.storyMedia` (9:16) is used by Story
   automations. The remaining 48 feed images still need 4:5 and 9:16 renders.
