@@ -68,6 +68,16 @@
   .end .cta { margin-top: 46px; display: inline-flex; align-items: center; gap: 14px; padding: 24px 38px; border-radius: 999px; background: linear-gradient(100deg, var(--accent2), var(--accent1)); color: #100a24; font-size: 40px; font-weight: 850; }
   .end .sub { margin: 34px auto 0; font-size: 30px; max-width: 760px; }
   .end .chips { justify-content: center; margin-top: 30px; }
+  /* 4:5 feed still */
+  body.fourfive, body.fourfive .card { height: 1350px; }
+  body.fourfive .card { padding: 210px 56px 80px; }
+  body.fourfive h1 { font-size: 76px; letter-spacing: -2px; max-width: 960px; }
+  body.fourfive .sub { font-size: 30px; margin-top: 16px; max-width: 940px; }
+  body.fourfive .chips { margin-top: 18px; gap: 10px; }
+  body.fourfive .chip { font-size: 19px; padding: 8px 12px; }
+  body.fourfive .browser { width: 960px; height: 560px; margin-top: 26px; border-radius: 20px; }
+  body.fourfive .screen { height: 512px; }
+  body.fourfive .foot { display: none; }
 </style>
 </head>
 <body>
@@ -102,6 +112,7 @@
   document.documentElement.style.setProperty("--accent1", t[0]);
   document.documentElement.style.setProperty("--accent2", t[1]);
   document.documentElement.style.setProperty("--accent3", t[2]);
+  if (get("format") === "4x5") document.body.classList.add("fourfive");
   const lang = get("lang", "en");
   if (lang === "ar") {
     document.body.classList.add("ar");

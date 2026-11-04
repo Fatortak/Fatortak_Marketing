@@ -10,6 +10,7 @@ const OUT = path.join(ROOT, "assets/videos");
 const TEMPLATE = "file:///" + path.join(ROOT, ".video-frame-v4.html").replace(/\\/g, "/");
 const CHROME = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const FORCE = process.argv.includes("--force");
+const PHOTOS = process.argv.includes("--photos");
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "fatortak-v4-"));
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -41,7 +42,7 @@ function run(cmd, args, label) {
   if (result.status !== 0) throw new Error(`${label} failed (${result.status})`);
 }
 
-function renderFrame(name, params) {
+function renderFrame(name, params, width = 1080, height = 1920) {
   const out = path.join(TMP, `${name}.png`);
   const query = new URLSearchParams(params).toString();
   const profile = path.join(TMP, `profile-${name}`);
@@ -52,7 +53,7 @@ function renderFrame(name, params) {
       "--disable-gpu",
       "--hide-scrollbars",
       "--no-first-run",
-      "--window-size=1080,1920",
+      `--window-size=${width},${height}`,
       "--virtual-time-budget=3500",
       `--user-data-dir=${profile}`,
       `--screenshot=${out}`,
@@ -72,6 +73,39 @@ function probe(file) {
   );
   if (result.status !== 0) throw new Error(`ffprobe failed: ${file}`);
   return JSON.parse(result.stdout);
+}
+
+if (PHOTOS) {
+  let photos = 0;
+  for (const video of videos) {
+    const out = path.join(ROOT, "assets/screenshots", `photo-v4-${video.id}-4x5.jpg`);
+    if (!FORCE && fs.existsSync(out)) {
+      console.log(`skip photo ${video.id}`);
+      continue;
+    }
+    const frame = renderFrame(
+      `photo-${video.id}`,
+      {
+        format: "4x5",
+        badge: video.badge,
+        title: video.title,
+        sub: video.sub,
+        chips: video.chips,
+        screen: video.screen,
+        theme: video.theme,
+        lang: video.lang,
+        url: video.url,
+      },
+      1080,
+      1350
+    );
+    run("ffmpeg", ["-y", "-i", frame, "-frames:v", "1", "-q:v", "2", out], `photo ${video.id}`);
+    photos += 1;
+    console.log(`ok photo ${video.id}`);
+  }
+  fs.rmSync(TMP, { recursive: true, force: true });
+  console.log(`Generated ${photos} 4:5 photos`);
+  process.exit(0);
 }
 
 let generated = 0;
