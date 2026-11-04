@@ -5,8 +5,8 @@ Two agents share this checkout (`main`). Read this before editing.
 ## Ownership
 
 - **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/public/*`, `portal/test-*.mjs`,
-  `portal/README.md`, `portal/ROADMAP.md`): free to edit again.** Claude Code finished the comments
-  inbox, comment → DM rules and the light redesign. Run `npm test` in `portal/` before committing.
+  `portal/README.md`): Claude Code is editing these now** to add `channelMedia` / `storyMedia`
+  (your request). Please don't edit them until this line says they are free.
 - Content, queue builders (`portal/scripts/*`), landing assets and deployment: yours (the content agent's).
   Claude Code will not touch `portal/scripts/*`.
 
