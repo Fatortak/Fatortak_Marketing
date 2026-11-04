@@ -15,6 +15,36 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MARKETING_ROOT = path.resolve(HERE, "../..");
 const SCREENSHOTS = path.join(MARKETING_ROOT, "landing/assets/screenshots");
 const VIDEOS = path.join(MARKETING_ROOT, "landing/assets/videos");
+const PUBLIC_SITE = "https://fatortak.rabbeh.com";
+const WIRE_ONLY = process.argv.includes("--wire-only");
+const LAUNCH_MEDIA = {
+  "social-v3-01-ui.png": { photo: "photo-v4-01-ui-4x5.jpg", story: "video-v4-01-ui.jpg", kind: "image" },
+  "social-v3-02-reports.png": { photo: "photo-v4-02-reports-4x5.jpg", story: "video-v4-02-reports.jpg", kind: "image" },
+  "social-v3-03-import.png": { photo: "photo-v4-03-import-4x5.jpg", story: "video-v4-03-import.jpg", kind: "image" },
+  "social-v3-04-platform.png": { photo: "photo-v4-04-platform-4x5.jpg", story: "video-v4-04-platform.jpg", kind: "image" },
+  "social-v3-05-onboarding.png": { photo: "photo-v4-05-onboarding-4x5.jpg", story: "video-v4-05-onboarding.jpg", kind: "image" },
+  "social-v3-06-templates.png": { photo: "photo-v4-06-templates-4x5.jpg", story: "video-v4-06-templates.jpg", kind: "image" },
+  "social-v3-07-ui-ar.png": { photo: "photo-v4-11-ui-ar-4x5.jpg", story: "video-v4-11-ui-ar.jpg", kind: "image" },
+  "social-v3-08-reports-ar.png": { photo: "photo-v4-12-reports-ar-4x5.jpg", story: "video-v4-12-reports-ar.jpg", kind: "image" },
+  "social-v3-09-import-ar.png": { photo: "photo-v4-13-import-ar-4x5.jpg", story: "video-v4-13-import-ar.jpg", kind: "image" },
+  "social-v3-10-platform-ar.png": { photo: "photo-v4-14-platform-ar-4x5.jpg", story: "video-v4-14-platform-ar.jpg", kind: "image" },
+  "social-v3-11-onboarding-ar.png": { photo: "photo-v4-15-onboarding-ar-4x5.jpg", story: "video-v4-15-onboarding-ar.jpg", kind: "image" },
+  "social-v3-12-templates-ar.png": { photo: "photo-v4-16-templates-ar-4x5.jpg", story: "video-v4-16-templates-ar.jpg", kind: "image" },
+  "video-v4-01-ui.mp4": { photo: "photo-v4-01-ui-4x5.jpg", story: "video-v4-01-ui.jpg", kind: "video" },
+  "video-v4-02-reports.mp4": { photo: "photo-v4-02-reports-4x5.jpg", story: "video-v4-02-reports.jpg", kind: "video" },
+  "video-v4-03-import.mp4": { photo: "photo-v4-03-import-4x5.jpg", story: "video-v4-03-import.jpg", kind: "video" },
+  "video-v4-04-platform.mp4": { photo: "photo-v4-04-platform-4x5.jpg", story: "video-v4-04-platform.jpg", kind: "video" },
+  "video-v4-05-onboarding.mp4": { photo: "photo-v4-05-onboarding-4x5.jpg", story: "video-v4-05-onboarding.jpg", kind: "video" },
+  "video-v4-06-templates.mp4": { photo: "photo-v4-06-templates-4x5.jpg", story: "video-v4-06-templates.jpg", kind: "video" },
+  "video-v4-07-arabic-first.mp4": { photo: "photo-v4-07-arabic-first-4x5.jpg", story: "video-v4-07-arabic-first.jpg", kind: "video" },
+  "video-v4-11-ui-ar.mp4": { photo: "photo-v4-11-ui-ar-4x5.jpg", story: "video-v4-11-ui-ar.jpg", kind: "video" },
+  "video-v4-12-reports-ar.mp4": { photo: "photo-v4-12-reports-ar-4x5.jpg", story: "video-v4-12-reports-ar.jpg", kind: "video" },
+  "video-v4-13-import-ar.mp4": { photo: "photo-v4-13-import-ar-4x5.jpg", story: "video-v4-13-import-ar.jpg", kind: "video" },
+  "video-v4-14-platform-ar.mp4": { photo: "photo-v4-14-platform-ar-4x5.jpg", story: "video-v4-14-platform-ar.jpg", kind: "video" },
+  "video-v4-15-onboarding-ar.mp4": { photo: "photo-v4-15-onboarding-ar-4x5.jpg", story: "video-v4-15-onboarding-ar.jpg", kind: "video" },
+  "video-v4-16-templates-ar.mp4": { photo: "photo-v4-16-templates-ar-4x5.jpg", story: "video-v4-16-templates-ar.jpg", kind: "video" },
+  "video-v4-17-arabic-first-ar.mp4": { photo: "photo-v4-17-arabic-first-ar-4x5.jpg", story: "video-v4-17-arabic-first-ar.jpg", kind: "video" },
+};
 const CONFIG = JSON.parse(fs.readFileSync(path.join(MARKETING_ROOT, "config.example.json"), "utf8"));
 const INPUT = process.argv[2];
 const OUTPUT = process.argv[3] || path.join(MARKETING_ROOT, "portal/data/portal-daily-10.json");
@@ -29,6 +59,75 @@ const PRICING_EN = "Pricing: Starter 300 EGP/month, Professional 600 EGP/month, 
 const PRICING_AR = "الأسعار: Starter 300 جنيه/شهر، Professional 600 جنيه/شهر، Enterprise 900 جنيه/شهر. استضافة مُدارة ونسخ احتياطي وتحديثات ودعم.";
 
 const firstLine = (value) => String(value || "").split("\n")[0].replace(/^#+\s*/, "").slice(0, 90);
+
+function applyPerChannelMedia(posts) {
+  let addedChannel = 0;
+  let addedStory = 0;
+  for (const post of posts) {
+    if (post.status !== "scheduled") continue;
+    const mapping = LAUNCH_MEDIA[String(post.mediaName || "")];
+    if (!mapping) continue;
+    const alt = post.mediaAlt || post.title || "";
+    if (post.mediaKind !== "video" && mapping.kind !== "video") {
+      const channels = post.channels || [];
+      const next = { ...(post.channelMedia || {}) };
+      for (const channel of ["instagram", "facebook"]) {
+        if (!channels.includes(channel) || next[channel]) continue;
+        next[channel] = {
+          mediaUrl: `/portal/index.php/media/landing/${mapping.photo}`,
+          mediaPublicUrl: `${PUBLIC_SITE}/assets/screenshots/${mapping.photo}`,
+          mediaKind: "image",
+          mediaName: mapping.photo,
+          mediaAlt: alt,
+        };
+        addedChannel += 1;
+      }
+      if (Object.keys(next).length) post.channelMedia = next;
+    }
+    if (!post.storyMedia) {
+      post.storyMedia = {
+        mediaUrl: `${PUBLIC_SITE}/assets/videos/${mapping.story}`,
+        mediaPublicUrl: `${PUBLIC_SITE}/assets/videos/${mapping.story}`,
+        mediaKind: "image",
+        mediaName: mapping.story,
+        mediaAlt: alt,
+      };
+      addedStory += 1;
+    }
+  }
+  return { addedChannel, addedStory };
+}
+
+function mediaCounts(posts) {
+  const scheduled = posts.filter((post) => post.status === "scheduled");
+  const channelPosts = scheduled.filter((post) => Object.keys(post.channelMedia || {}).length);
+  return {
+    scheduled: scheduled.length,
+    channelMediaPosts: channelPosts.length,
+    channelMediaKeys: channelPosts.reduce((sum, post) => sum + Object.keys(post.channelMedia).length, 0),
+    storyMediaPosts: scheduled.filter((post) => post.storyMedia).length,
+  };
+}
+
+function validatePerChannelMedia(posts) {
+  for (const post of posts) {
+    for (const channel of ["instagram", "facebook"]) {
+      const variant = post.channelMedia?.[channel];
+      if (!variant) continue;
+      const file = path.join(SCREENSHOTS, variant.mediaName || "");
+      if (!fs.existsSync(file)) throw new Error(`${post.id}: ${channel} media file missing: ${variant.mediaName}`);
+      if (!/^https:\/\//i.test(variant.mediaPublicUrl || "")) throw new Error(`${post.id}: ${channel} media URL is not https`);
+      if (!/\.jpe?g$/i.test(variant.mediaName || "")) throw new Error(`${post.id}: ${channel} media is not JPEG`);
+    }
+    if (post.storyMedia) {
+      const name = post.storyMedia.mediaName || "";
+      const file = [path.join(VIDEOS, name), path.join(SCREENSHOTS, name)].find((candidate) => fs.existsSync(candidate));
+      if (!file) throw new Error(`${post.id}: story media file missing: ${name}`);
+      if (!/^https:\/\//i.test(post.storyMedia.mediaPublicUrl || "")) throw new Error(`${post.id}: story media URL is not https`);
+      if (!/\.jpe?g$/i.test(name)) throw new Error(`${post.id}: story media is not JPEG`);
+    }
+  }
+}
 
 const NEW_THEMES_EN = [
   {
@@ -552,6 +651,25 @@ try {
 } catch (error) {
   throw new Error(`Cannot read portal data at ${INPUT}: ${error.message}`);
 }
+
+if (WIRE_ONLY) {
+  if (!Array.isArray(data.posts)) throw new Error("Portal data has no posts array");
+  const added = applyPerChannelMedia(data.posts);
+  validatePerChannelMedia(data.posts);
+  data.activity = Array.isArray(data.activity) ? data.activity : [];
+  data.activity.unshift({
+    at: new Date().toISOString(),
+    type: "media",
+    message: `Wired per-channel and story media on scheduled posts (${added.addedChannel} channel variants, ${added.addedStory} story variants).`,
+    postId: null,
+  });
+  data.activity = data.activity.slice(0, 200);
+  data.updatedAt = new Date().toISOString();
+  fs.writeFileSync(OUTPUT, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  console.log(JSON.stringify({ mode: "wire-only", output: OUTPUT, ...mediaCounts(data.posts), added }, null, 2));
+  process.exit(0);
+}
+
 const history = (Array.isArray(data.posts) ? data.posts : []).filter(
   (post) => String(post.scheduledAt || "") < START || String(post.scheduledAt || "") <= CUTOFF
 );
@@ -718,6 +836,9 @@ for (let day = 0; day < 30; day += 1) {
   }
 }
 
+const wired = applyPerChannelMedia(posts);
+validatePerChannelMedia(posts);
+
 const banned = /\bZATCA\b|\bETA\b|100%|\bguarantee|\bcertified\b|\bfake\b|testimonial|trusted by|#1|best in/i;
 const bannedHits = posts.filter((post) => banned.test(`${post.title}\n${post.content}`));
 if (bannedHits.length) {
@@ -808,5 +929,7 @@ console.log(JSON.stringify({
   videosUnique: new Set(
     posts.filter((post) => post.mediaKind === "video").map((post) => post.mediaName)
   ).size,
+  wired,
+  media: mediaCounts(posts),
   dayBalance: badDays.length === 0,
 }, null, 2));
