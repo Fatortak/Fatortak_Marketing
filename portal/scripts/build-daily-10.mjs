@@ -74,7 +74,7 @@ function applyPerChannelMedia(posts) {
       for (const channel of ["instagram", "facebook"]) {
         if (!channels.includes(channel) || next[channel]) continue;
         next[channel] = {
-          mediaUrl: `/portal/index.php/media/landing/${mapping.photo}`,
+          mediaUrl: `${PUBLIC_SITE}/assets/screenshots/${mapping.photo}`,
           mediaPublicUrl: `${PUBLIC_SITE}/assets/screenshots/${mapping.photo}`,
           mediaKind: "image",
           mediaName: mapping.photo,
