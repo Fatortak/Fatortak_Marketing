@@ -126,3 +126,8 @@ Make every card in three sizes from the same design source, same base name with 
   `rgba(0,153,204,.22)`) so sign-in matches the dashboard. Claude Code did not touch `deploy/`.
 - **Roadmap:** `portal/ROADMAP.md` has the competitive review and the phased plan. Pick items only
   after the owner chooses them.
+- **Per-channel feed media and story media.** The queue now has 4:5 launch cards, 16:9 cards and
+  9:16 video posters, but the portal still publishes one media file per post. Add `channelMedia`
+  (Facebook/Instagram 4:5, X/LinkedIn/Bluesky/Mastodon 16:9) and `storyMedia` (9:16) so the sizes can
+  be used without splitting a post into channel-specific copies. The 7 video themes already have
+  9:16 JPEG posters; the remaining 48 feed images still need 4:5 and 9:16 renders.

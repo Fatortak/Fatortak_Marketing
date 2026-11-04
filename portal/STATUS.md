@@ -126,7 +126,9 @@ The queue now holds **360 new posts at 12 per day** (6 Arabic + 6 English, 08:00
 ## Current publishing state
 
 - The queue is **366 posts** total: 6 history/published posts plus **360 new posts at 12 per day** (6 Arabic + 6 English) from 4 November to 3 December 2026, including **60 video posts** (2/day).
-- Every new post has an image or video; the library uses **53 images + 12 vertical videos**, including 12 new UI/feature cards. Instagram receives JPEG and MP4 publish variants.
+- Every new post has an image or video; the scheduled queue uses **48 image assets + 14 vertical videos**. Videos are 20-second 1080×1920 MP4s with Ken Burns motion, burned-in copy, an end card and a JPEG poster.
+- Channel rules are live: Facebook/Instagram caps at 2/day, LinkedIn 1/day, X/Bluesky 6/day, Mastodon 4/day. Video posts are tagged `priority`, so they bypass caps. Instagram uses link-in-bio and four hashtags; LinkedIn gets four hashtags.
+- The portal content audit reports **100/100**, with no repeat inside 3 days and 19% of posts asking a question.
 - The 3 November 19:00 post published to Bluesky, Facebook and Instagram; X returned `credits depleted`. The next post is **4 November 2026 at 08:00 Cairo**, leading with the refreshed UI, reports hub, data import, platform console, onboarding and invoice templates.
 - The first two video posts are **4 November at 10:15 (English)** and **16:15 (Arabic)**. Bluesky video upload was tested with the real account and the test post was deleted. A portal dry run confirmed Facebook and Bluesky receive the MP4 while X and LinkedIn receive the poster with a status note.
 - X still needs API credits; LinkedIn waits for its token; Threads is blocked/expired; Dev.to is article-only. The scheduler records every channel result and the status modal shows it.

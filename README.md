@@ -33,13 +33,14 @@ The portal is live at <https://fatortak.rabbeh.com/portal/>.
 - PHP supervises the Node process and proxies the API and media.
 - State, credentials, media and backups live in `App_Data` on the server, never in Git.
 - The queue holds **360 new posts at 12 per day** (6 Arabic + 6 English, 08:00–21:30 Cairo) from
-  4 November to 3 December 2026, plus the published history. **53 images + 12 vertical videos**,
-  including 12 cards for the refreshed UI, reports hub, data import, platform console, onboarding and
-  invoice templates.
+  4 November to 3 December 2026, plus the published history. The scheduled queue uses **48 image
+  assets + 14 vertical videos**; the library also keeps the older cards.
 - Every day adds **two video posts** (one Arabic, one English) at 10:15 and 16:15 Cairo. Videos are
-  1080×1920 MP4s with matching poster images.
-- The first two days lead with the new UI and feature posts; the rest of the month rotates the
-  established product, use-case, open-source and pricing themes.
+  **20-second 1080×1920 MP4s** with Ken Burns motion, burned-in copy, an end card and a JPEG poster.
+- Seven video themes rotate on a 7-day cycle. The image queue has 36 themes and uses a 7-day cycle,
+  with caps on Facebook/Instagram/LinkedIn and `priority` videos exempt from caps.
+- Instagram uses the link-in-bio rule and four hashtags; LinkedIn gets four hashtags. The content
+  audit scores **100/100** with no repeats inside 3 days and 19% of posts asking a question.
 - Every post targets the short-form channels: Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn.
   LinkedIn stays skipped until its token; X needs API credits. Dev.to is article-only and Threads is
   still blocked by Meta review.

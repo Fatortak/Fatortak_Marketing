@@ -38,8 +38,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-01-ui.png",
-    video: "video-v3-01-ui.mp4",
-    videoPoster: "video-v3-01-ui.png",
+    video: "video-v4-01-ui.mp4",
+    videoPoster: "video-v4-01-ui.jpg",
   },
   {
     key: "reports",
@@ -48,8 +48,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-02-reports.png",
-    video: "video-v3-02-reports.mp4",
-    videoPoster: "video-v3-02-reports.png",
+    video: "video-v4-02-reports.mp4",
+    videoPoster: "video-v4-02-reports.jpg",
   },
   {
     key: "import",
@@ -58,8 +58,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-03-import.png",
-    video: "video-v3-03-import.mp4",
-    videoPoster: "video-v3-03-import.png",
+    video: "video-v4-03-import.mp4",
+    videoPoster: "video-v4-03-import.jpg",
   },
   {
     key: "platform",
@@ -68,8 +68,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-04-platform.png",
-    video: "video-v3-04-platform.mp4",
-    videoPoster: "video-v3-04-platform.png",
+    video: "video-v4-04-platform.mp4",
+    videoPoster: "video-v4-04-platform.jpg",
   },
   {
     key: "onboarding",
@@ -78,8 +78,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-05-onboarding.png",
-    video: "video-v3-05-onboarding.mp4",
-    videoPoster: "video-v3-05-onboarding.png",
+    video: "video-v4-05-onboarding.mp4",
+    videoPoster: "video-v4-05-onboarding.jpg",
   },
   {
     key: "templates",
@@ -88,8 +88,18 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-06-templates.png",
-    video: "video-v3-06-templates.mp4",
-    videoPoster: "video-v3-06-templates.png",
+    video: "video-v4-06-templates.mp4",
+    videoPoster: "video-v4-06-templates.jpg",
+  },
+  {
+    key: "arabic-first",
+    title: "Arabic-first, not translated later.",
+    core: "RTL layouts, Arabic invoices and Arabic reports are designed together, not mirrored from an English product.",
+    pillar: "product",
+    link: "{{site}}",
+    media: "social-v2-11-arabic.png",
+    video: "video-v4-07-arabic-first.mp4",
+    videoPoster: "video-v4-07-arabic-first.jpg",
   },
 ];
 
@@ -101,8 +111,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-07-ui-ar.png",
-    video: "video-v3-07-ui-ar.mp4",
-    videoPoster: "video-v3-07-ui-ar.png",
+    video: "video-v4-11-ui-ar.mp4",
+    videoPoster: "video-v4-11-ui-ar.jpg",
   },
   {
     key: "reports",
@@ -111,8 +121,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-08-reports-ar.png",
-    video: "video-v3-08-reports-ar.mp4",
-    videoPoster: "video-v3-08-reports-ar.png",
+    video: "video-v4-12-reports-ar.mp4",
+    videoPoster: "video-v4-12-reports-ar.jpg",
   },
   {
     key: "import",
@@ -121,8 +131,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-09-import-ar.png",
-    video: "video-v3-09-import-ar.mp4",
-    videoPoster: "video-v3-09-import-ar.png",
+    video: "video-v4-13-import-ar.mp4",
+    videoPoster: "video-v4-13-import-ar.jpg",
   },
   {
     key: "platform",
@@ -131,8 +141,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-10-platform-ar.png",
-    video: "video-v3-10-platform-ar.mp4",
-    videoPoster: "video-v3-10-platform-ar.png",
+    video: "video-v4-14-platform-ar.mp4",
+    videoPoster: "video-v4-14-platform-ar.jpg",
   },
   {
     key: "onboarding",
@@ -141,8 +151,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-11-onboarding-ar.png",
-    video: "video-v3-11-onboarding-ar.mp4",
-    videoPoster: "video-v3-11-onboarding-ar.png",
+    video: "video-v4-15-onboarding-ar.mp4",
+    videoPoster: "video-v4-15-onboarding-ar.jpg",
   },
   {
     key: "templates",
@@ -151,8 +161,18 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-12-templates-ar.png",
-    video: "video-v3-12-templates-ar.mp4",
-    videoPoster: "video-v3-12-templates-ar.png",
+    video: "video-v4-16-templates-ar.mp4",
+    videoPoster: "video-v4-16-templates-ar.jpg",
+  },
+  {
+    key: "arabic-first",
+    title: "عربي أولاً، لا ترجمة لاحقة.",
+    core: "تخطيط RTL وفواتير وتقارير عربية مصممة معًا، لا نسخ معكوس من منتج إنجليزي.",
+    pillar: "product",
+    link: "{{site}}",
+    media: "social-v2-28-arabicreports.png",
+    video: "video-v4-17-arabic-first-ar.mp4",
+    videoPoster: "video-v4-17-arabic-first-ar.jpg",
   },
 ];
 
@@ -182,6 +202,10 @@ const VIDEO_COPY = {
       title: "Six invoices. Your brand.",
       core: "Pick a template, set your logo and colour, preview print and the public link.",
     },
+    "arabic-first": {
+      title: "Arabic-first, not translated later.",
+      core: "RTL invoices, reports and a properly shaped Arabic UI, designed together.",
+    },
   },
   ar: {
     ui: {
@@ -207,6 +231,10 @@ const VIDEO_COPY = {
     templates: {
       title: "ستة قوالب. هويتك.",
       core: "اختر القالب، حدد الشعار واللون، وعاين الطباعة والرابط العام.",
+    },
+    "arabic-first": {
+      title: "عربي أولاً، لا ترجمة لاحقة.",
+      core: "واجهة RTL وفواتير وتقارير عربية مصممة معًا.",
     },
   },
 };
@@ -502,7 +530,7 @@ const PILLAR_FILES = {
 const existing = new Set(fs.readdirSync(SCREENSHOTS).filter((file) => file.endsWith(".png")));
 const videoExisting = new Set(
   fs.existsSync(VIDEOS)
-    ? fs.readdirSync(VIDEOS).filter((file) => /\.(mp4|png)$/i.test(file))
+    ? fs.readdirSync(VIDEOS).filter((file) => /\.(mp4|jpe?g|png)$/i.test(file))
     : []
 );
 function mediaFor(language, pillar, used, offset) {
@@ -637,7 +665,7 @@ for (let day = 0; day < 30; day += 1) {
   }
 
   const videoThemeIndex = videoCursor;
-  videoCursor = (videoCursor + 1) % 6;
+  videoCursor = (videoCursor + 1) % 7;
   const videoSlots = [
     { language: "en", theme: NEW_THEMES_EN[videoThemeIndex], time: "10:15", suffix: "v1" },
     { language: "ar", theme: NEW_THEMES_AR[videoThemeIndex], time: "16:15", suffix: "v2" },
