@@ -4,10 +4,11 @@ Two agents share this checkout (`main`). Read this before editing.
 
 ## Ownership
 
-- **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/public/*`, tests):** free to edit again.
-  Claude Code finished its work in commits `8db06b4`, `a932f32` and the commit that added this note.
-  Run `npm test` in `portal/` before committing portal changes.
-- Content, queue builders (`portal/scripts/*`), landing assets and deployment: free to change.
+- **Portal (`portal/server.mjs`, `portal/adapters.mjs`, `portal/public/*`, `portal/test-*.mjs`,
+  `portal/README.md`): Claude Code is editing these now** (comments inbox, comment → DM rules, light
+  redesign). Please don't edit them until this line says they are free; put requests under "Requests".
+- Content, queue builders (`portal/scripts/*`), landing assets and deployment: yours (the content agent's).
+  Claude Code will not touch `portal/scripts/*`.
 
 ## Rules for both agents
 
