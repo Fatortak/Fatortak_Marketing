@@ -556,6 +556,90 @@ async function postDiscord(text, media) {
   return { ok: true, id: data?.id };
 }
 
+/* ------------------------------------------------------------------ *
+ * Stories
+ *
+ * Only Facebook Pages and Instagram professional accounts expose a Stories
+ * publishing API. LinkedIn and X retired stories; Threads, Bluesky and
+ * Mastodon never had them. Stories carry media only: captions, links and
+ * stickers cannot be set through the API.
+ * ------------------------------------------------------------------ */
+
+export const STORY_CHANNELS = ["facebook", "instagram"];
+
+async function postFacebookStory(media) {
+  const pageId = env("FACEBOOK_PAGE_ID");
+  const token = env("FACEBOOK_PAGE_ACCESS_TOKEN");
+  if (!pageId || !token) return missing("FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN not set");
+  if (!media) return missing("A story needs an image or video.");
+  const base = `https://graph.facebook.com/v21.0/${pageId}`;
+
+  if (isVideo(media)) {
+    const start = await formPost(`${base}/video_stories`, { upload_phase: "start", access_token: token });
+    if (!start.video_id || !start.upload_url) return { ok: false, error: "Facebook did not return a story upload session" };
+    const publicUrl = publicMediaUrl(media);
+    const uploadHeaders = { Authorization: `OAuth ${token}` };
+    let uploadResponse;
+    if (publicUrl) {
+      uploadResponse = await fetch(start.upload_url, { method: "POST", headers: { ...uploadHeaders, file_url: publicUrl } });
+    } else {
+      const buffer = await mediaBuffer(media);
+      uploadResponse = await fetch(start.upload_url, {
+        method: "POST",
+        headers: { ...uploadHeaders, offset: "0", file_size: String(buffer.length) },
+        body: buffer,
+      });
+    }
+    await expectOk(uploadResponse);
+    const finished = await formPost(`${base}/video_stories`, {
+      upload_phase: "finish",
+      video_id: start.video_id,
+      access_token: token,
+    });
+    return { ok: true, id: finished.post_id || start.video_id, kind: "story" };
+  }
+
+  // Photo stories reference an unpublished Page photo.
+  const form = new FormData();
+  form.append("access_token", token);
+  form.append("published", "false");
+  form.append("source", await mediaBlob(media), mediaName(media, "image.png"));
+  const photo = await multipartPost(`${base}/photos`, form);
+  if (!photo.id) return { ok: false, error: "Facebook did not return a photo id for the story" };
+  const story = await formPost(`${base}/photo_stories`, { photo_id: photo.id, access_token: token });
+  return { ok: true, id: story.post_id || photo.id, kind: "story" };
+}
+
+async function postInstagramStory(media) {
+  const userId = env("INSTAGRAM_USER_ID");
+  const token = env("INSTAGRAM_ACCESS_TOKEN");
+  if (!userId || !token) return missing("INSTAGRAM_USER_ID or INSTAGRAM_ACCESS_TOKEN not set");
+  if (!media) return missing("A story needs an image or video.");
+  const url = publicMediaUrl(media);
+  if (!url) return missing("Instagram stories need a public https media URL (JPEG image or MP4 video).");
+  const fields = { media_type: "STORIES", access_token: token };
+  if (isVideo(media)) fields.video_url = url;
+  else fields.image_url = url;
+  const container = await formPost(`https://graph.facebook.com/v21.0/${userId}/media`, fields);
+  if (!container.id) return { ok: false, error: "Instagram did not return a story container id" };
+  await waitForMetaContainer(`https://graph.facebook.com/v21.0/${container.id}`, token, "status_code", 24);
+  const published = await formPost(`https://graph.facebook.com/v21.0/${userId}/media_publish`, {
+    creation_id: container.id,
+    access_token: token,
+  });
+  return { ok: true, id: published.id, kind: "story" };
+}
+
+export async function publishStory(channel, { media } = {}) {
+  try {
+    if (channel === "facebook") return await postFacebookStory(media);
+    if (channel === "instagram") return await postInstagramStory(media);
+    return missing(`${channel} has no Stories API. Use an announcement post for this channel instead.`);
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
 const MANUAL = {
   tiktok: "TikTok Content Posting API requires a developer app audit and a video asset.",
   youtube: "YouTube publishing requires OAuth, a video asset and API quota/audit.",

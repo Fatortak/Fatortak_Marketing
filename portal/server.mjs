@@ -20,6 +20,8 @@ import {
   channelMode,
   testConnection,
   oauth1Header,
+  publishStory,
+  STORY_CHANNELS,
 } from "./adapters.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -47,8 +49,11 @@ function loadDotEnv(file) {
   }
 }
 
-loadDotEnv(path.join(MARKETING_ROOT, "automation", ".env"));
-loadDotEnv(process.env.PORTAL_ENV_FILE ? path.resolve(process.env.PORTAL_ENV_FILE) : path.join(HERE, ".env"));
+// PORTAL_ISOLATED=1 (used by tests) ignores the shared automation credentials entirely.
+if (process.env.PORTAL_ISOLATED !== "1") loadDotEnv(path.join(MARKETING_ROOT, "automation", ".env"));
+// The same file is read at startup and written by the Connections wizard.
+const ENV_FILE = process.env.PORTAL_ENV_FILE ? path.resolve(process.env.PORTAL_ENV_FILE) : path.join(HERE, ".env");
+loadDotEnv(ENV_FILE);
 
 const HOST = process.env.PORTAL_HOST || "127.0.0.1";
 const PORT = Number(process.env.PORTAL_PORT || 4180);
@@ -439,6 +444,95 @@ function channelSetup(key) {
   return CHANNEL_SETUP[key] || { docs: "", console: "", media: "none", note: "" };
 }
 
+// Plain-language connection guides: what each field is, where to find it, and how to check it
+// before saving. `optional` fields are not needed to post.
+const FIELD_META = {
+  X_API_KEY: { label: "API key (consumer key)", help: "developer.x.com → your app → Keys and tokens → Consumer keys.", secret: true },
+  X_API_SECRET: { label: "API key secret", help: "Shown next to the API key. Regenerate it if you lost it.", secret: true },
+  X_OAUTH1_ACCESS_TOKEN: { label: "Access token", help: "Keys and tokens → Authentication tokens → Access token. Generate it after setting Read and write permission.", secret: true, pattern: "^\\d+-[A-Za-z0-9]+$", example: "1234567890-AbCdEf…" },
+  X_OAUTH1_ACCESS_TOKEN_SECRET: { label: "Access token secret", help: "Shown once together with the access token.", secret: true },
+  X_ACCESS_TOKEN: { label: "OAuth 2.0 user token", help: "Only needed if you do not use the four OAuth 1.0a keys above. Text posts only.", secret: true, optional: true },
+  LINKEDIN_ACCESS_TOKEN: { label: "Access token", help: "LinkedIn developer portal → your app → Auth → OAuth token tools, with w_organization_social.", secret: true },
+  LINKEDIN_AUTHOR_URN: { label: "Company page ID (URN)", help: "The number in your page admin link linkedin.com/company/<number>/admin.", pattern: "^urn:li:(organization|person):\\d+$", example: "urn:li:organization:109974822" },
+  LINKEDIN_VERSION: { label: "API version", help: "Year and month, e.g. 202601. Leave empty to use the default.", pattern: "^\\d{6}$", example: "202601", optional: true },
+  FACEBOOK_PAGE_ID: { label: "Page ID", help: "Facebook Page → About → Page transparency, or Meta Business Suite → Settings.", pattern: "^\\d{5,}$", example: "1338665946004849" },
+  FACEBOOK_PAGE_ACCESS_TOKEN: { label: "Page access token", help: "Graph API Explorer → your app → Get Page access token (pages_manage_posts). Exchange it for a long-lived token.", secret: true },
+  INSTAGRAM_USER_ID: { label: "Instagram business account ID", help: "Graph API Explorer: GET /<page-id>?fields=instagram_business_account.", pattern: "^\\d{5,}$", example: "17841429322066567" },
+  INSTAGRAM_ACCESS_TOKEN: { label: "Access token", help: "A token with instagram_basic and instagram_content_publish. The Page token works when the account is linked.", secret: true },
+  THREADS_USER_ID: { label: "Threads user ID", help: "Returned by GET graph.threads.net/v1.0/me after you sign in to the Threads API.", pattern: "^\\d+$" },
+  THREADS_ACCESS_TOKEN: { label: "Threads access token", help: "Needs threads_basic and threads_content_publish.", secret: true },
+  BLUESKY_HANDLE: { label: "Handle", help: "Your handle without @, e.g. fatortak.bsky.social.", pattern: "^[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", example: "fatortak.bsky.social" },
+  BLUESKY_APP_PASSWORD: { label: "App password", help: "Bluesky → Settings → Privacy and security → App passwords → Add. Not your login password.", secret: true, pattern: "^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$", example: "abcd-efgh-ijkl-mnop" },
+  BLUESKY_SERVICE: { label: "Server", help: "Leave empty unless you self-host.", pattern: "^https://", example: "https://bsky.social", optional: true },
+  MASTODON_INSTANCE: { label: "Server address", help: "The server your account lives on.", pattern: "^https://", example: "https://mastodon.social", optional: true },
+  MASTODON_ACCESS_TOKEN: { label: "Access token", help: "Preferences → Development → New application (write:statuses, write:media) → Your access token.", secret: true },
+  MASTODON_ACCOUNT: { label: "Account", help: "Used for follower metrics, e.g. fatortaksoftware@mastodon.social.", optional: true },
+  TELEGRAM_BOT_TOKEN: { label: "Bot token", help: "Open @BotFather → /newbot → copy the token.", secret: true, pattern: "^\\d+:[A-Za-z0-9_-]{30,}$", example: "123456789:AA…" },
+  TELEGRAM_CHAT_ID: { label: "Channel ID", help: "Add the bot as an admin of your channel, then use the channel's @username or its -100… ID.", pattern: "^(-100\\d+|@[A-Za-z0-9_]{5,})$", example: "-1001234567890 or @fatortak" },
+  DISCORD_WEBHOOK_URL: { label: "Webhook URL", help: "Channel settings → Integrations → Webhooks → New webhook → Copy URL.", secret: true, pattern: "^https://(discord|discordapp)\\.com/api/webhooks/", example: "https://discord.com/api/webhooks/…" },
+  DEVTO_API_KEY: { label: "API key", help: "dev.to → Settings → Extensions → DEV Community API keys → Generate.", secret: true },
+};
+
+const CHANNEL_GUIDES = {
+  facebook: { effort: "15 min", difficulty: "medium", steps: ["Make sure you are an admin of the Facebook Page.", "Create a Meta app (type Business) and add Facebook Login for Business.", "In Graph API Explorer, pick the app and Page, grant pages_manage_posts and pages_read_engagement, and copy the Page token.", "Paste the Page ID and token here and press Save & test."] },
+  instagram: { effort: "15 min", difficulty: "medium", steps: ["Switch the Instagram account to Business or Creator.", "Link it to your Facebook Page (Page settings → Linked accounts).", "Grant instagram_basic and instagram_content_publish to your Meta app and copy the token.", "Find the Instagram business account ID and paste both here."] },
+  x: { effort: "10 min", difficulty: "medium", steps: ["Sign in to developer.x.com with the brand account and create a project and app.", "Set app permissions to Read and write.", "Generate the API key/secret and the access token/secret.", "Paste all four here. Posting needs X API credits on the account."] },
+  linkedin: { effort: "Needs approval", difficulty: "hard", steps: ["Create an app at linkedin.com/developers and verify it with your company page.", "Request the Community Management API (LinkedIn reviews this).", "After approval, generate a token with w_organization_social.", "Paste the token and your company URN here."] },
+  bluesky: { effort: "2 min", difficulty: "easy", steps: ["Open Bluesky → Settings → Privacy and security → App passwords.", "Create an app password named Fatortak portal.", "Paste your handle and the app password here."] },
+  mastodon: { effort: "3 min", difficulty: "easy", steps: ["On your Mastodon server open Preferences → Development → New application.", "Tick write:statuses and write:media, then save.", "Open the application and copy Your access token here."] },
+  threads: { effort: "Needs approval", difficulty: "hard", steps: ["Add the Threads API use case to your Meta app.", "Add your Threads account as a tester (or pass App Review).", "Sign in through the Threads API and copy the user ID and token."] },
+  telegram: { effort: "3 min", difficulty: "easy", steps: ["Message @BotFather, send /newbot and copy the token.", "Add the bot to your channel as an administrator who can post.", "Paste the token and your channel @username here."] },
+  discord: { effort: "1 min", difficulty: "easy", steps: ["Open the Discord channel settings → Integrations → Webhooks.", "Create a webhook and copy its URL here."] },
+  devto: { effort: "1 min", difficulty: "easy", steps: ["Open dev.to → Settings → Extensions.", "Generate a DEV Community API key and paste it here. Dev.to receives articles, not short posts."] },
+};
+
+const CHANNEL_CAPABILITIES = {
+  facebook: { text: true, image: true, video: true, story: true, metrics: true },
+  instagram: { text: false, image: true, video: true, story: true, metrics: true },
+  x: { text: true, image: true, video: false, story: false, metrics: true },
+  linkedin: { text: true, image: true, video: false, story: false, metrics: false },
+  bluesky: { text: true, image: true, video: true, story: false, metrics: true },
+  mastodon: { text: true, image: true, video: true, story: false, metrics: true },
+  threads: { text: true, image: true, video: true, story: false, metrics: false },
+  telegram: { text: true, image: true, video: true, story: false, metrics: false },
+  discord: { text: true, image: true, video: true, story: false, metrics: false },
+  devto: { text: true, image: true, video: false, story: false, metrics: true },
+};
+
+// What platforms typically reward for a brand account. Used by the content audit and as
+// one-click defaults for per-channel daily caps.
+const RECOMMENDED_DAILY = { facebook: 2, instagram: 2, linkedin: 1, threads: 4, x: 8, bluesky: 8, mastodon: 6, telegram: 4, discord: 4, devto: 1 };
+
+function credentialFields(key) {
+  const required = new Set(connectionState(key).env || []);
+  return (CREDENTIAL_KEYS[key] || []).map((name) => {
+    const meta = FIELD_META[name] || {};
+    return {
+      key: name,
+      label: meta.label || name,
+      help: meta.help || "",
+      secret: Boolean(meta.secret),
+      pattern: meta.pattern || "",
+      example: meta.example || "",
+      required: required.has(name) && !meta.optional,
+      saved: Boolean(env(name)),
+      // Show non-secret values so people can see what is configured; secrets stay hidden.
+      value: meta.secret ? "" : String(env(name) || ""),
+    };
+  });
+}
+
+function validateCredentials(channel, values) {
+  const errors = [];
+  for (const [key, value] of Object.entries(values)) {
+    const meta = FIELD_META[key];
+    if (meta?.pattern && value && !new RegExp(meta.pattern).test(value)) {
+      errors.push(`${meta.label}: that doesn't look right${meta.example ? ` (expected something like ${meta.example})` : ""}.`);
+    }
+  }
+  return errors;
+}
+
 function channelInfo(key) {
   const def = CHANNEL_DEFS.find((item) => item.key === key) || { key, label: key };
   const state = connectionState(key);
@@ -463,6 +557,11 @@ function channelInfo(key) {
     console: setup.console,
     signup: CHANNEL_SIGNUP[key] || "",
     note: setup.note,
+    fields: credentialFields(key),
+    guide: CHANNEL_GUIDES[key] || null,
+    capabilities: CHANNEL_CAPABILITIES[key] || { text: false, image: false, video: false, story: false, metrics: false },
+    recommendedDaily: RECOMMENDED_DAILY[key] || 0,
+    rule: DATA.settings.channelRules?.[key] || null,
     requirements:
       RESTRICTED_REASONS[key] ||
       setup.note ||
@@ -500,7 +599,34 @@ function defaultSettings() {
     siteUrl: CONFIG.links.site,
     repo: CONFIG.repo,
     profiles: CONFIG.profiles || {},
+    // Per-channel publishing rules: { [channel]: { dailyCap, hashtags, linkInBio, linkText } }
+    channelRules: {},
   };
+}
+
+function cleanChannelRules(input) {
+  const rules = {};
+  const known = new Set(CHANNEL_DEFS.map((channel) => channel.key));
+  for (const [key, raw] of Object.entries(input && typeof input === "object" ? input : {})) {
+    if (!known.has(key) || !raw || typeof raw !== "object") continue;
+    const dailyCap = Number(raw.dailyCap || 0);
+    if (!Number.isInteger(dailyCap) || dailyCap < 0 || dailyCap > 100) throw new Error(`${key}: daily cap must be a whole number from 0 (no cap) to 100.`);
+    const hashtags = String(raw.hashtags || "")
+      .split(/[\s,]+/)
+      .map((tag) => tag.trim().replace(/^#*/, ""))
+      .filter(Boolean)
+      .slice(0, 15)
+      .map((tag) => `#${tag}`)
+      .join(" ");
+    const rule = {
+      dailyCap,
+      hashtags,
+      linkInBio: Boolean(raw.linkInBio),
+      linkText: String(raw.linkText || "").trim().slice(0, 60),
+    };
+    if (rule.dailyCap || rule.hashtags || rule.linkInBio) rules[key] = rule;
+  }
+  return rules;
 }
 
 function addActivity(data, type, message, postId = null) {
@@ -561,6 +687,7 @@ function revisionSnapshot(post) {
     posterPublicUrl: post.posterPublicUrl || "",
     posterName: post.posterName || "",
     notes: post.notes || "",
+    overrides: { ...(post.overrides || {}) },
   };
 }
 
@@ -627,6 +754,13 @@ function ensureDataShape(data) {
   }
   data.activity = Array.isArray(data.activity) ? data.activity : [];
   data.templates = Array.isArray(data.templates) ? data.templates : defaultTemplates();
+  data.automations = Array.isArray(data.automations) ? data.automations : [];
+  data.automationRuns = Array.isArray(data.automationRuns) ? data.automationRuns.slice(0, 500) : [];
+  data.metricsHistory = Array.isArray(data.metricsHistory) ? data.metricsHistory.slice(-180) : [];
+  // Deleted posts stay restorable for 30 days.
+  const trashCutoff = Date.now() - 30 * 86_400_000;
+  data.trash = (Array.isArray(data.trash) ? data.trash : []).filter((item) => item?.post && Date.parse(item.deletedAt) > trashCutoff);
+  if (!data.settings.channelRules || typeof data.settings.channelRules !== "object") data.settings.channelRules = {};
   if (!isValidTimezone(data.settings.timezone)) data.settings.timezone = "Africa/Cairo";
   for (const post of data.posts) {
     post.tags = cleanTags(post.tags);
@@ -801,7 +935,7 @@ function readBinary(req, limit = 100 * 1024 * 1024) {
 }
 
 function writeEnvValues(values) {
-  const file = path.join(HERE, ".env");
+  const file = ENV_FILE;
   const header = "# Fatortak portal credentials. Written by the portal; never commit this file.";
   const lines = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split(/\r?\n/) : [header];
   const pending = new Map();
@@ -1169,11 +1303,14 @@ async function syncBluesky() {
     );
     if (feedResponse.ok) {
       const feed = await feedResponse.json();
-      engagement = (feed.feed || []).reduce(
-        (sum, item) =>
-          sum + Number(item.post?.likeCount || 0) + Number(item.post?.repostCount || 0) + Number(item.post?.replyCount || 0),
-        0
-      );
+      engagement = 0;
+      for (const item of feed.feed || []) {
+        const likes = Number(item.post?.likeCount || 0);
+        const reposts = Number(item.post?.repostCount || 0);
+        const replies = Number(item.post?.replyCount || 0);
+        engagement += likes + reposts + replies;
+        recordPostMetric("bluesky", item.post?.uri, { likes, reposts, replies, engagement: likes + reposts + replies });
+      }
     }
   } catch {
     engagement = null;
@@ -1186,7 +1323,8 @@ async function syncBluesky() {
     clicks: null,
     posts: data.postsCount || 0,
     lastUpdated: new Date().toISOString(),
-    note: `@${handle} · engagement from the latest 30 posts`,
+    windows: { engagement: "likes + reposts + replies on the latest 30 posts", posts: "all-time account posts" },
+    note: `@${handle}`,
   };
   return { channel: "bluesky", followers: data.followersCount || 0 };
 }
@@ -1208,11 +1346,14 @@ async function syncMastodon() {
     );
     if (statusesResponse.ok) {
       const statuses = await statusesResponse.json();
-      engagement = (statuses || []).reduce(
-        (sum, status) =>
-          sum + Number(status.favourites_count || 0) + Number(status.reblogs_count || 0) + Number(status.replies_count || 0),
-        0
-      );
+      engagement = 0;
+      for (const status of statuses || []) {
+        const likes = Number(status.favourites_count || 0);
+        const reposts = Number(status.reblogs_count || 0);
+        const replies = Number(status.replies_count || 0);
+        engagement += likes + reposts + replies;
+        recordPostMetric("mastodon", status.id, { likes, reposts, replies, engagement: likes + reposts + replies });
+      }
     }
   } catch {
     engagement = null;
@@ -1225,9 +1366,23 @@ async function syncMastodon() {
     clicks: null,
     posts: data.statuses_count || 0,
     lastUpdated: new Date().toISOString(),
-    note: `@${account} · engagement from the latest 20 posts`,
+    windows: { engagement: "favourites + boosts + replies on the latest 20 posts", posts: "all-time account posts" },
+    note: `@${account}`,
   };
   return { channel: "mastodon", followers: data.followers_count || 0 };
+}
+
+// Attach platform numbers to the portal post that produced them (matched by the id the
+// platform returned when we published), so Reports can rank posts by real engagement.
+function recordPostMetric(channel, platformId, values) {
+  if (!platformId) return;
+  const id = String(platformId);
+  for (const post of DATA.posts) {
+    if (!(post.results || []).some((result) => result.channel === channel && result.ok && String(result.id) === id)) continue;
+    post.metrics = post.metrics && typeof post.metrics === "object" ? post.metrics : {};
+    post.metrics[channel] = { ...values, at: new Date().toISOString() };
+    return;
+  }
 }
 
 function insightTotal(data, name) {
@@ -1268,33 +1423,42 @@ async function syncFacebook() {
   const token = env("FACEBOOK_PAGE_ACCESS_TOKEN");
   if (!pageId || !token) return null;
   const profile = await graphGet(pageId, { fields: "name,followers_count,fan_count" }, token);
-  const postIds = [
-    ...new Set(
-      DATA.posts.flatMap((post) =>
-        (post.results || [])
-          .filter((result) => result.channel === "facebook" && result.ok && result.id)
-          .map((result) => String(result.id))
-      )
-    ),
-  ];
+  // Newest first: the old code took the first 20 ids in queue order, i.e. the oldest posts,
+  // so anything published after the 20th post was never measured.
+  const published = DATA.posts
+    .flatMap((post) =>
+      (post.results || [])
+        .filter((result) => result.channel === "facebook" && result.ok && !result.dryRun && result.id)
+        .map((result) => ({ id: String(result.id), at: result.at || post.publishedAt || "" }))
+    )
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const postIds = [...new Set(published.map((item) => item.id))];
+  const cutoff = Date.now() - 28 * 86_400_000;
+  const recent = published.filter((item) => Date.parse(item.at) >= cutoff).map((item) => item.id);
+  const sample = [...new Set(recent.length ? recent : postIds)].slice(0, 30);
   let reach = null;
   let views = null;
   let reactions = 0;
   let clicks = 0;
   let counted = 0;
   const notes = [];
-  for (const postId of postIds.slice(0, 20)) {
+  for (const postId of sample) {
     try {
       const insights = await graphGet(
         `${postId}/insights`,
         { metric: "post_reactions_by_type_total,post_clicks,post_media_view,post_total_media_view_unique" },
         token
       );
-      reactions += insightNumeric(insights, "post_reactions_by_type_total") || 0;
-      clicks += insightNumeric(insights, "post_clicks") || 0;
-      views = (views || 0) + (insightNumeric(insights, "post_media_view") || 0);
-      reach = (reach || 0) + (insightNumeric(insights, "post_total_media_view_unique") || 0);
+      const postReactions = insightNumeric(insights, "post_reactions_by_type_total") || 0;
+      const postClicks = insightNumeric(insights, "post_clicks") || 0;
+      const postViews = insightNumeric(insights, "post_media_view") || 0;
+      const postReach = insightNumeric(insights, "post_total_media_view_unique") || 0;
+      reactions += postReactions;
+      clicks += postClicks;
+      views = (views || 0) + postViews;
+      reach = (reach || 0) + postReach;
       counted += 1;
+      recordPostMetric("facebook", postId, { reach: postReach, views: postViews, reactions: postReactions, clicks: postClicks, engagement: postReactions + postClicks });
     } catch (error) {
       notes.push(`post insights: ${error.message}`);
     }
@@ -1306,9 +1470,13 @@ async function syncFacebook() {
     clicks: counted ? clicks : null,
     posts: postIds.length,
     lastUpdated: new Date().toISOString(),
-    note: `Page: ${profile.name || pageId} · portaled posts${views !== null ? ` · views: ${views}` : ""}${
-      notes.length ? ` · ${notes[0]}` : ""
-    }`,
+    windows: {
+      reach: `sum of per-post unique viewers across ${counted} portal posts from the last 28 days (people who saw several posts count once per post)`,
+      engagement: `reactions + clicks on the same ${counted} posts`,
+      clicks: `link and media clicks on the same ${counted} posts`,
+      posts: "posts published by the portal",
+    },
+    note: `Page: ${profile.name || pageId}${views !== null ? ` · ${views} media views` : ""}${notes.length ? ` · ${notes[0]}` : ""}`,
   };
   return {
     channel: "facebook",
@@ -1327,10 +1495,14 @@ async function syncInstagram() {
   let views = null;
   let engagement = null;
   const notes = [];
+  // Without since/until, period=day returns only the latest day. Ask for an explicit 28-day window.
+  const until = Math.floor(Date.now() / 1000);
+  const since = until - 28 * 86_400;
+  let reachWindow = "unique accounts reached in the last 28 days";
   try {
     const insights = await graphGet(
       `${userId}/insights`,
-      { metric: "reach,views,profile_views", period: "day", metric_type: "total_value" },
+      { metric: "reach,views", period: "day", metric_type: "total_value", since, until },
       token
     );
     reach = insightTotal(insights, "reach");
@@ -1338,19 +1510,22 @@ async function syncInstagram() {
   } catch (error) {
     notes.push(`insights: ${error.message}`);
     try {
-      const insights = await graphGet(`${userId}/insights`, { metric: "impressions,reach", period: "day" }, token);
-      reach = insightTotal(insights, "reach");
-      views = insightTotal(insights, "impressions");
+      const insights = await graphGet(`${userId}/insights`, { metric: "reach", period: "days_28" }, token);
+      reach = insightNumeric(insights, "reach");
     } catch (fallbackError) {
+      reachWindow = "not available";
       notes.push(`fallback: ${fallbackError.message}`);
     }
   }
   try {
-    const media = await graphGet(`${userId}/media`, { fields: "like_count,comments_count", limit: "50" }, token);
-    engagement = (media.data || []).reduce(
-      (sum, item) => sum + Number(item.like_count || 0) + Number(item.comments_count || 0),
-      0
-    );
+    const media = await graphGet(`${userId}/media`, { fields: "id,like_count,comments_count", limit: "50" }, token);
+    engagement = 0;
+    for (const item of media.data || []) {
+      const likes = Number(item.like_count || 0);
+      const comments = Number(item.comments_count || 0);
+      engagement += likes + comments;
+      recordPostMetric("instagram", item.id, { likes, comments, engagement: likes + comments });
+    }
   } catch (error) {
     notes.push(`media: ${error.message}`);
   }
@@ -1361,9 +1536,8 @@ async function syncInstagram() {
     clicks: null,
     posts: Number(profile.media_count || 0),
     lastUpdated: new Date().toISOString(),
-    note: `@${profile.username || userId}${views !== null ? ` · views: ${views}` : ""}${
-      notes.length ? ` · ${notes[0]}` : ""
-    }`,
+    windows: { reach: reachWindow, engagement: "likes + comments on the latest 50 posts", posts: "all-time account posts" },
+    note: `@${profile.username || userId}${views !== null ? ` · ${views} views (28 days)` : ""}${notes.length ? ` · ${notes[0]}` : ""}`,
   };
   return { channel: "instagram", followers: DATA.metrics.instagram.followers, reach, engagement };
 }
@@ -1390,6 +1564,7 @@ async function syncX() {
     clicks: null,
     posts: Number(publicMetrics.tweet_count || 0),
     lastUpdated: new Date().toISOString(),
+    windows: { posts: "all-time account posts" },
     note: `@${data.data?.username || "connected"} · reach/engagement need paid owned-read access`,
   };
   return { channel: "x", followers: DATA.metrics.x.followers };
@@ -1425,11 +1600,81 @@ async function syncDevTo() {
     clicks: null,
     posts: articles.length,
     lastUpdated: new Date().toISOString(),
+    windows: { reach: "lifetime page views of published articles", engagement: "lifetime reactions + comments", posts: "published articles" },
     note: `@${profile.username || "fatortak"} · ${articles.length} published article${
       articles.length === 1 ? "" : "s"
     }${articles.length ? "" : " · no articles yet"}`,
   };
   return { channel: "devto", posts: articles.length };
+}
+
+// One follower snapshot per day (the latest sync wins) so analytics can show real growth.
+function snapshotFollowers() {
+  const date = nowInTimezone(DATA.settings.timezone).slice(0, 10);
+  const followers = {};
+  for (const [channel, value] of Object.entries(DATA.metrics)) {
+    if (value?.lastUpdated && Number.isFinite(Number(value.followers)) && value.followers !== null) followers[channel] = Number(value.followers);
+  }
+  if (!Object.keys(followers).length) return;
+  DATA.metricsHistory = (DATA.metricsHistory || []).filter((entry) => entry.date !== date);
+  DATA.metricsHistory.push({ date, followers });
+  DATA.metricsHistory = DATA.metricsHistory.sort((a, b) => a.date.localeCompare(b.date)).slice(-180);
+}
+
+function followerGrowth() {
+  const history = DATA.metricsHistory || [];
+  const latest = history.at(-1);
+  if (!latest) return { days: 0, channels: {} };
+  const pick = (days) => {
+    const target = new Date(Date.parse(`${latest.date}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+    return [...history].reverse().find((entry) => entry.date <= target) || null;
+  };
+  const week = pick(7);
+  const month = pick(30);
+  const channels = {};
+  for (const [channel, value] of Object.entries(latest.followers)) {
+    channels[channel] = {
+      now: value,
+      d7: week && Number.isFinite(week.followers[channel]) ? value - week.followers[channel] : null,
+      d30: month && Number.isFinite(month.followers[channel]) ? value - month.followers[channel] : null,
+    };
+  }
+  return { days: history.length, since: history[0].date, series: history.slice(-60), channels };
+}
+
+// What actually happened per channel, from publish results (not what posts merely targeted).
+function deliveryStats(days = 30) {
+  const cutoff = Date.now() - days * 86_400_000;
+  const stats = {};
+  for (const post of DATA.posts) {
+    for (const result of post.results || []) {
+      if (!result.channel || result.dryRun) continue;
+      const at = Date.parse(result.at || post.lastAttemptAt || post.publishedAt || "");
+      if (!at || at < cutoff) continue;
+      const row = (stats[result.channel] = stats[result.channel] || { published: 0, failed: 0, skipped: 0, capped: 0 });
+      if (result.ok) row.published += 1;
+      else if (result.capped) row.capped += 1;
+      else if (result.skipped) row.skipped += 1;
+      else row.failed += 1;
+    }
+  }
+  for (const row of Object.values(stats)) {
+    const attempted = row.published + row.failed;
+    row.successRate = attempted ? Math.round((row.published / attempted) * 100) : null;
+  }
+  return stats;
+}
+
+function topPosts(limit = 10) {
+  return DATA.posts
+    .filter((post) => post.metrics && Object.keys(post.metrics).length)
+    .map((post) => {
+      const engagement = Object.values(post.metrics).reduce((sum, value) => sum + Number(value.engagement || 0), 0);
+      const reach = Object.values(post.metrics).reduce((sum, value) => sum + Number(value.reach || 0), 0);
+      return { id: post.id, title: post.title, language: post.language, pillar: post.pillar, publishedAt: post.publishedAt, engagement, reach, byChannel: post.metrics };
+    })
+    .sort((a, b) => b.engagement - a.engagement || b.reach - a.reach)
+    .slice(0, limit);
 }
 
 async function syncMetrics() {
@@ -1473,6 +1718,7 @@ async function syncMetrics() {
       warnings.push(`${channel.label}: connect credentials to ingest metrics.`);
     }
   }
+  snapshotFollowers();
   addActivity(
     DATA,
     "metrics",
@@ -1543,16 +1789,42 @@ function validatePostInput(body, existing = null) {
       };
     })(),
     notes: String(body.notes ?? existing?.notes ?? "").slice(0, 4000),
+    overrides: cleanOverrides(body.overrides ?? existing?.overrides, channels),
     utm: body.utm || existing?.utm || null,
   };
 }
 
-function renderForChannel(post, channel) {
-  return renderText(String(post.content || ""), {
+// Per-channel copy. Only channels the post targets keep an override; empty text means "use the main copy".
+function cleanOverrides(value, channels) {
+  const result = {};
+  if (!value || typeof value !== "object") return result;
+  for (const channel of channels) {
+    const text = String(value[channel] ?? "").replace(/\r\n/g, "\n");
+    if (text.trim()) result[channel] = text.slice(0, 5000);
+  }
+  return result;
+}
+
+// The exact text a channel receives: the per-channel override (or main copy), tracked links,
+// then the channel's rules ("link in bio" for Instagram, standard hashtags).
+function renderForChannel(post, channel, rules = DATA.settings.channelRules || {}) {
+  const source = String(post.overrides?.[channel] || post.content || "");
+  let text = renderText(source, {
     channel,
     links: CONFIG.links,
     utm: { ...(post.utm || {}), content: post.id || "preview" },
   });
+  const rule = rules[channel];
+  if (rule?.linkInBio) {
+    const label = rule.linkText || (post.language === "ar" ? "الرابط في البايو" : "Link in bio");
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    text = text.replace(URL_PATTERN, label).replace(new RegExp(`(${escaped}\\s*){2,}`, "g"), `${label} `).trim();
+  }
+  if (rule?.hashtags) {
+    const missing = rule.hashtags.split(" ").filter((tag) => tag && !text.toLowerCase().includes(tag.toLowerCase()));
+    if (missing.length) text = `${text}\n\n${missing.join(" ")}`;
+  }
+  return text.trim();
 }
 
 function previewPost(post, media = null) {
@@ -1560,6 +1832,7 @@ function previewPost(post, media = null) {
     const text = renderForChannel(post, channel);
     const limit = LIMITS[channel] || 0;
     const length = channelTextLength(channel, text);
+    const rule = DATA.settings.channelRules?.[channel];
     return {
       channel,
       label: CHANNEL_DEFS.find((def) => def.key === channel)?.label || channel,
@@ -1567,11 +1840,28 @@ function previewPost(post, media = null) {
       length,
       limit,
       over: Boolean(limit && length > limit),
+      custom: Boolean(post.overrides?.[channel]),
+      rules: rule ? [rule.linkInBio ? "link in bio" : "", rule.hashtags ? "hashtags" : "", rule.dailyCap ? `max ${rule.dailyCap}/day` : ""].filter(Boolean) : [],
       mode: MONITORING.has(channel) ? "monitoring" : channelMode(channel),
       configured: connectionState(channel).configured,
       notes: channelTextNotes(channel, text, media),
     };
   });
+}
+
+// How many posts a channel already received today (portal timezone), for daily caps.
+function publishedTodayCount(channel) {
+  const tz = DATA.settings.timezone || "Africa/Cairo";
+  const today = nowInTimezone(tz).slice(0, 10);
+  let count = 0;
+  for (const post of DATA.posts) {
+    for (const result of post.results || []) {
+      if (result.channel !== channel || !result.ok || result.dryRun) continue;
+      const at = result.at || post.publishedAt;
+      if (at && wallClock(new Date(at), tz).startsWith(today)) count += 1;
+    }
+  }
+  return count;
 }
 
 async function resolvePostMedia(post) {
@@ -1689,6 +1979,14 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
         continue;
       }
     }
+    // Daily caps protect reach on feeds that punish over-posting. They limit the scheduler only;
+    // a person pressing Publish now always goes through.
+    const cap = Number(DATA.settings.channelRules?.[channel]?.dailyCap || 0);
+    const capReached = cap > 0 && publishedTodayCount(channel) >= cap;
+    if (!dryRun && automatic && capReached) {
+      results.push({ channel, ok: false, skipped: true, capped: true, reason: `Daily cap reached (${cap}/day) for ${channel}. Raise it in Connections → channel rules.` });
+      continue;
+    }
     const channelMedia = media?.kind === "video" && poster && VIDEO_POSTER_CHANNELS.has(channel) ? poster : media;
     if (dryRun) {
       const state = connectionState(channel);
@@ -1698,6 +1996,7 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
         dryRun: true,
         media: channelMedia?.kind || null,
         ...(channelMedia !== media ? { mediaNote: "Would publish the video cover image." } : {}),
+        ...(capReached ? { mediaNote: `Daily cap of ${cap} already reached today; the scheduler would skip this channel.` } : {}),
         length,
         ready: state.configured,
         reason: state.configured
@@ -1717,7 +2016,7 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
     if (result.ok && channelMedia !== media) {
       result.mediaNote = "Video cover published; video upload is not enabled for this channel yet.";
     }
-    results.push({ channel, ...result });
+    results.push({ channel, at: new Date().toISOString(), ...result });
   }
 
   if (dryRun) {
@@ -1751,13 +2050,370 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
     );
   } else if (failures.length === 0 && skipped.length > 0) {
     post.status = "blocked";
-    addActivity(DATA, "blocked", `Blocked “${post.title}”: no selected channel is connected yet.`, post.id);
+    const reasons = [...new Set(skipped.map((result) => (result.capped ? "daily cap" : /needs setup/i.test(result.reason || "") ? "not connected" : "skipped")))];
+    addActivity(DATA, "blocked", `Blocked “${post.title}”: every channel was skipped (${reasons.join(", ")}).`, post.id);
   } else {
     post.status = "failed";
     addActivity(DATA, "failed", `Publish failed for “${post.title}” (${failures.length + skipped.length} channel issues).`, post.id);
   }
   saveData();
   return { results, published: attemptOk, mergedPublished: ok, failures: failures.length, skipped: skipped.length, dryRun, channels };
+}
+
+/* ------------------------------------------------------------------ *
+ * Automations
+ *
+ * A rule watches posts and, when its trigger fires, shares extra content:
+ *  - "story": a Facebook / Instagram Story with the post's image or video
+ *    (the only platforms with a Stories API);
+ *  - "post": a teaser, announcement or follow-up on any connected channel,
+ *    written from a short template.
+ * Triggers: N minutes before a post publishes, N minutes after it publishes,
+ * or as soon as a matching post is scheduled (e.g. a new offer).
+ * Rules only run live when live publishing is on; otherwise use Test.
+ * ------------------------------------------------------------------ */
+
+const AUTOMATION_EVENTS = ["before", "published", "scheduled"];
+const POST_ACTION_CHANNELS = ["x", "linkedin", "facebook", "instagram", "threads", "bluesky", "mastodon", "telegram", "discord"];
+
+function cleanAutomation(body, existing = null) {
+  const name = String(body.name ?? existing?.name ?? "").trim().slice(0, 80);
+  if (!name) throw new Error("Give the automation a name.");
+  const triggerIn = body.trigger || existing?.trigger || {};
+  const event = String(triggerIn.event || "");
+  if (!AUTOMATION_EVENTS.includes(event)) throw new Error("Choose when the automation runs.");
+  const minutes = Number(triggerIn.minutes || 0);
+  if (!Number.isInteger(minutes) || minutes < 0 || minutes > 10080) throw new Error("Timing must be a whole number of minutes between 0 and 10,080 (7 days).");
+  if (event === "before" && minutes < 5) throw new Error("Run at least 5 minutes before the post.");
+  const filterIn = body.filter || existing?.filter || {};
+  const filter = {
+    tags: cleanTags(filterIn.tags || []),
+    pillars: (Array.isArray(filterIn.pillars) ? filterIn.pillars : []).map(String).filter(Boolean).slice(0, 10),
+    language: ["en", "ar"].includes(filterIn.language) ? filterIn.language : "",
+    channels: (Array.isArray(filterIn.channels) ? filterIn.channels : []).filter((key) => CHANNEL_DEFS.some((def) => def.key === key)),
+    keyword: String(filterIn.keyword || "").trim().slice(0, 60),
+  };
+  const actionsIn = Array.isArray(body.actions) ? body.actions : existing?.actions || [];
+  if (!actionsIn.length) throw new Error("Add at least one action.");
+  const actions = actionsIn.slice(0, 6).map((action, index) => {
+    const type = action.type === "story" ? "story" : action.type === "post" ? "post" : "";
+    if (!type) throw new Error(`Action ${index + 1}: choose Story or Post.`);
+    const allowed = type === "story" ? STORY_CHANNELS : POST_ACTION_CHANNELS;
+    const channels = [...new Set((Array.isArray(action.channels) ? action.channels : []).filter((key) => allowed.includes(key)))];
+    if (!channels.length) {
+      throw new Error(
+        type === "story"
+          ? `Action ${index + 1}: stories can go to Facebook and Instagram only. Use a Post action for other channels.`
+          : `Action ${index + 1}: pick at least one channel.`
+      );
+    }
+    const media = ["post", "poster", "none"].includes(action.media) ? action.media : "post";
+    if (type === "story" && media === "none") throw new Error(`Action ${index + 1}: a story needs the post's image or video.`);
+    const text = String(action.text || "").slice(0, 3000);
+    if (type === "post" && !text.trim()) throw new Error(`Action ${index + 1}: write the text to post (you can use {{title}}, {{time}} and {{site}}).`);
+    return { type, channels, media, text };
+  });
+  return {
+    id: existing?.id || `auto-${Date.now()}-${randomUUID().slice(0, 6)}`,
+    name,
+    enabled: body.enabled ?? existing?.enabled ?? true,
+    trigger: { event, minutes },
+    filter,
+    actions,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastRunAt: existing?.lastRunAt || null,
+    runCount: existing?.runCount || 0,
+  };
+}
+
+function automationMatches(rule, post) {
+  const f = rule.filter || {};
+  if (f.tags?.length && !f.tags.some((tag) => (post.tags || []).includes(tag))) return false;
+  if (f.pillars?.length && !f.pillars.includes(post.pillar)) return false;
+  if (f.language && post.language !== f.language) return false;
+  if (f.channels?.length && !f.channels.some((channel) => (post.channels || []).includes(channel))) return false;
+  if (f.keyword && !`${post.title} ${post.content}`.toLowerCase().includes(f.keyword.toLowerCase())) return false;
+  return true;
+}
+
+function automationTemplateText(template, post) {
+  const at = String(post.scheduledAt || "");
+  const excerpt = String(post.content || "").replace(/\{\{\w+\}\}|https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+  return String(template)
+    .replaceAll("{{title}}", post.title || "")
+    .replaceAll("{{time}}", at.slice(11, 16))
+    .replaceAll("{{date}}", at.slice(0, 10))
+    .replaceAll("{{excerpt}}", excerpt.length > 140 ? `${excerpt.slice(0, 139)}…` : excerpt)
+    .replaceAll("{{content}}", String(post.content || ""));
+}
+
+async function automationMedia(post, mode) {
+  if (mode === "none") return null;
+  const media = await resolvePostMedia(post);
+  if (mode === "poster" && media?.kind === "video" && post.posterUrl) {
+    return resolvePostMedia({ ...post, mediaUrl: post.posterUrl, mediaPublicUrl: post.posterPublicUrl || post.posterUrl, mediaKind: "image", mediaName: post.posterName || path.basename(post.posterUrl) });
+  }
+  return media;
+}
+
+// Plans (and, unless dryRun, performs) every action of a rule for one post.
+async function runAutomation(rule, post, { dryRun = true, source = "scheduler" } = {}) {
+  CONFIG = loadConfig();
+  const outcomes = [];
+  for (const action of rule.actions) {
+    const media = await automationMedia(post, action.media);
+    for (const channel of action.channels) {
+      const state = connectionState(channel);
+      const base = { channel, type: action.type, media: media?.kind || null };
+      if (action.type === "story") {
+        if (!media) {
+          outcomes.push({ ...base, ok: false, skipped: true, reason: "The post has no image or video for a story." });
+          continue;
+        }
+        if (channel === "instagram" && !/^https:\/\//i.test(media.publicUrl || "")) {
+          outcomes.push({ ...base, ok: false, skipped: true, reason: "Instagram stories need a public https image or video URL." });
+          continue;
+        }
+        if (dryRun) {
+          outcomes.push({ ...base, ok: state.configured, dryRun: true, reason: state.configured ? `Would share a ${channel} story (${media.kind}).` : `Would skip: ${channel} is not connected.` });
+          continue;
+        }
+        if (!state.configured) {
+          outcomes.push({ ...base, ok: false, skipped: true, reason: `${channel} is not connected.` });
+          continue;
+        }
+        outcomes.push({ ...base, ...(await publishStory(channel, { media })) });
+        continue;
+      }
+      const draft = { ...post, content: automationTemplateText(action.text, post), overrides: {}, utm: { ...(post.utm || {}), campaign: post.utm?.campaign || "automation" } };
+      draft.id = `${post.id}-auto`;
+      const text = renderForChannel(draft, channel);
+      const limit = LIMITS[channel] || 0;
+      const length = channelTextLength(channel, text);
+      if (limit && length > limit) {
+        outcomes.push({ ...base, ok: false, skipped: true, text, reason: `Text is ${length} characters; ${channel} allows ${limit}.` });
+        continue;
+      }
+      if (channel === "instagram" && !media) {
+        outcomes.push({ ...base, ok: false, skipped: true, text, reason: "Instagram posts need an image or video." });
+        continue;
+      }
+      if (dryRun) {
+        outcomes.push({ ...base, ok: state.configured, dryRun: true, text, reason: state.configured ? "Would post." : `Would skip: ${channel} is not connected.` });
+        continue;
+      }
+      if (!state.configured) {
+        outcomes.push({ ...base, ok: false, skipped: true, text, reason: `${channel} is not connected.` });
+        continue;
+      }
+      let result;
+      try {
+        result = await publishToChannel(channel, text, { config: CONFIG, media });
+      } catch (error) {
+        result = { ok: false, error: error.message };
+      }
+      outcomes.push({ ...base, text, ...result });
+    }
+  }
+  const at = new Date().toISOString();
+  if (!dryRun) {
+    post.automationRuns = post.automationRuns && typeof post.automationRuns === "object" ? post.automationRuns : {};
+    post.automationRuns[rule.id] = { at, ok: outcomes.filter((o) => o.ok).length, total: outcomes.length };
+    rule.lastRunAt = at;
+    rule.runCount = (rule.runCount || 0) + 1;
+    const okCount = outcomes.filter((o) => o.ok).length;
+    DATA.automationRuns.unshift({
+      at,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      postId: post.id,
+      postTitle: post.title,
+      source,
+      ok: okCount,
+      total: outcomes.length,
+      outcomes: outcomes.map(({ text, ...rest }) => ({ ...rest, text: text ? String(text).slice(0, 280) : undefined })),
+    });
+    DATA.automationRuns = DATA.automationRuns.slice(0, 500);
+    addActivity(DATA, "automation", `Automation “${rule.name}” on “${post.title}”: ${okCount} of ${outcomes.length} actions succeeded.`, post.id);
+    saveData();
+  }
+  return outcomes;
+}
+
+// Which posts a rule should act on right now. Each rule acts on a post at most once, and only
+// for events that happen after the rule was created (so a new rule never floods old posts).
+function dueAutomations(nowWall) {
+  const due = [];
+  const nowMs = Date.now();
+  for (const rule of DATA.automations) {
+    if (!rule.enabled) continue;
+    const created = Date.parse(rule.createdAt) || 0;
+    for (const post of DATA.posts) {
+      if (post.automationRuns?.[rule.id]) continue;
+      if (!automationMatches(rule, post)) continue;
+      const minutes = Number(rule.trigger.minutes || 0);
+      if (rule.trigger.event === "before") {
+        if (post.status !== "scheduled") continue;
+        const at = String(post.scheduledAt);
+        const startMs = Date.parse(`${at}Z`) - minutes * 60_000;
+        const nowWallMs = Date.parse(`${nowWall}Z`);
+        if (at > nowWall && nowWallMs >= startMs && Date.now() >= created) due.push({ rule, post });
+      } else if (rule.trigger.event === "published") {
+        const publishedMs = Date.parse(post.publishedAt || "");
+        if (post.status !== "published" || !publishedMs || publishedMs < created) continue;
+        if (nowMs >= publishedMs + minutes * 60_000 && nowMs - publishedMs < 24 * 3_600_000 + minutes * 60_000) due.push({ rule, post });
+      } else if (rule.trigger.event === "scheduled") {
+        const updatedMs = Date.parse(post.updatedAt || post.createdAt || "");
+        if (post.status !== "scheduled" || String(post.scheduledAt) <= nowWall || !updatedMs || updatedMs < created) continue;
+        if (nowMs >= updatedMs + minutes * 60_000) due.push({ rule, post });
+      }
+    }
+  }
+  return due;
+}
+
+let automationBusy = false;
+async function automationTick() {
+  if (automationBusy || !AUTO_PUBLISH || !LIVE || DATA.settings.dryRun) return;
+  automationBusy = true;
+  try {
+    const due = dueAutomations(nowInTimezone(DATA.settings.timezone)).slice(0, 10);
+    for (const { rule, post } of due) {
+      try {
+        await runAutomation(rule, post, { dryRun: false, source: "scheduler" });
+      } catch (error) {
+        console.error(`Automation ${rule.id} failed: ${error.message}`);
+      }
+    }
+  } finally {
+    automationBusy = false;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Content audit
+ * ------------------------------------------------------------------ */
+
+function normalizedMessage(text) {
+  return String(text || "")
+    .replace(/\{\{\w+\}\}|https?:\/\/\S+/g, "")
+    .replace(/^[^:\n]{2,24}:\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function contentAudit() {
+  const nowWall = nowInTimezone(DATA.settings.timezone);
+  const rules = DATA.settings.channelRules || {};
+  const upcoming = DATA.posts.filter((post) => ["scheduled", "approved", "needs_review", "draft"].includes(post.status) && String(post.scheduledAt) >= nowWall.slice(0, 10));
+  const issues = {};
+  const add = (post, level, code, message) => (issues[post.id] = issues[post.id] || []).push({ level, code, message });
+
+  const lastSeen = new Map();
+  const repeats = new Map();
+  for (const post of [...DATA.posts].sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))) {
+    const key = normalizedMessage(post.content);
+    if (!key) continue;
+    repeats.set(key, (repeats.get(key) || 0) + 1);
+    const prev = lastSeen.get(key);
+    const at = Date.parse(`${String(post.scheduledAt).slice(0, 19)}Z`);
+    if (prev && at - prev.at < 3 * 86_400_000 && upcoming.includes(post)) {
+      add(post, "warn", "repeat", `Same message as “${prev.title}” less than 3 days earlier. Audiences notice repeats; vary the copy or space them out.`);
+    }
+    lastSeen.set(key, { at, title: post.title });
+  }
+
+  for (const post of upcoming) {
+    const preview = previewPost(post, post.mediaUrl ? { kind: post.mediaKind, publicUrl: post.mediaPublicUrl, posterUrl: post.posterUrl } : null);
+    for (const item of preview) {
+      if (item.over) add(post, "error", "too-long", `${item.label}: ${item.length}/${item.limit} characters — will be skipped.`);
+      if (item.channel === "instagram" && /https?:\/\//.test(item.text)) add(post, "warn", "ig-link", "Instagram captions can't open links. Turn on “link in bio” for Instagram or edit its copy.");
+      if (["instagram", "linkedin"].includes(item.channel) && !/#[\p{L}\d_]+/u.test(item.text)) add(post, "info", "no-hashtags", `${item.label}: no hashtags. 3–5 relevant hashtags help discovery.`);
+    }
+    if (!post.mediaUrl) add(post, DATA.settings.mediaRequired ? "error" : "info", "no-media", "No image or video.");
+    else if (!post.mediaAlt) add(post, "info", "no-alt", "No alt text for the media.");
+    if (!/\{\{\w+\}\}|https?:\/\//.test(post.content) && !Object.values(post.overrides || {}).some((text) => /\{\{\w+\}\}|https?:\/\//.test(text))) {
+      add(post, "info", "no-cta", "No link or call to action.");
+    }
+  }
+  // Collapse duplicate issue codes per post.
+  for (const id of Object.keys(issues)) {
+    const seen = new Set();
+    issues[id] = issues[id].filter((issue) => (seen.has(issue.code + issue.message) ? false : seen.add(issue.code + issue.message)));
+  }
+
+  const perDay = {};
+  for (const post of upcoming) {
+    if (post.status !== "scheduled") continue;
+    const day = String(post.scheduledAt).slice(0, 10);
+    for (const channel of post.channels || []) {
+      perDay[channel] = perDay[channel] || {};
+      perDay[channel][day] = (perDay[channel][day] || 0) + 1;
+    }
+  }
+  const volume = Object.entries(perDay).map(([channel, days]) => {
+    const counts = Object.values(days);
+    const max = Math.max(...counts);
+    const avg = counts.reduce((sum, n) => sum + n, 0) / counts.length;
+    const cap = Number(rules[channel]?.dailyCap || 0);
+    const recommended = RECOMMENDED_DAILY[channel] || 0;
+    return {
+      channel,
+      label: CHANNEL_DEFS.find((def) => def.key === channel)?.label || channel,
+      avgPerDay: Math.round(avg * 10) / 10,
+      maxPerDay: max,
+      recommended,
+      cap,
+      effectiveMax: cap ? Math.min(cap, max) : max,
+      over: Boolean(recommended && (cap ? Math.min(cap, max) : max) > recommended),
+    };
+  }).sort((a, b) => b.maxPerDay - a.maxPerDay);
+
+  const counts = { error: 0, warn: 0, info: 0 };
+  const byCode = {};
+  for (const list of Object.values(issues)) {
+    for (const issue of list) {
+      counts[issue.level] += 1;
+      byCode[issue.code] = (byCode[issue.code] || 0) + 1;
+    }
+  }
+  const messages = [...repeats.values()];
+  const pillarMix = {};
+  const languageMix = {};
+  for (const post of upcoming) {
+    pillarMix[post.pillar] = (pillarMix[post.pillar] || 0) + 1;
+    languageMix[post.language] = (languageMix[post.language] || 0) + 1;
+  }
+  const questions = upcoming.filter((post) => /[?؟]/.test(post.content)).length;
+  const score = upcoming.length
+    ? Math.max(0, Math.round(100 - (counts.error * 8 + counts.warn * 2 + counts.info * 0.25) / Math.max(1, upcoming.length) * 10 - volume.filter((v) => v.over).length * 5))
+    : 100;
+
+  const suggestions = [];
+  if (volume.some((v) => v.over)) suggestions.push({ code: "caps", text: `${volume.filter((v) => v.over).map((v) => `${v.label} gets up to ${v.effectiveMax}/day (recommended ${v.recommended})`).join("; ")}. Apply recommended daily caps so the busiest feeds don't lose reach.` });
+  if (byCode["ig-link"]) suggestions.push({ code: "link-in-bio", text: `${byCode["ig-link"]} Instagram captions contain links nobody can click. Turn on “link in bio” for Instagram.` });
+  if (byCode.repeat) suggestions.push({ code: "repeat", text: `${byCode.repeat} upcoming posts repeat a message from the previous 3 days. ${repeats.size} unique messages cover ${DATA.posts.length} posts (up to ${Math.max(0, ...messages)} uses of one message).` });
+  if (byCode["no-hashtags"]) suggestions.push({ code: "hashtags", text: "Instagram and LinkedIn copy has no hashtags. Add 3–5 standard hashtags per channel in channel rules." });
+  if (upcoming.length && questions / upcoming.length < 0.1) suggestions.push({ code: "questions", text: `Only ${questions} of ${upcoming.length} upcoming posts ask a question. Questions invite replies, which most feeds reward.` });
+  if (byCode["too-long"]) suggestions.push({ code: "too-long", text: `${byCode["too-long"]} posts are too long for at least one channel and will be skipped there. Add a shorter per-channel version.` });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    score,
+    upcoming: upcoming.length,
+    counts,
+    byCode,
+    volume,
+    uniqueMessages: repeats.size,
+    maxRepeats: Math.max(0, ...messages),
+    questions,
+    pillarMix,
+    languageMix,
+    suggestions,
+    issues,
+  };
 }
 
 function overview() {
@@ -1773,7 +2429,10 @@ function overview() {
     posts,
     queue: queueSnapshot(),
     channels: channelSummary(),
-    metrics: { totals: metricsTotals(), channels: DATA.metrics },
+    metrics: { totals: metricsTotals(), channels: DATA.metrics, growth: followerGrowth() },
+    delivery: deliveryStats(30),
+    automations: { total: DATA.automations.length, enabled: DATA.automations.filter((rule) => rule.enabled).length },
+    trash: DATA.trash.length,
     activity: DATA.activity.slice(0, 12),
   };
 }
@@ -1794,18 +2453,27 @@ function reportsSummary() {
   const connected = channelSummary().filter((channel) => channel.configured);
   const blocked = DATA.posts.filter((post) => post.status === "blocked").length;
   const totals = metricsTotals();
+  // Only connected posting channels are expected to report metrics; restricted ones never do.
   const unavailable = channelSummary()
-    .filter((channel) => !channel.metrics?.lastUpdated)
+    .filter((channel) => channel.configured && CHANNEL_CAPABILITIES[channel.key]?.metrics && !channel.metrics?.lastUpdated)
     .map((channel) => ({
       channel: channel.label,
-      note: channel.metrics?.note || (channel.configured ? "No metrics received yet." : "Channel is not configured."),
+      note: channel.metrics?.note || "Connected, but no metrics received yet. Run Sync metrics.",
     }));
   const recommendations = [];
   if (!siteLiveCache.value) recommendations.push("Deploy the landing page before publishing posts that use {{site}} links.");
   if (!connected.length) recommendations.push("Connect at least one posting API in the portal environment.");
   if (blocked) recommendations.push(`${blocked} post${blocked === 1 ? "" : "s"} blocked by the live-site or channel check.`);
-  if (DATA.posts.some((post) => post.channels?.includes("instagram") && !post.mediaUrl)) {
-    recommendations.push("Instagram posts need a public media URL before they can publish.");
+  const wallNow = nowInTimezone(DATA.settings.timezone);
+  const igNoPublic = DATA.posts.filter(
+    (post) => post.status === "scheduled" && String(post.scheduledAt) >= wallNow && post.channels?.includes("instagram") && !/^https:\/\//i.test(post.mediaPublicUrl || post.mediaUrl || "")
+  ).length;
+  if (igNoPublic) recommendations.push(`${igNoPublic} upcoming Instagram post${igNoPublic === 1 ? " has" : "s have"} no public https media URL and will be skipped on Instagram.`);
+  const delivery = deliveryStats(30);
+  for (const [channel, row] of Object.entries(delivery)) {
+    if (row.failed >= 3 && row.successRate !== null && row.successRate < 50) {
+      recommendations.push(`${CHANNEL_DEFS.find((def) => def.key === channel)?.label || channel} failed ${row.failed} times in 30 days (${row.successRate}% success). Check its connection.`);
+    }
   }
   if (DATA.settings.mediaRequired && DATA.posts.some((post) => !post.mediaUrl)) {
     recommendations.push("Some posts have no image or video. Attach media before scheduling or publishing.");
@@ -1824,6 +2492,10 @@ function reportsSummary() {
     generatedAt: new Date().toISOString(),
     posts: postSummary(),
     channelCounts,
+    delivery,
+    topPosts: topPosts(10),
+    growth: followerGrowth(),
+    automationRuns: DATA.automationRuns.slice(0, 20),
     metrics: {
       totals,
       channels: DATA.metrics,
@@ -1964,6 +2636,7 @@ function applyBulk(action, ids, value) {
     }
     if (action === "delete") {
       DATA.posts = DATA.posts.filter((item) => item !== post);
+      moveToTrash(post);
       updated += 1;
       continue;
     }
@@ -2263,6 +2936,8 @@ async function handleApi(req, res, url) {
           if (text) clean[key] = text;
         }
         if (!Object.keys(clean).length) throw new Error("Enter at least one credential value.");
+        const problems = validateCredentials(channel, clean);
+        if (problems.length) return json(res, 400, { error: problems.join(" "), problems });
         writeEnvValues(clean);
         DATA.connectionChecks[channel] = null;
         addActivity(DATA, "connection", `Saved ${Object.keys(clean).length} credential${Object.keys(clean).length === 1 ? "" : "s"} for ${channel}.`);
@@ -2283,6 +2958,112 @@ async function handleApi(req, res, url) {
         return json(res, 400, { error: error.message });
       }
     }
+    if (action === "credentials" && method === "DELETE") {
+      const allowed = CREDENTIAL_KEYS[channel];
+      if (!allowed) return json(res, 400, { error: "This channel has no API credentials to remove." });
+      // Writing empty values removes them from portal/.env and from the running process.
+      writeEnvValues(Object.fromEntries(allowed.map((key) => [key, ""])));
+      DATA.connectionChecks[channel] = null;
+      addActivity(DATA, "connection", `Disconnected ${channel}: removed its saved credentials.`);
+      saveData();
+      return json(res, 200, { channel: channelInfo(channel) });
+    }
+  }
+
+  if (method === "GET" && pathname === "/api/content/audit") {
+    return json(res, 200, contentAudit());
+  }
+
+  if (pathname === "/api/automations" || pathname.startsWith("/api/automations/")) {
+    const rest = pathname.slice("/api/automations".length).replace(/^\//, "");
+    const [rawId, verb] = rest.split("/");
+    const id = rawId ? decodeURIComponentSafe(rawId) : "";
+    const rule = id ? DATA.automations.find((item) => item.id === id) : null;
+    if (id && !rule) return json(res, 404, { error: "Automation not found" });
+    try {
+      if (method === "GET" && !id) {
+        return json(res, 200, {
+          automations: DATA.automations,
+          runs: DATA.automationRuns.slice(0, 100),
+          storyChannels: STORY_CHANNELS,
+          postChannels: POST_ACTION_CHANNELS,
+          live: LIVE && AUTO_PUBLISH && !DATA.settings.dryRun,
+        });
+      }
+      if (method === "POST" && !id) {
+        const created = cleanAutomation(await readBody(req));
+        DATA.automations.push(created);
+        addActivity(DATA, "automation", `Created automation “${created.name}”.`);
+        saveData();
+        return json(res, 201, { automation: created });
+      }
+      if (method === "PUT" && rule && !verb) {
+        const updated = cleanAutomation(await readBody(req), rule);
+        Object.assign(rule, updated);
+        addActivity(DATA, "automation", `Updated automation “${rule.name}”${updated.enabled ? "" : " (paused)"}.`);
+        saveData();
+        return json(res, 200, { automation: rule });
+      }
+      if (method === "DELETE" && rule && !verb) {
+        DATA.automations = DATA.automations.filter((item) => item !== rule);
+        addActivity(DATA, "automation", `Deleted automation “${rule.name}”.`);
+        saveData();
+        return json(res, 200, { ok: true });
+      }
+      if (method === "POST" && rule && (verb === "test" || verb === "run")) {
+        const body = await readBody(req);
+        const candidates = DATA.posts
+          .filter((post) => automationMatches(rule, post))
+          .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)));
+        const nowWall = nowInTimezone(DATA.settings.timezone);
+        const post = body.postId
+          ? DATA.posts.find((item) => item.id === body.postId)
+          : candidates.find((item) => String(item.scheduledAt) >= nowWall) || candidates.at(-1);
+        if (!post) throw new Error("No post matches this automation's filters yet.");
+        if (verb === "run" && !LIVE) return json(res, 403, { error: "Live publishing is locked. Set MARKETING_LIVE=true on the portal server." });
+        const outcomes = await runAutomation(rule, post, { dryRun: verb === "test", source: "manual" });
+        return json(res, 200, { post: { id: post.id, title: post.title, scheduledAt: post.scheduledAt }, outcomes, matching: candidates.length });
+      }
+      return json(res, 405, { error: "Method not allowed" });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
+  }
+
+  if (pathname === "/api/trash" || pathname.startsWith("/api/trash/")) {
+    const rest = pathname.slice("/api/trash".length).replace(/^\//, "");
+    const [rawId, verb] = rest.split("/");
+    const id = rawId ? decodeURIComponentSafe(rawId) : "";
+    if (method === "GET" && !id) {
+      return json(res, 200, { items: DATA.trash.map((item) => ({ deletedAt: item.deletedAt, post: listPost(item.post) })) });
+    }
+    if (method === "DELETE" && !id) {
+      const count = DATA.trash.length;
+      DATA.trash = [];
+      addActivity(DATA, "deleted", `Emptied trash (${count} post${count === 1 ? "" : "s"} permanently deleted).`);
+      saveData();
+      return json(res, 200, { removed: count });
+    }
+    const index = DATA.trash.findIndex((item) => item.post.id === id);
+    if (index < 0) return json(res, 404, { error: "Not in trash" });
+    if (method === "POST" && verb === "restore") {
+      const [item] = DATA.trash.splice(index, 1);
+      const post = item.post;
+      // A restored post never goes straight back to auto-publishing.
+      if (post.status === "scheduled" || post.status === "publishing") post.status = "draft";
+      if (DATA.posts.some((existing) => existing.id === post.id)) post.id = `${post.id}-restored`;
+      DATA.posts.push(post);
+      addActivity(DATA, "restored", `Restored “${post.title}” from trash as ${post.status.replace(/_/g, " ")}.`, post.id);
+      saveData();
+      return json(res, 200, { post: listPost(post) });
+    }
+    if (method === "DELETE" && !verb) {
+      const [item] = DATA.trash.splice(index, 1);
+      addActivity(DATA, "deleted", `Permanently deleted “${item.post.title}”.`);
+      saveData();
+      return json(res, 200, { ok: true });
+    }
+    return json(res, 405, { error: "Method not allowed" });
   }
 
   if (method === "GET" && pathname === "/api/overview") {
@@ -2294,7 +3075,16 @@ async function handleApi(req, res, url) {
   }
 
   if (method === "GET" && pathname === "/api/posts") {
-    return json(res, 200, { posts: filterPosts(url.searchParams).map(listPost) });
+    const audit = contentAudit();
+    return json(res, 200, {
+      posts: filterPosts(url.searchParams).map((post) => {
+        const issues = audit.issues[post.id] || [];
+        return {
+          ...listPost(post),
+          health: issues.length ? { error: issues.filter((i) => i.level === "error").length, warn: issues.filter((i) => i.level === "warn").length, info: issues.filter((i) => i.level === "info").length } : null,
+        };
+      }),
+    });
   }
 
   if (method === "POST" && pathname === "/api/posts/bulk") {
@@ -2360,7 +3150,14 @@ async function handleApi(req, res, url) {
 
     if (method === "GET" && !action) {
       const media = await resolvePostMedia(post);
-      return json(res, 200, { post, preview: previewPost(post, media ? { ...media, posterUrl: post.posterUrl || "" } : null) });
+      return json(res, 200, {
+        post,
+        preview: previewPost(post, media ? { ...media, posterUrl: post.posterUrl || "" } : null),
+        issues: contentAudit().issues[post.id] || [],
+        automations: DATA.automations
+          .filter((rule) => automationMatches(rule, post))
+          .map((rule) => ({ id: rule.id, name: rule.name, enabled: rule.enabled, event: rule.trigger.event, minutes: rule.trigger.minutes, ran: post.automationRuns?.[rule.id] || null })),
+      });
     }
 
     if (method === "PUT" && !action) {
@@ -2401,7 +3198,8 @@ async function handleApi(req, res, url) {
 
     if (method === "DELETE" && !action) {
       DATA.posts = DATA.posts.filter((item) => item.id !== id);
-      addActivity(DATA, "deleted", `Deleted “${post.title}”.`, post.id);
+      moveToTrash(post);
+      addActivity(DATA, "deleted", `Moved “${post.title}” to trash.`, post.id);
       saveData();
       return json(res, 200, { ok: true });
     }
@@ -2544,12 +3342,24 @@ async function handleApi(req, res, url) {
         if (value && !/^https?:\/\/[^/]+/i.test(value)) throw new Error("Public media host must be an http(s) URL.");
         next.publicUrl = value;
       }
-      const changed = Object.keys(next).filter((key) => DATA.settings[key] !== next[key]);
+      if ("channelRules" in body) {
+        // Merge: a request may update only some channels.
+        const merged = { ...(DATA.settings.channelRules || {}) };
+        for (const key of Object.keys(body.channelRules || {})) delete merged[key];
+        next.channelRules = { ...merged, ...cleanChannelRules(body.channelRules) };
+      }
+      const changed = Object.keys(next).filter((key) => JSON.stringify(DATA.settings[key]) !== JSON.stringify(next[key]));
       Object.assign(DATA.settings, next);
       if ("publicUrl" in next) publicBaseOverride = next.publicUrl;
       if (changed.length) {
         const summary = changed
-          .map((key) => (typeof next[key] === "boolean" ? `${key} ${next[key] ? "on" : "off"}` : `${key} → ${next[key] || "(empty)"}`))
+          .map((key) =>
+            key === "channelRules"
+              ? `channel rules → ${Object.entries(next.channelRules).map(([channel, rule]) => `${channel}${rule.dailyCap ? ` max ${rule.dailyCap}/day` : ""}${rule.linkInBio ? " link-in-bio" : ""}${rule.hashtags ? " hashtags" : ""}`).join(", ") || "none"}`
+              : typeof next[key] === "boolean"
+                ? `${key} ${next[key] ? "on" : "off"}`
+                : `${key} → ${next[key] || "(empty)"}`
+          )
           .join(", ");
         addActivity(DATA, "settings", `Settings changed: ${summary}.`);
       }
@@ -2622,6 +3432,14 @@ async function schedulerTick() {
   } finally {
     schedulerBusy = false;
   }
+  // Stories, teasers and follow-ups run after the posts of this tick went out.
+  await automationTick().catch((error) => console.error(`Automation tick failed: ${error.message}`));
+}
+
+function moveToTrash(post) {
+  const { revisions, ...rest } = post;
+  DATA.trash.unshift({ deletedAt: new Date().toISOString(), post: { ...rest, revisions: (revisions || []).slice(0, 5) } });
+  DATA.trash = DATA.trash.slice(0, 500);
 }
 
 setInterval(schedulerTick, 60_000);

@@ -2,7 +2,7 @@
 // without calling a real social platform. Run with `npm test`.
 
 import assert from "node:assert/strict";
-import { publishToChannel, setHttpTransport } from "./adapters.mjs";
+import { publishToChannel, publishStory, setHttpTransport } from "./adapters.mjs";
 
 const json = (data, status = 200, headers = {}) => ({
   ok: status < 400,
@@ -21,6 +21,13 @@ globalThis.fetch = async (url, init = {}) => {
   const target = String(url);
   const method = init.method || "GET";
   calls.push({ url: target, method });
+  if (target.includes("video_stories")) {
+    return String(init.body || "").includes("upload_phase=finish")
+      ? json({ post_id: "fb-video-story-1" })
+      : json({ video_id: "vs-1", upload_url: "https://rupload.facebook.test/vs-1" });
+  }
+  if (target.includes("rupload.facebook.test")) return json({ success: true });
+  if (target.includes("photo_stories")) return json({ post_id: "fb-photo-story-1" });
   if (target.includes("/photos")) return json({ id: "photo-1", post_id: "post-1" });
   if (target.includes("/videos")) return json({ id: "video-1" });
   if (target.includes("media_publish")) return json({ id: "ig-1" });
@@ -134,6 +141,25 @@ for (const [channel, label, attachment] of expectedBlocked) {
   const result = await publishToChannel(channel, `Test post for ${label}`, { config, media: attachment });
   if (result.ok) failures.push(`${label}: expected a clear block, got success`);
   else console.log(`ok  ${label} blocked -> ${result.reason || result.error}`);
+}
+
+for (const [channel, label, attachment] of [
+  ["facebook", "Facebook photo story", media],
+  ["facebook", "Facebook video story", video],
+  ["instagram", "Instagram image story", media],
+  ["instagram", "Instagram video story", video],
+]) {
+  const result = await publishStory(channel, { media: attachment });
+  if (!result.ok || result.kind !== "story") failures.push(`${label}: ${result.reason || result.error || "not a story"}`);
+  else console.log(`ok  ${label} -> ${result.id}`);
+}
+{
+  const result = await publishStory("linkedin", { media });
+  if (result.ok || !result.skipped) failures.push("LinkedIn story: expected a clear 'no Stories API' skip");
+  else console.log(`ok  LinkedIn story skipped -> ${result.reason}`);
+  const noPublic = await publishStory("instagram", { media: { ...media, publicUrl: "" } });
+  if (noPublic.ok) failures.push("Instagram story without public URL should be skipped");
+  else console.log(`ok  Instagram story without public URL skipped`);
 }
 
 console.log(`\n${calls.length} mocked HTTP calls`);

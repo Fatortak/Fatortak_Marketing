@@ -27,7 +27,9 @@ const child = spawn(process.execPath, [path.join(HERE, "server.mjs")], {
     PORTAL_PORT: String(port),
     PORTAL_HOST: "127.0.0.1",
     PORTAL_DATA_DIR: dataDir,
-    PORTAL_ENV_FILE: path.join(dataDir, "none.env"),
+    // Never read or write the real credentials: portal/.env and automation/.env stay untouched.
+    PORTAL_ENV_FILE: path.join(dataDir, "test.env"),
+    PORTAL_ISOLATED: "1",
     MARKETING_LIVE: "false",
     PORTAL_AUTO_PUBLISH: "false",
   },
@@ -310,6 +312,138 @@ test("media upload rejects unsupported types and protects files in use", async (
   assert.equal(blocked.status, 409);
   const forced = await api(`/api/media/${encodeURIComponent(uploaded.id)}?force=1`, { method: "DELETE" });
   assert.equal(forced.status, 200);
+});
+
+test("deleted posts go to trash and can be restored as drafts", async () => {
+  const created = await api("/api/posts", { method: "POST", body: { content: "Trash me", channels: ["x"], status: "scheduled", scheduledAt: "2033-01-01T09:00", ...media } });
+  const id = created.data.post.id;
+  assert.equal((await api(`/api/posts/${id}`, { method: "DELETE" })).status, 200);
+  const trash = await api("/api/trash");
+  assert.ok(trash.data.items.some((item) => item.post.id === id));
+  const restored = await api(`/api/trash/${id}/restore`, { method: "POST" });
+  assert.equal(restored.status, 200, restored.text);
+  assert.equal(restored.data.post.status, "draft", "restored posts never auto-publish");
+  await api("/api/posts/bulk", { method: "POST", body: { ids: [id], action: "delete" } });
+  assert.equal((await api(`/api/trash/${id}`, { method: "DELETE" })).status, 200);
+  assert.ok(!(await api("/api/trash")).data.items.some((item) => item.post.id === id));
+});
+
+test("per-channel copy and channel rules shape what each channel receives", async () => {
+  const rules = await api("/api/settings", {
+    method: "PUT",
+    body: { channelRules: { instagram: { linkInBio: true, hashtags: "fatortak, accounting #MENA", dailyCap: 2 } } },
+  });
+  assert.equal(rules.status, 200, rules.text);
+  assert.equal(rules.data.settings.channelRules.instagram.hashtags, "#fatortak #accounting #MENA");
+  const badCap = await api("/api/settings", { method: "PUT", body: { channelRules: { x: { dailyCap: -1 } } } });
+  assert.equal(badCap.status, 400);
+
+  const created = await api("/api/posts", {
+    method: "POST",
+    body: { content: "Read more {{site}}", channels: ["instagram", "x", "linkedin"], overrides: { linkedin: "A longer LinkedIn version {{site}}", bluesky: "ignored: not a target" }, ...media },
+  });
+  assert.equal(created.status, 201, created.text);
+  assert.deepEqual(Object.keys(created.data.post.overrides), ["linkedin"]);
+  const full = await api(`/api/posts/${created.data.post.id}`);
+  const byChannel = Object.fromEntries(full.data.preview.map((item) => [item.channel, item]));
+  assert.ok(!/https?:/.test(byChannel.instagram.text), "Instagram links become 'Link in bio'");
+  assert.match(byChannel.instagram.text, /Link in bio/);
+  assert.match(byChannel.instagram.text, /#fatortak #accounting #MENA$/);
+  assert.match(byChannel.x.text, /utm_source=x/);
+  assert.match(byChannel.linkedin.text, /^A longer LinkedIn version https:/);
+  assert.equal(byChannel.linkedin.custom, true);
+  await api("/api/settings", { method: "PUT", body: { channelRules: { instagram: {} } } });
+});
+
+test("content audit flags repeats, Instagram links and over-posting", async () => {
+  for (let i = 0; i < 4; i += 1) {
+    await api("/api/posts", {
+      method: "POST",
+      body: { content: "Audit repeat message {{site}}", channels: ["instagram", "facebook"], status: "scheduled", scheduledAt: `2034-02-01T${String(9 + i).padStart(2, "0")}:00`, ...media },
+    });
+  }
+  const audit = await api("/api/content/audit");
+  assert.equal(audit.status, 200);
+  assert.ok(audit.data.byCode.repeat >= 3);
+  assert.ok(audit.data.byCode["ig-link"] >= 4);
+  const facebook = audit.data.volume.find((row) => row.channel === "facebook");
+  assert.ok(facebook.maxPerDay >= 4 && facebook.over, "4 Facebook posts in a day exceeds the recommended 2");
+  assert.ok(audit.data.suggestions.some((item) => item.code === "caps"));
+  const list = await api("/api/posts?q=audit%20repeat");
+  assert.ok(list.data.posts.every((post) => post.health && post.health.warn >= 1));
+});
+
+test("automations validate input and dry-run their actions", async () => {
+  const badStory = await api("/api/automations", {
+    method: "POST",
+    body: { name: "Bad", trigger: { event: "published" }, actions: [{ type: "story", channels: ["x"] }] },
+  });
+  assert.equal(badStory.status, 400);
+  assert.match(badStory.data.error, /Facebook and Instagram/);
+  const tooSoon = await api("/api/automations", {
+    method: "POST",
+    body: { name: "Soon", trigger: { event: "before", minutes: 1 }, actions: [{ type: "story", channels: ["facebook"] }] },
+  });
+  assert.equal(tooSoon.status, 400);
+
+  await api("/api/posts", { method: "POST", body: { content: "Big offer {{site}}", channels: ["facebook"], tags: ["offer"], status: "scheduled", scheduledAt: "2035-03-01T10:00", ...media } });
+  const created = await api("/api/automations", {
+    method: "POST",
+    body: {
+      name: "Offer teaser",
+      trigger: { event: "before", minutes: 60 },
+      filter: { tags: ["offer"] },
+      actions: [
+        { type: "story", channels: ["facebook", "instagram"], media: "post" },
+        { type: "post", channels: ["x", "bluesky"], media: "none", text: "In one hour: {{title}} at {{time}} → {{site}}" },
+      ],
+    },
+  });
+  assert.equal(created.status, 201, created.text);
+  const id = created.data.automation.id;
+  const tested = await api(`/api/automations/${id}/test`, { method: "POST", body: {} });
+  assert.equal(tested.status, 200, tested.text);
+  assert.equal(tested.data.post.title, "Big offer {{site}}");
+  const outcomes = tested.data.outcomes;
+  assert.equal(outcomes.length, 4);
+  assert.ok(outcomes.every((o) => o.dryRun || o.skipped));
+  const xPost = outcomes.find((o) => o.channel === "x");
+  assert.match(xPost.text, /^In one hour: Big offer .* at 10:00 → https:\/\/.*utm_source=x/);
+  const igStory = outcomes.find((o) => o.channel === "instagram");
+  assert.ok(igStory.skipped, "local media has no public URL, so the Instagram story is skipped with a reason");
+  const run = await api(`/api/automations/${id}/run`, { method: "POST", body: {} });
+  assert.equal(run.status, 403, "live runs are locked without MARKETING_LIVE");
+  const paused = await api(`/api/automations/${id}`, { method: "PUT", body: { enabled: false } });
+  assert.equal(paused.data.automation.enabled, false);
+  assert.equal(paused.data.automation.actions.length, 2);
+  const listed = await api("/api/automations");
+  assert.deepEqual(listed.data.storyChannels, ["facebook", "instagram"]);
+  assert.equal((await api(`/api/automations/${id}`, { method: "DELETE" })).status, 200);
+});
+
+test("connection guides validate credential formats and can disconnect", async () => {
+  const connections = await api("/api/connections");
+  const telegram = connections.data.channels.find((channel) => channel.key === "telegram");
+  assert.ok(telegram.guide.steps.length >= 2);
+  assert.ok(telegram.fields.some((field) => field.key === "TELEGRAM_CHAT_ID" && field.pattern));
+  const bad = await api("/api/connections/telegram/credentials", { method: "PUT", body: { values: { TELEGRAM_CHAT_ID: "12345" } } });
+  assert.equal(bad.status, 400);
+  assert.match(bad.data.error, /Channel ID/);
+  const good = await api("/api/connections/telegram/credentials", { method: "PUT", body: { values: { TELEGRAM_BOT_TOKEN: `123456:${"A".repeat(35)}`, TELEGRAM_CHAT_ID: "@fatortak_test" } } });
+  assert.equal(good.status, 200, good.text);
+  assert.equal(good.data.channel.configured, true);
+  assert.equal(good.data.channel.fields.find((field) => field.key === "TELEGRAM_CHAT_ID").value, "@fatortak_test");
+  assert.equal(good.data.channel.fields.find((field) => field.key === "TELEGRAM_BOT_TOKEN").value, "", "secrets are never returned");
+  const removed = await api("/api/connections/telegram/credentials", { method: "DELETE" });
+  assert.equal(removed.data.channel.configured, false);
+});
+
+test("reports expose delivery per channel and follower growth", async () => {
+  const report = await api("/api/reports/summary");
+  assert.equal(report.status, 200);
+  assert.equal(typeof report.data.delivery, "object");
+  assert.ok(Array.isArray(report.data.topPosts));
+  assert.equal(typeof report.data.growth, "object");
 });
 
 test("CSV export neutralizes formulas", async () => {
