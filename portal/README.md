@@ -48,14 +48,27 @@ The portal seeds itself from `content/queue.json` on first run. State is stored 
 
 | View | What it shows |
 | --- | --- |
-| **Overview** | Publishing pipeline, followers, traffic, channel health, upcoming posts and activity |
-| **Calendar** | Month view of scheduled and published posts |
-| **Content** | Search/filter every post; edit, dry-run, publish, delete, per-channel status and retry failed/skipped |
-| **Composer** | Create a post, attach an image/video from the library or upload, select channels, see per-channel character limits, schedule |
-| **Connections** | Click Connect, open the official console, paste credentials, save and test; see which channels are API-ready, need review, or are monitoring-only |
+| **Overview** | Alerts (overdue, failed, needs review, failing connection tests), next post, 14-day publishing strip, up-next agenda, publishing mode, audience, channel health and recent activity |
+| **Content** | Status tabs with counts; search, date-range, channel, language, pillar and tag filters; sorting and pagination; bulk schedule/status/move days/add-remove channel/tag/duplicate/delete; row actions (approve, dry run, results, duplicate, publish, copy link) and filtered CSV export |
+| **Calendar** | Month grid in the portal timezone; drag a post to another day to reschedule (with Undo); "+N more" day view; create a post on a given day; language/channel filters |
+| **Media** | Uploads and the brand library with usage counts, drag-and-drop multi-upload with progress, copy URL, "new post from this", and delete (refused while unpublished posts use the file) |
+| **Templates** | Reusable copy with default language, pillar and channels; create, edit, delete, and start a post from a template |
+| **Post editor** | Two-pane drawer: copy with tracked-link placeholders, language (Arabic is RTL), pillar, tags, channel picker showing connection readiness, media (upload, drop, library, external URL, alt text), schedule quick picks, status with guidance, notes; live per-channel preview with platform character counting; last publish and dry-run results; revision history with restore; unsaved-change guard; Ctrl/⌘+S |
+| **Connections** | Filter by connected / needs setup / restricted; connect, test one or all; see which channels are API-ready, need review, or are monitoring-only |
 | **Analytics** | Traffic, traffic by source, followers, reach, engagement, clicks and last sync |
-| **Reports** | Rule-based recommendations, channel mix, CSV/JSON export, latest automation report |
-| **Settings** | Dry-run, auto-approve, require media, live-site guard, timezone, queue import |
+| **Reports** | Rule-based recommendations, EN/AR and pillar mix, posts per channel, CSV/JSON export, latest automation report |
+| **Activity** | Searchable, filterable, paginated audit trail (last 1,000 events) linking back to posts |
+| **Settings** | Dry-run (with a go-live confirmation), auto-approve, require media, live-site guard, timezone, public media host; changes are tracked and logged |
+
+Keyboard: `N` new post, `/` search, `R` refresh, `G` then `O/C/K/M/T/A/S/R` to switch views, `?` for the list. Views are deep-linkable (`#/content?status=failed`, `#/content?post=<id>`, `#/calendar?month=2026-11`).
+
+### Publishing rules worth knowing
+
+- **Dry run never changes a post's status.** It stores the simulated result on the post (`preview`) and reports, per channel, whether it *would* publish or be skipped.
+- **Character limits use each platform's counting.** X and Mastodon count every link as 23 characters (X also weighs emoji/CJK as 2); Bluesky counts graphemes. Counts are taken after `{{site}}`-style placeholders expand to their tracked URL, so the editor shows exactly what the publish check enforces.
+- **A published post is not re-published by accident.** Publishing it again requires an explicit confirmation; retrying individual channels from Results is always allowed.
+- **Edits are conflict-checked.** A save made from a stale copy (the scheduler or another tab changed the post) is refused with a prompt to overwrite or reload.
+- **Interrupted publishes are flagged, not repeated.** A post left in `publishing` by a crash or restart is marked `failed` on startup so a person can check which channels already received it.
 
 ## Channel automation matrix
 
@@ -216,13 +229,21 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 | --- | --- | --- |
 | GET | `/api/health` | Health check |
 | GET | `/api/overview` | Dashboard payload |
-| GET | `/api/posts` | List/filter posts |
+| GET | `/api/meta` | Statuses, pillars, channel limits, placeholders, tags and the portal's current wall-clock time |
+| GET | `/api/posts` | List/filter posts (`status`, `channel`, `lang`, `tag`, `pillar`, `q`); revision history omitted |
 | POST | `/api/posts` | Create post |
-| PUT | `/api/posts/:id` | Update post |
+| POST | `/api/posts/bulk` | Bulk `status`, `shift` (days), `addChannel`/`removeChannel`, `addTag`/`removeTag`, `duplicate`, `delete` |
+| GET | `/api/posts/:id` | Full post with revisions and a per-channel preview |
+| PUT | `/api/posts/:id` | Update post (send `updatedAt` to reject stale edits with 409) |
+| POST | `/api/posts/:id/restore` | Restore a revision (`{ index }`) |
 | POST | `/api/posts/:id/status` | Change status |
-| POST | `/api/posts/:id/publish` | Publish now (dry-run by default) |
-| POST | `/api/posts/:id/duplicate` | Copy post |
+| POST | `/api/posts/:id/publish` | Publish now (dry-run by default; never changes status in dry run) |
+| POST | `/api/posts/:id/duplicate` | Copy post as a draft |
 | DELETE | `/api/posts/:id` | Delete local post |
+| POST | `/api/preview` | Rendered text, platform length and warnings per channel |
+| GET/POST | `/api/templates` | List / create templates |
+| PUT/DELETE | `/api/templates/:id` | Update / delete a template |
+| GET | `/api/activity` | Paginated audit trail (`type`, `q`, `postId`, `limit`, `offset`) |
 | GET | `/api/calendar?month=YYYY-MM` | Calendar posts |
 | GET | `/api/connections` | Channel modes, setup links, media support and verification |
 | PUT | `/api/connections/:channel/credentials` | Save whitelisted credentials to `.env` |
@@ -230,11 +251,20 @@ The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as
 | GET | `/api/media` | Uploaded files + screenshot library |
 | GET | `/api/media/library` | Screenshot library only |
 | POST | `/api/media` | Upload image/video (raw body, `X-File-Name` header) |
-| DELETE | `/api/media/:id` | Delete an uploaded file |
+| DELETE | `/api/media/:id` | Delete an uploaded file (409 while unpublished posts use it; `?force=1` overrides) |
 | GET | `/api/metrics` | Metrics + traffic |
 | POST | `/api/metrics/sync` | Sync available metrics |
 | GET | `/api/reports/summary` | Report payload |
-| GET | `/api/reports/export?format=csv\|json` | Export |
+| GET | `/api/reports/export?format=csv\|json` | Download export; accepts the same filters as `/api/posts` |
+
+`PUT`/`DELETE` can also be sent as `POST` with an `X-Portal-Method` header — the production PHP proxy does this because IIS blocks those verbs.
+
+## Tests
+
+```powershell
+npm test               # adapters (mocked HTTP) + portal API end-to-end
+npm run test:portal    # boots server.mjs on a free port with a temp data dir, dry run, no credentials
+```
 | GET/PUT | `/api/settings` | Safe settings |
 | POST | `/api/import-queue` | Import the 90-day queue |
 

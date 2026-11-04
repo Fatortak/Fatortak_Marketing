@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
-    "test": "node test-adapters.mjs"
+    "test": "node test-adapters.mjs && node test-portal.mjs",
+    "test:adapters": "node test-adapters.mjs",
+    "test:portal": "node test-portal.mjs"
   },
   "engines": {
     "node": ">=20"

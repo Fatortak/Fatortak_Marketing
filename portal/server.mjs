@@ -310,6 +310,120 @@ function mediaContentType(name, fallback = "") {
   return types[ext] || fallback || "application/octet-stream";
 }
 
+const ALLOWED_MEDIA_EXT = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".mp4", ".mov", ".webm", ".m4v"]);
+const POST_STATUSES = ["draft", "needs_review", "approved", "scheduled", "published", "failed", "blocked", "dry_run"];
+const PILLARS = ["product", "insight", "open-source", "use-case", "arabic", "ai-ocr", "commercial", "tip"];
+const MEDIA_REQUIRED_STATUSES = ["scheduled", "approved", "published"];
+const MAX_REVISIONS = 20;
+const MAX_ACTIVITY = 1000;
+
+function isValidTimezone(value) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: String(value) });
+    return Boolean(value);
+  } catch {
+    return false;
+  }
+}
+
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+// Posts are scheduled as naive wall-clock strings ("YYYY-MM-DDTHH:mm:ss") in the portal timezone.
+// The scheduler compares them as strings, so every write must use exactly this shape.
+function normalizeScheduledAt(value, timeZone) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const naive = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/.exec(text);
+  if (naive) {
+    const [, y, mo, d, h, mi, s] = naive;
+    const probe = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +(s || 0)));
+    if (Number.isNaN(probe.getTime()) || probe.getUTCMonth() !== +mo - 1 || probe.getUTCDate() !== +d) return null;
+    return `${y}-${mo}-${d}T${h}:${mi}:${s || "00"}`;
+  }
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return null;
+  return wallClock(date, timeZone);
+}
+
+function wallClock(date, timeZone = "Africa/Cairo") {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: isValidTimezone(timeZone) ? timeZone : "Africa/Cairo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const pick = (type) => parts.find((part) => part.type === type)?.value || "00";
+  return `${pick("year")}-${pick("month")}-${pick("day")}T${pick("hour")}:${pick("minute")}:${pick("second")}`;
+}
+
+function shiftScheduledAt(value, days) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/.exec(String(value || ""));
+  if (!match) return value;
+  const [, y, mo, d, h, mi, s] = match.map(Number);
+  const date = new Date(Date.UTC(y, mo - 1, d + days, h, mi, s));
+  return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}T${pad2(h)}:${pad2(mi)}:${pad2(s)}`;
+}
+
+const URL_PATTERN = /https?:\/\/[^\s]+/gi;
+
+// Length as each platform counts it. X and Mastodon count every link as 23 characters;
+// X also weighs characters outside the Latin/Arabic ranges (emoji, CJK) as 2.
+function channelTextLength(channel, text) {
+  const value = String(text || "");
+  if (channel === "x" || channel === "mastodon") {
+    const withoutUrls = value.replace(URL_PATTERN, "");
+    const urlCount = (value.match(URL_PATTERN) || []).length;
+    if (channel === "mastodon") return [...withoutUrls].length + urlCount * 23;
+    let weighted = 0;
+    for (const char of withoutUrls) {
+      const code = char.codePointAt(0);
+      const light =
+        (code >= 0 && code <= 4351) ||
+        (code >= 8192 && code <= 8205) ||
+        (code >= 8208 && code <= 8223) ||
+        (code >= 8242 && code <= 8247);
+      weighted += light ? 1 : 2;
+    }
+    return weighted + urlCount * 23;
+  }
+  if (channel === "bluesky" && typeof Intl.Segmenter === "function") {
+    return [...new Intl.Segmenter("en", { granularity: "grapheme" }).segment(value)].length;
+  }
+  return [...value].length;
+}
+
+function channelTextNotes(channel, text, media) {
+  const notes = [];
+  if (channel === "telegram" && media && String(text).length > 1024) {
+    notes.push("Telegram captions are cut at 1,024 characters when media is attached.");
+  }
+  if (["instagram", "threads", "devto"].includes(channel) && media && !/^https?:\/\//i.test(media.publicUrl || "")) {
+    notes.push("Needs a public https media URL.");
+  }
+  if (VIDEO_POSTER_CHANNELS.has(channel) && media?.kind === "video") {
+    notes.push(
+      media.posterUrl
+        ? "Video upload is not enabled here yet; the video's cover image is published instead."
+        : "Video upload is not enabled here yet. Add a cover image (poster) or this channel will fail."
+    );
+  }
+  return notes;
+}
+
+// Channels that cannot upload video yet receive the video's poster image instead.
+const VIDEO_POSTER_CHANNELS = new Set(["x", "linkedin"]);
+
+function cleanTags(value) {
+  const list = Array.isArray(value) ? value : String(value || "").split(",");
+  return [...new Set(list.map((tag) => String(tag).trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40)).filter(Boolean))].slice(0, 12);
+}
+
 function publicMediaBase() {
   return String(publicBaseOverride || process.env.PORTAL_PUBLIC_URL || "").replace(/\/$/, "");
 }
@@ -397,7 +511,69 @@ function addActivity(data, type, message, postId = null) {
     message,
     postId,
   });
-  data.activity = data.activity.slice(0, 200);
+  data.activity = data.activity.slice(0, MAX_ACTIVITY);
+}
+
+function defaultTemplates() {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: "tpl-product-proof",
+      name: "Product proof",
+      language: "en",
+      pillar: "product",
+      channels: ["x", "linkedin", "facebook", "instagram"],
+      content: 'Ask your ledger: "How did October compare with September?"\n\nThe assistant answers with the numbers and KPI cards from your own data.\n\nSee it → {{site}}',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: "tpl-ocr-flow",
+      name: "OCR flow",
+      language: "en",
+      pillar: "ai-ocr",
+      channels: ["x", "linkedin", "facebook", "instagram"],
+      content: "Upload a supplier invoice. Preview it. Review the extracted fields. Create the purchase invoice.\n\nOCR invoice capture is built into Fatortak.\n\n{{site}}",
+      createdAt: now,
+      updatedAt: now,
+    },
+  ];
+}
+
+function revisionSnapshot(post) {
+  return {
+    at: post.updatedAt || post.createdAt || new Date().toISOString(),
+    title: post.title,
+    content: post.content,
+    channels: [...(post.channels || [])],
+    language: post.language,
+    pillar: post.pillar,
+    tags: [...(post.tags || [])],
+    scheduledAt: post.scheduledAt,
+    status: post.status,
+    mediaUrl: post.mediaUrl || "",
+    mediaPublicUrl: post.mediaPublicUrl || "",
+    mediaKind: post.mediaKind || "",
+    mediaAlt: post.mediaAlt || "",
+    mediaName: post.mediaName || "",
+    mediaSource: post.mediaSource || "",
+    posterUrl: post.posterUrl || "",
+    posterPublicUrl: post.posterPublicUrl || "",
+    posterName: post.posterName || "",
+    notes: post.notes || "",
+  };
+}
+
+function pushRevision(post) {
+  post.revisions = Array.isArray(post.revisions) ? post.revisions : [];
+  post.revisions.unshift(revisionSnapshot(post));
+  post.revisions = post.revisions.slice(0, MAX_REVISIONS);
+}
+
+// The list endpoints send a light post object; the full revision history is served by GET /api/posts/:id.
+function listPost(post) {
+  const { revisions, ...rest } = post;
+  return { ...rest, revisionCount: Array.isArray(revisions) ? revisions.length : 0 };
 }
 
 function seedQueue(data) {
@@ -425,8 +601,10 @@ function seedQueue(data) {
       status: data.settings.autoApprove ? "scheduled" : "needs_review",
       ...defaultMediaForPillar(item.pillar || "product"),
       utm: item.utm || null,
+      tags: [],
       notes: "",
       results: [],
+      revisions: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       publishedAt: null,
@@ -448,7 +626,25 @@ function ensureDataShape(data) {
     data.metrics[key] = { ...defaultMetrics()[key], ...(data.metrics[key] || {}) };
   }
   data.activity = Array.isArray(data.activity) ? data.activity : [];
+  data.templates = Array.isArray(data.templates) ? data.templates : defaultTemplates();
+  if (!isValidTimezone(data.settings.timezone)) data.settings.timezone = "Africa/Cairo";
   for (const post of data.posts) {
+    post.tags = cleanTags(post.tags);
+    // A post left in "publishing" means the process stopped mid-publish. Do not re-publish it
+    // automatically (some channels may already have it); flag it for a human to check.
+    if (post.status === "publishing") {
+      post.status = "failed";
+      post.results = (Array.isArray(post.results) ? post.results : []).concat({
+        ok: false,
+        error: "Publishing was interrupted by a restart. Check each channel before retrying.",
+      });
+      data.activity.unshift({
+        at: new Date().toISOString(),
+        type: "failed",
+        message: `Publishing of “${post.title}” was interrupted; marked failed for review.`,
+        postId: post.id,
+      });
+    }
     if (!post.mediaUrl) {
       Object.assign(post, defaultMediaForPillar(post.pillar || "product"));
     }
@@ -727,6 +923,28 @@ async function getSiteLive(force = false) {
   return false;
 }
 
+// Dashboard reads should never wait on a slow remote check once we have an answer.
+// Serve the cached value and refresh it in the background when it is stale.
+let siteRefresh = null;
+let trafficRefresh = null;
+
+async function siteLiveForView() {
+  if (!siteLiveCache.at) return getSiteLive();
+  const maxAge = siteLiveCache.value ? 5 * 60_000 : 60_000;
+  if (Date.now() - siteLiveCache.at > maxAge && !siteRefresh) {
+    siteRefresh = getSiteLive(true).catch(() => false).finally(() => (siteRefresh = null));
+  }
+  return siteLiveCache.value;
+}
+
+async function trafficForView() {
+  if (!trafficCache.value) return getTraffic();
+  if (Date.now() - trafficCache.at > 5 * 60_000 && !trafficRefresh) {
+    trafficRefresh = getTraffic(true).catch(() => null).finally(() => (trafficRefresh = null));
+  }
+  return trafficCache.value;
+}
+
 function channelSummary() {
   return CHANNEL_DEFS.map((def) => {
     const info = channelInfo(def.key);
@@ -745,15 +963,23 @@ function postSummary() {
     if (!post.publishedAt) return false;
     return now - new Date(post.publishedAt) <= 30 * 86_400_000;
   }).length;
-  const upcoming = DATA.posts
-    .filter((post) => ["scheduled", "approved"].includes(post.status))
-    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
-    .slice(0, 8);
+  const wallNow = nowInTimezone(DATA.settings.timezone || "Africa/Cairo");
+  const scheduled = DATA.posts.filter((post) => post.status === "scheduled");
+  const upcoming = scheduled
+    .filter((post) => String(post.scheduledAt) >= wallNow)
+    .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))
+    .slice(0, 8)
+    .map(listPost);
+  const today = wallNow.slice(0, 10);
   return {
     total: DATA.posts.length,
     counts,
     needsReview: counts.needs_review || 0,
-    scheduled: (counts.scheduled || 0) + (counts.approved || 0),
+    drafts: counts.draft || 0,
+    approved: counts.approved || 0,
+    scheduled: scheduled.length,
+    overdue: scheduled.filter((post) => String(post.scheduledAt) < wallNow).length,
+    today: scheduled.filter((post) => String(post.scheduledAt).startsWith(today)).length,
     published: counts.published || 0,
     published30,
     failed: counts.failed || 0,
@@ -765,10 +991,10 @@ function postSummary() {
 
 function queueSnapshot() {
   const now = nowInTimezone(DATA.settings.timezone || "Africa/Cairo");
-  const scheduled = DATA.posts.filter((post) => ["scheduled", "approved"].includes(post.status));
+  const scheduled = DATA.posts.filter((post) => post.status === "scheduled");
   const posted = DATA.posts.filter((post) => post.status === "published").length;
   const next = scheduled
-    .slice()
+    .filter((post) => String(post.scheduledAt) >= now)
     .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))[0];
   return {
     total: DATA.posts.length,
@@ -893,7 +1119,9 @@ async function getTraffic(force = false) {
     trafficCache = { at: Date.now(), value };
     return value;
   } catch (error) {
-    return { configured: true, error: error.message };
+    const value = { configured: true, provider: "plausible", error: error.message };
+    trafficCache = { at: Date.now(), value };
+    return value;
   }
 }
 
@@ -1255,49 +1483,95 @@ async function syncMetrics() {
 }
 
 function validatePostInput(body, existing = null) {
-  const channels = Array.isArray(body.channels) ? body.channels : existing?.channels || [];
+  const channels = [...new Set(Array.isArray(body.channels) ? body.channels.map(String) : existing?.channels || [])];
   const known = new Set(CHANNEL_DEFS.map((channel) => channel.key));
   const invalid = channels.filter((channel) => !known.has(channel));
   if (invalid.length) throw new Error(`Unknown channels: ${invalid.join(", ")}`);
-  if (!body.content && !existing?.content) throw new Error("Post content is required");
+  const content = String(body.content ?? existing?.content ?? "");
+  if (!content.trim()) throw new Error("Post content is required");
   if (!channels.length) throw new Error("Select at least one channel");
-  const statuses = ["draft", "needs_review", "approved", "scheduled", "published", "failed", "blocked", "dry_run", "publishing"];
   const status = body.status || existing?.status || "draft";
-  if (!statuses.includes(status)) throw new Error("Invalid status");
-  const scheduledAt = body.scheduledAt || existing?.scheduledAt;
-  if (scheduledAt && Number.isNaN(new Date(scheduledAt).getTime())) throw new Error("Invalid scheduledAt");
+  if (!POST_STATUSES.includes(status)) throw new Error("Invalid status");
+  const timeZone = DATA.settings.timezone || "Africa/Cairo";
+  const rawSchedule = body.scheduledAt ?? existing?.scheduledAt;
+  const scheduledAt = rawSchedule ? normalizeScheduledAt(rawSchedule, timeZone) : wallClock(new Date(), timeZone);
+  if (scheduledAt === null) throw new Error("Invalid schedule date");
 
-  const mediaUrl = String(body.mediaUrl ?? existing?.mediaUrl ?? "").trim();
-  const mediaPublicUrl = String(body.mediaPublicUrl ?? existing?.mediaPublicUrl ?? "").trim();
-  const mediaKind = body.mediaKind === "video" || existing?.mediaKind === "video" ? "video" : mediaUrl ? "image" : "";
-  const mediaAlt = String(body.mediaAlt ?? existing?.mediaAlt ?? "").slice(0, 1000);
-  const mediaName = String(body.mediaName ?? existing?.mediaName ?? "").slice(0, 200);
-  const mediaSource = String(body.mediaSource ?? existing?.mediaSource ?? "").slice(0, 200);
-  if (mediaUrl && !/^(https?:\/\/|\/media\/)/i.test(mediaUrl)) throw new Error("Media URL must be an https URL or a portal /media path");
-  if (DATA.settings.mediaRequired && !mediaUrl && ["scheduled", "approved", "published"].includes(status)) {
+  const pick = (key) => String(body[key] ?? existing?.[key] ?? "").trim();
+  const mediaUrl = pick("mediaUrl");
+  // The public URL is only a hint for channels that fetch media remotely. Without a public
+  // media host it can be a relative portal path; keep absolute URLs and drop the rest.
+  const rawPublicUrl = pick("mediaPublicUrl");
+  const mediaPublicUrl = /^https?:\/\//i.test(rawPublicUrl) ? rawPublicUrl : "";
+  const mediaName = pick("mediaName").slice(0, 200);
+  const requestedKind = body.mediaKind ?? existing?.mediaKind;
+  const mediaKind = !mediaUrl
+    ? ""
+    : requestedKind === "video" || requestedKind === "image"
+      ? requestedKind
+      : mediaTypeFromName(mediaName || mediaUrl, "image");
+  const portalMediaPath = mediaUrl.startsWith("/media/") || (PUBLIC_BASE && mediaUrl.startsWith(`${PUBLIC_BASE}/media/`));
+  if (mediaUrl && !/^https?:\/\//i.test(mediaUrl) && !portalMediaPath) {
+    throw new Error("Media URL must be an https URL or a portal /media path");
+  }
+  if (DATA.settings.mediaRequired && !mediaUrl && MEDIA_REQUIRED_STATUSES.includes(status)) {
     throw new Error("Attach an image or video before scheduling or publishing. Text-only posts are disabled.");
   }
 
   return {
-    title: String(body.title || existing?.title || "Untitled post").slice(0, 140),
-    content: String(body.content || existing?.content || ""),
+    title: (String(body.title ?? existing?.title ?? "").trim() || content.trim().split("\n")[0] || "Untitled post").slice(0, 140),
+    content,
     channels,
-    language: body.language === "ar" ? "ar" : body.language === "en" ? "en" : existing?.language || "en",
+    language: body.language === "ar" || body.language === "en" ? body.language : existing?.language || "en",
     pillar: String(body.pillar || existing?.pillar || "product").slice(0, 40),
-    scheduledAt: scheduledAt || new Date().toISOString().slice(0, 16),
+    tags: cleanTags(body.tags ?? existing?.tags ?? []),
+    scheduledAt,
     status,
-    mediaUrl,
-    mediaPublicUrl,
+    mediaUrl: mediaUrl.slice(0, 2000),
+    mediaPublicUrl: mediaPublicUrl.slice(0, 2000),
     mediaKind,
-    mediaAlt,
+    mediaAlt: pick("mediaAlt").slice(0, 1000),
     mediaName,
-    mediaSource,
-    posterUrl: String(body.posterUrl ?? existing?.posterUrl ?? "").slice(0, 500),
-    posterPublicUrl: String(body.posterPublicUrl ?? existing?.posterPublicUrl ?? "").slice(0, 500),
-    posterName: String(body.posterName ?? existing?.posterName ?? "").slice(0, 200),
-    notes: String(body.notes || existing?.notes || ""),
+    mediaSource: pick("mediaSource").slice(0, 200),
+    // Video cover image. Clearing posterUrl (or switching to non-video media) clears the rest.
+    ...(() => {
+      const posterUrl = mediaKind === "video" ? pick("posterUrl").slice(0, 500) : "";
+      return {
+        posterUrl,
+        posterPublicUrl: posterUrl ? pick("posterPublicUrl").slice(0, 500) : "",
+        posterName: posterUrl ? pick("posterName").slice(0, 200) : "",
+      };
+    })(),
+    notes: String(body.notes ?? existing?.notes ?? "").slice(0, 4000),
     utm: body.utm || existing?.utm || null,
   };
+}
+
+function renderForChannel(post, channel) {
+  return renderText(String(post.content || ""), {
+    channel,
+    links: CONFIG.links,
+    utm: { ...(post.utm || {}), content: post.id || "preview" },
+  });
+}
+
+function previewPost(post, media = null) {
+  return (post.channels || []).map((channel) => {
+    const text = renderForChannel(post, channel);
+    const limit = LIMITS[channel] || 0;
+    const length = channelTextLength(channel, text);
+    return {
+      channel,
+      label: CHANNEL_DEFS.find((def) => def.key === channel)?.label || channel,
+      text,
+      length,
+      limit,
+      over: Boolean(limit && length > limit),
+      mode: MONITORING.has(channel) ? "monitoring" : channelMode(channel),
+      configured: connectionState(channel).configured,
+      notes: channelTextNotes(channel, text, media),
+    };
+  });
 }
 
 async function resolvePostMedia(post) {
@@ -1324,8 +1598,6 @@ async function resolvePostMedia(post) {
   };
 }
 
-const VIDEO_POSTER_CHANNELS = new Set(["x", "linkedin"]);
-
 async function publishPost(post, { dryRun = true, automatic = false, channels: requestedChannels = null } = {}) {
   CONFIG = loadConfig();
   const validChannels = post.channels.filter((channel) => CHANNEL_DEFS.some((def) => def.key === channel));
@@ -1346,22 +1618,27 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
         mediaAlt: post.mediaAlt,
       })
     : null;
-  if (DATA.settings.mediaRequired && !media) {
+  const block = (reason, message) => {
+    const results = [{ ok: false, blocked: true, reason }];
+    if (dryRun) {
+      // A dry run only reports; it never changes the post's place in the schedule.
+      post.preview = { at: new Date().toISOString(), blocked: true, results };
+      saveData();
+      return { blocked: true, dryRun: true, results };
+    }
     post.status = "blocked";
-    post.results = [{ ok: false, blocked: true, reason: "Text-only posts are disabled. Attach an image or video before publishing." }];
+    post.results = results;
     post.lastAttemptAt = new Date().toISOString();
-    addActivity(DATA, "blocked", `Blocked “${post.title}”: no image or video attached.`, post.id);
+    addActivity(DATA, "blocked", message, post.id);
     saveData();
-    return { blocked: true, results: post.results };
+    return { blocked: true, results };
+  };
+  if (DATA.settings.mediaRequired && !media) {
+    return block("Text-only posts are disabled. Attach an image or video before publishing.", `Blocked “${post.title}”: no image or video attached.`);
   }
   const needsSite = post.content.includes("{{site}}") || post.content.includes(CONFIG.links.site);
   if (needsSite && DATA.settings.requireLiveSite && !(await getSiteLive())) {
-    post.status = "blocked";
-    post.results = [{ ok: false, blocked: true, reason: "Landing page is not live. Deploy it before publishing this post." }];
-    post.lastAttemptAt = new Date().toISOString();
-    addActivity(DATA, "blocked", `Blocked “${post.title}”: landing page is not live.`, post.id);
-    saveData();
-    return { blocked: true, results: post.results };
+    return block("Landing page is not live. Deploy it before publishing this post.", `Blocked “${post.title}”: landing page is not live.`);
   }
 
   const results = [];
@@ -1379,14 +1656,11 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
   }
   const mediaOnSite = Boolean(siteHost && mediaHost && siteHost === mediaHost);
   for (const channel of channels) {
-    const rendered = renderText(post.content, {
-      channel,
-      links: CONFIG.links,
-      utm: { ...(post.utm || {}), content: post.id },
-    });
+    const rendered = renderForChannel(post, channel);
     const limit = LIMITS[channel];
-    if (limit && rendered.length > limit) {
-      results.push({ channel, ok: false, skipped: true, reason: `Text is ${rendered.length} chars; ${channel} allows ${limit}.` });
+    const length = channelTextLength(channel, rendered);
+    if (limit && length > limit) {
+      results.push({ channel, ok: false, skipped: true, reason: `Text is ${length} characters; ${channel} allows ${limit}.` });
       continue;
     }
     if (mediaOnSite && ["instagram", "threads", "devto"].includes(channel) && DATA.settings.requireLiveSite && !(await getSiteLive())) {
@@ -1415,11 +1689,23 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
         continue;
       }
     }
-    const channelMedia = media?.kind === "video" && poster && VIDEO_POSTER_CHANNELS.has(channel)
-      ? poster
-      : media;
+    const channelMedia = media?.kind === "video" && poster && VIDEO_POSTER_CHANNELS.has(channel) ? poster : media;
     if (dryRun) {
-      results.push({ channel, ok: true, dryRun: true, media: channelMedia?.kind || null });
+      const state = connectionState(channel);
+      results.push({
+        channel,
+        ok: true,
+        dryRun: true,
+        media: channelMedia?.kind || null,
+        ...(channelMedia !== media ? { mediaNote: "Would publish the video cover image." } : {}),
+        length,
+        ready: state.configured,
+        reason: state.configured
+          ? "Would publish."
+          : state.mode === "restricted"
+            ? "Would skip: channel is blocked or monitoring-only."
+            : `Would skip: needs ${state.env.join(", ") || "credentials"}.`,
+      });
       continue;
     }
     let result;
@@ -1434,7 +1720,15 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
     results.push({ channel, ...result });
   }
 
-  const previous = Array.isArray(post.results) ? post.results : [];
+  if (dryRun) {
+    post.preview = { at: new Date().toISOString(), results };
+    addActivity(DATA, "dry_run", `Dry run “${post.title}” across ${channels.length} channel${channels.length === 1 ? "" : "s"}.`, post.id);
+    saveData();
+    const issues = results.filter((result) => !result.ok);
+    return { results, published: 0, failures: issues.filter((r) => !r.skipped).length, skipped: issues.filter((r) => r.skipped).length, dryRun, channels };
+  }
+
+  const previous = Array.isArray(post.results) ? post.results.filter((result) => result.channel) : [];
   const merged = subset
     ? previous.filter((result) => !channels.includes(result.channel)).concat(results)
     : results;
@@ -1444,10 +1738,7 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
   const ok = merged.filter((result) => result.ok && !result.dryRun).length;
   const failures = merged.filter((result) => !result.ok && !result.skipped);
   const skipped = merged.filter((result) => result.skipped);
-  if (dryRun) {
-    post.status = "dry_run";
-    addActivity(DATA, "dry_run", `Dry run “${post.title}” across ${channels.length} channel${channels.length === 1 ? "" : "s"}.`, post.id);
-  } else if (ok > 0) {
+  if (ok > 0) {
     post.status = "published";
     if (!post.publishedAt) post.publishedAt = new Date().toISOString();
     addActivity(
@@ -1492,7 +1783,7 @@ function calendar(month) {
     if (!month) return true;
     return (post.scheduledAt || "").startsWith(month);
   });
-  return { month, posts };
+  return { month, posts: posts.map(listPost) };
 }
 
 function reportsSummary() {
@@ -1556,25 +1847,188 @@ function readLatestReport() {
 }
 
 function csvEscape(value) {
-  const text = String(value ?? "");
+  let text = String(value ?? "");
+  // Stop spreadsheet apps from evaluating cell text as a formula.
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-function exportCsv() {
+function resultSummary(results, predicate) {
+  return (results || []).filter((result) => result.channel && predicate(result)).map((result) => result.channel).join("|");
+}
+
+function exportCsv(posts = DATA.posts) {
   const rows = [
-    ["id", "title", "channels", "language", "status", "scheduledAt", "publishedAt", "results"],
-    ...DATA.posts.map((post) => [
+    ["id", "title", "status", "language", "pillar", "tags", "channels", "scheduledAt", "publishedAt", "published", "failed", "skipped", "media", "content"],
+    ...posts.map((post) => [
       post.id,
       post.title,
-      (post.channels || []).join("|"),
-      post.language,
       post.status,
+      post.language,
+      post.pillar,
+      (post.tags || []).join("|"),
+      (post.channels || []).join("|"),
       post.scheduledAt,
       post.publishedAt || "",
-      JSON.stringify(post.results || []),
+      resultSummary(post.results, (result) => result.ok && !result.dryRun),
+      resultSummary(post.results, (result) => !result.ok && !result.skipped),
+      resultSummary(post.results, (result) => result.skipped),
+      post.mediaName || post.mediaUrl || "",
+      post.content,
     ]),
   ];
-  return rows.map((row) => row.map(csvEscape).join(",")).join("\r\n");
+  return `﻿${rows.map((row) => row.map(csvEscape).join(",")).join("\r\n")}`;
+}
+
+function filterPosts(params) {
+  const status = params.get("status");
+  const channel = params.get("channel");
+  const lang = params.get("lang");
+  const tag = params.get("tag");
+  const pillar = params.get("pillar");
+  const q = (params.get("q") || "").toLowerCase();
+  let posts = [...DATA.posts];
+  if (status) posts = posts.filter((post) => post.status === status);
+  if (channel) posts = posts.filter((post) => (post.channels || []).includes(channel));
+  if (lang) posts = posts.filter((post) => post.language === lang);
+  if (tag) posts = posts.filter((post) => (post.tags || []).includes(tag));
+  if (pillar) posts = posts.filter((post) => post.pillar === pillar);
+  if (q) posts = posts.filter((post) => `${post.title} ${post.content} ${(post.tags || []).join(" ")} ${post.notes || ""}`.toLowerCase().includes(q));
+  return posts.sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)));
+}
+
+function mediaUsage() {
+  const usage = {};
+  for (const post of DATA.posts) {
+    const url = String(post.mediaUrl || "");
+    const match = /\/media\/(?!landing\/)([^/?#]+)$/.exec(url);
+    const key = match ? decodeURIComponentSafe(match[1]) : url.includes("/media/landing/") ? `landing:${path.basename(url)}` : "";
+    if (!key) continue;
+    usage[key] = usage[key] || { total: 0, pending: 0 };
+    usage[key].total += 1;
+    if (["scheduled", "approved", "needs_review", "draft", "publishing"].includes(post.status)) usage[key].pending += 1;
+  }
+  return usage;
+}
+
+function decodeURIComponentSafe(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function libraryPayload() {
+  const usage = mediaUsage();
+  return MEDIA_LIBRARY.map((item) => ({
+    ...item,
+    url: `${PUBLIC_BASE}/media/landing/${item.file}`,
+    publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file.replace(/\.png$/i, ".jpg")}` : "",
+    usage: usage[`landing:${item.file}`] || { total: 0, pending: 0 },
+  }));
+}
+
+function meta() {
+  return {
+    statuses: POST_STATUSES,
+    pillars: PILLARS,
+    limits: LIMITS,
+    placeholders: Object.keys(CONFIG.links || {}).filter((key) => /^https?:|^mailto:/i.test(String(CONFIG.links[key] || ""))),
+    timezone: DATA.settings.timezone,
+    now: nowInTimezone(DATA.settings.timezone),
+    tags: [...new Set(DATA.posts.flatMap((post) => post.tags || []))].sort(),
+  };
+}
+
+function applyBulk(action, ids, value) {
+  const targets = DATA.posts.filter((post) => ids.includes(post.id));
+  const skipped = [];
+  let updated = 0;
+  const created = [];
+  const known = new Set(CHANNEL_DEFS.map((channel) => channel.key));
+  // Validate once up front so a bad value never leaves the selection half-applied.
+  if (!["delete", "duplicate", "status", "shift", "addChannel", "removeChannel", "addTag", "removeTag"].includes(action)) {
+    throw new Error("Unknown bulk action");
+  }
+  if (action === "status" && !POST_STATUSES.includes(value)) throw new Error("Invalid status");
+  if (action === "shift" && (!Number.isInteger(Number(value)) || Number(value) === 0 || Math.abs(Number(value)) > 365)) {
+    throw new Error("Shift must be a whole number of days between -365 and 365.");
+  }
+  if ((action === "addChannel" || action === "removeChannel") && !known.has(value)) throw new Error("Unknown channel");
+  if ((action === "addTag" || action === "removeTag") && !cleanTags([value]).length) throw new Error("Enter a tag");
+  for (const post of targets) {
+    if (post.status === "publishing") {
+      skipped.push({ id: post.id, reason: "Currently publishing." });
+      continue;
+    }
+    if (action === "delete") {
+      DATA.posts = DATA.posts.filter((item) => item !== post);
+      updated += 1;
+      continue;
+    }
+    if (action === "duplicate") {
+      const copy = duplicatePost(post);
+      DATA.posts.push(copy);
+      created.push(copy.id);
+      updated += 1;
+      continue;
+    }
+    pushRevision(post);
+    if (action === "status") {
+      if (!POST_STATUSES.includes(value)) throw new Error("Invalid status");
+      if (DATA.settings.mediaRequired && MEDIA_REQUIRED_STATUSES.includes(value) && !post.mediaUrl) {
+        post.revisions.shift();
+        skipped.push({ id: post.id, reason: "No image or video attached." });
+        continue;
+      }
+      post.status = value;
+      if (value === "published" && !post.publishedAt) post.publishedAt = new Date().toISOString();
+    } else if (action === "shift") {
+      const days = Number(value);
+      if (!Number.isInteger(days) || Math.abs(days) > 365) throw new Error("Shift must be a whole number of days (±365).");
+      post.scheduledAt = shiftScheduledAt(post.scheduledAt, days);
+    } else if (action === "addChannel" || action === "removeChannel") {
+      if (!known.has(value)) throw new Error("Unknown channel");
+      const next = action === "addChannel"
+        ? [...new Set([...(post.channels || []), value])]
+        : (post.channels || []).filter((channel) => channel !== value);
+      if (!next.length) {
+        post.revisions.shift();
+        skipped.push({ id: post.id, reason: "A post needs at least one channel." });
+        continue;
+      }
+      post.channels = next;
+    } else if (action === "addTag" || action === "removeTag") {
+      const [tag] = cleanTags([value]);
+      if (!tag) throw new Error("Enter a tag");
+      post.tags = action === "addTag" ? cleanTags([...(post.tags || []), tag]) : (post.tags || []).filter((item) => item !== tag);
+    } else {
+      throw new Error("Unknown bulk action");
+    }
+    post.updatedAt = new Date().toISOString();
+    updated += 1;
+  }
+  return { updated, skipped, created };
+}
+
+function duplicatePost(post) {
+  const now = new Date().toISOString();
+  const { revisions, preview, ...rest } = post;
+  return {
+    ...rest,
+    id: `portal-${Date.now()}-${randomUUID().slice(0, 6)}`,
+    source: "portal",
+    queueId: null,
+    title: `${post.title} (copy)`.slice(0, 140),
+    status: "draft",
+    results: [],
+    revisions: [],
+    createdAt: now,
+    updatedAt: now,
+    publishedAt: null,
+    lastAttemptAt: null,
+  };
 }
 
 function serveStatic(req, res, pathname) {
@@ -1611,7 +2065,10 @@ function serveStatic(req, res, pathname) {
 }
 
 async function handleApi(req, res, url) {
-  const method = req.method || "GET";
+  // The production PHP proxy tunnels PUT/DELETE through POST (IIS blocks them) and restores the
+  // method itself; honor the same header here so direct requests behave identically.
+  const override = String(req.headers["x-portal-method"] || "").toUpperCase();
+  const method = req.method === "POST" && ["PUT", "PATCH", "DELETE"].includes(override) ? override : req.method || "GET";
   const pathname = url.pathname;
 
   if (pathname === "/api/health") {
@@ -1636,21 +2093,98 @@ async function handleApi(req, res, url) {
   if (!isAuthorized(req, url)) return json(res, 401, { error: "Unauthorized. Set the portal token." });
 
   if (method === "GET" && pathname === "/api/media/library") {
-    return json(res, 200, {
-      library: MEDIA_LIBRARY.map((item) => ({
-        ...item,
-        url: `${PUBLIC_BASE}/media/landing/${item.file}`,
-        publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file.replace(/\.png$/i, ".jpg")}` : "",
-      })),
-    });
+    return json(res, 200, { library: libraryPayload() });
   }
 
   if (method === "GET" && pathname === "/api/media") {
-    return json(res, 200, { media: listUploadedMedia(), library: MEDIA_LIBRARY.map((item) => ({
-      ...item,
-      url: `${PUBLIC_BASE}/media/landing/${item.file}`,
-      publicUrl: siteBase() ? `${siteBase()}/assets/screenshots/${item.file.replace(/\.png$/i, ".jpg")}` : "",
-    })) });
+    const usage = mediaUsage();
+    const media = listUploadedMedia().map((item) => ({ ...item, usage: usage[item.id] || { total: 0, pending: 0 } }));
+    return json(res, 200, { media, library: libraryPayload() });
+  }
+
+  if (method === "GET" && pathname === "/api/meta") {
+    return json(res, 200, meta());
+  }
+
+  if (method === "POST" && pathname === "/api/preview") {
+    try {
+      const body = await readBody(req);
+      const existing = body.id ? DATA.posts.find((item) => item.id === body.id) : null;
+      const known = new Set(CHANNEL_DEFS.map((channel) => channel.key));
+      const draft = {
+        id: existing?.id || "preview",
+        content: String(body.content ?? existing?.content ?? ""),
+        channels: (Array.isArray(body.channels) ? body.channels : existing?.channels || []).filter((key) => known.has(key)),
+        utm: existing?.utm || null,
+      };
+      const mediaUrl = body.mediaUrl ?? existing?.mediaUrl;
+      const media = mediaUrl
+        ? {
+            kind: (body.mediaKind ?? existing?.mediaKind) === "video" ? "video" : "image",
+            publicUrl: String(body.mediaPublicUrl ?? existing?.mediaPublicUrl ?? "") || (/^https?:/i.test(mediaUrl) ? mediaUrl : ""),
+            posterUrl: String(body.posterUrl ?? existing?.posterUrl ?? ""),
+          }
+        : null;
+      return json(res, 200, { channels: previewPost(draft, media) });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
+  }
+
+  if (method === "GET" && pathname === "/api/activity") {
+    const type = url.searchParams.get("type");
+    const q = (url.searchParams.get("q") || "").toLowerCase();
+    const postId = url.searchParams.get("postId");
+    const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit")) || 50));
+    const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+    let items = DATA.activity;
+    if (type) items = items.filter((item) => item.type === type);
+    if (postId) items = items.filter((item) => item.postId === postId);
+    if (q) items = items.filter((item) => String(item.message).toLowerCase().includes(q));
+    const types = [...new Set(DATA.activity.map((item) => item.type))].sort();
+    return json(res, 200, { items: items.slice(offset, offset + limit), total: items.length, offset, limit, types });
+  }
+
+  if (pathname === "/api/templates" || pathname.startsWith("/api/templates/")) {
+    const id = pathname === "/api/templates" ? "" : decodeURIComponentSafe(pathname.slice("/api/templates/".length));
+    const index = id ? DATA.templates.findIndex((item) => item.id === id) : -1;
+    if (id && index < 0) return json(res, 404, { error: "Template not found" });
+    try {
+      if (method === "GET" && !id) return json(res, 200, { templates: DATA.templates });
+      if ((method === "POST" && !id) || (method === "PUT" && id)) {
+        const body = await readBody(req);
+        const current = id ? DATA.templates[index] : null;
+        const name = String(body.name ?? current?.name ?? "").trim().slice(0, 80);
+        const content = String(body.content ?? current?.content ?? "");
+        if (!name) throw new Error("Template name is required");
+        if (!content.trim()) throw new Error("Template content is required");
+        const known = new Set(CHANNEL_DEFS.map((channel) => channel.key));
+        const template = {
+          id: current?.id || `tpl-${Date.now()}-${randomUUID().slice(0, 6)}`,
+          name,
+          content,
+          language: body.language === "ar" ? "ar" : body.language === "en" ? "en" : current?.language || "en",
+          pillar: String(body.pillar || current?.pillar || "product").slice(0, 40),
+          channels: (Array.isArray(body.channels) ? body.channels : current?.channels || []).filter((key) => known.has(key)),
+          createdAt: current?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        if (current) DATA.templates[index] = template;
+        else DATA.templates.unshift(template);
+        addActivity(DATA, "template", `${current ? "Updated" : "Created"} template “${template.name}”.`);
+        saveData();
+        return json(res, current ? 200 : 201, { template });
+      }
+      if (method === "DELETE" && id) {
+        const [removed] = DATA.templates.splice(index, 1);
+        addActivity(DATA, "template", `Deleted template “${removed.name}”.`);
+        saveData();
+        return json(res, 200, { ok: true });
+      }
+      return json(res, 405, { error: "Method not allowed" });
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
   }
 
   if (method === "POST" && pathname === "/api/media") {
@@ -1666,9 +2200,12 @@ async function handleApi(req, res, url) {
       const headerType = String(req.headers["content-type"] || "");
       const kind = mediaTypeFromName(original, headerType.startsWith("video/") ? "video" : headerType.startsWith("image/") ? "image" : "");
       if (!kind) return json(res, 400, { error: "Only image and video files are allowed." });
+      const ext = path.extname(original).toLowerCase() || (kind === "video" ? ".mp4" : ".png");
+      if (!ALLOWED_MEDIA_EXT.has(ext)) {
+        return json(res, 400, { error: `Unsupported file type ${ext}. Use PNG, JPG, WebP, GIF, AVIF, MP4, MOV, WebM or M4V.` });
+      }
       const buffer = await readBinary(req);
       if (!buffer.length) return json(res, 400, { error: "The uploaded file is empty." });
-      const ext = path.extname(original).toLowerCase() || (kind === "video" ? ".mp4" : ".png");
       const base = path.basename(original, path.extname(original)).replace(/[^\w\- ]+/g, "_").slice(0, 60) || "upload";
       const filename = `${Date.now()}-${randomUUID().slice(0, 6)}-${base}${ext}`;
       const file = path.join(MEDIA_DIR, filename);
@@ -1695,6 +2232,13 @@ async function handleApi(req, res, url) {
     const id = path.basename(decodeURIComponent(mediaMatch[1]));
     const file = path.join(MEDIA_DIR, id);
     if (!fs.existsSync(file)) return json(res, 404, { error: "Media not found" });
+    const usage = mediaUsage()[id];
+    if (usage?.pending && url.searchParams.get("force") !== "1") {
+      return json(res, 409, {
+        error: `${usage.pending} unpublished post${usage.pending === 1 ? " uses" : "s use"} this file. Replace it there first.`,
+        usage,
+      });
+    }
     fs.unlinkSync(file);
     addActivity(DATA, "media", `Deleted media ${id}.`);
     saveData();
@@ -1742,8 +2286,7 @@ async function handleApi(req, res, url) {
   }
 
   if (method === "GET" && pathname === "/api/overview") {
-    const traffic = await getTraffic();
-    const siteLive = await getSiteLive();
+    const [traffic, siteLive] = await Promise.all([trafficForView(), siteLiveForView()]);
     const payload = overview();
     payload.traffic = traffic;
     payload.siteLive = siteLive;
@@ -1751,17 +2294,33 @@ async function handleApi(req, res, url) {
   }
 
   if (method === "GET" && pathname === "/api/posts") {
-    const status = url.searchParams.get("status");
-    const channel = url.searchParams.get("channel");
-    const lang = url.searchParams.get("lang");
-    const q = (url.searchParams.get("q") || "").toLowerCase();
-    let posts = [...DATA.posts];
-    if (status) posts = posts.filter((post) => post.status === status);
-    if (channel) posts = posts.filter((post) => (post.channels || []).includes(channel));
-    if (lang) posts = posts.filter((post) => post.language === lang);
-    if (q) posts = posts.filter((post) => `${post.title} ${post.content}`.toLowerCase().includes(q));
-    posts.sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
-    return json(res, 200, { posts });
+    return json(res, 200, { posts: filterPosts(url.searchParams).map(listPost) });
+  }
+
+  if (method === "POST" && pathname === "/api/posts/bulk") {
+    try {
+      const body = await readBody(req);
+      const ids = Array.isArray(body.ids) ? body.ids.map(String).slice(0, 2000) : [];
+      if (!ids.length) throw new Error("Select at least one post");
+      const result = applyBulk(String(body.action || ""), ids, body.value);
+      const labels = {
+        delete: "Deleted",
+        duplicate: "Duplicated",
+        status: `Set status ${String(body.value).replace(/_/g, " ")} on`,
+        shift: `Moved ${Number(body.value) > 0 ? "+" : ""}${body.value} day(s):`,
+        addChannel: `Added ${body.value} to`,
+        removeChannel: `Removed ${body.value} from`,
+        addTag: `Tagged #${body.value}:`,
+        removeTag: `Untagged #${body.value}:`,
+      };
+      if (result.updated) {
+        addActivity(DATA, "bulk", `${labels[body.action] || "Updated"} ${result.updated} post${result.updated === 1 ? "" : "s"}${result.skipped.length ? ` (${result.skipped.length} skipped)` : ""}.`);
+        saveData();
+      }
+      return json(res, 200, result);
+    } catch (error) {
+      return json(res, 400, { error: error.message });
+    }
   }
 
   if (method === "POST" && pathname === "/api/posts") {
@@ -1775,6 +2334,7 @@ async function handleApi(req, res, url) {
         queueId: null,
         ...input,
         results: [],
+        revisions: [],
         createdAt: now,
         updatedAt: now,
         publishedAt: null,
@@ -1783,24 +2343,55 @@ async function handleApi(req, res, url) {
       DATA.posts.push(post);
       addActivity(DATA, "created", `Created “${post.title}”.`, post.id);
       saveData();
-      return json(res, 201, { post });
+      return json(res, 201, { post: listPost(post) });
     } catch (error) {
       return json(res, 400, { error: error.message });
     }
   }
 
-  const postMatch = pathname.match(/^\/api\/posts\/([^/]+)(?:\/(publish|status|duplicate))?$/);
+  const postMatch = pathname.match(/^\/api\/posts\/([^/]+)(?:\/(publish|status|duplicate|restore))?$/);
   if (postMatch) {
-    const id = decodeURIComponent(postMatch[1]);
+    const id = decodeURIComponentSafe(postMatch[1]);
     const action = postMatch[2];
     const post = DATA.posts.find((item) => item.id === id);
     if (!post) return json(res, 404, { error: "Post not found" });
+    const busy = post.status === "publishing" && method !== "GET";
+    if (busy) return json(res, 409, { error: "This post is publishing right now. Try again in a moment." });
+
+    if (method === "GET" && !action) {
+      const media = await resolvePostMedia(post);
+      return json(res, 200, { post, preview: previewPost(post, media ? { ...media, posterUrl: post.posterUrl || "" } : null) });
+    }
 
     if (method === "PUT" && !action) {
       try {
         const body = await readBody(req);
-        Object.assign(post, validatePostInput(body, post), { updatedAt: new Date().toISOString() });
+        if (body.updatedAt && post.updatedAt && body.updatedAt !== post.updatedAt) {
+          return json(res, 409, { error: "This post was changed elsewhere since you opened it. Reload it to see the latest version.", post: listPost(post) });
+        }
+        const input = validatePostInput(body, post);
+        pushRevision(post);
+        Object.assign(post, input, { updatedAt: new Date().toISOString() });
         addActivity(DATA, "updated", `Updated “${post.title}”.`, post.id);
+        saveData();
+        return json(res, 200, { post: listPost(post) });
+      } catch (error) {
+        return json(res, 400, { error: error.message });
+      }
+    }
+
+    if (method === "POST" && action === "restore") {
+      try {
+        const body = await readBody(req);
+        const revisions = Array.isArray(post.revisions) ? post.revisions : [];
+        const revision = revisions[Number(body.index)];
+        if (!revision) throw new Error("Revision not found");
+        const { at, ...fields } = revision;
+        // Restore the content; keep the current status unless the old one is still valid without media.
+        const input = validatePostInput({ ...fields, status: post.status }, post);
+        pushRevision(post);
+        Object.assign(post, input, { updatedAt: new Date().toISOString() });
+        addActivity(DATA, "updated", `Restored “${post.title}” to the version from ${String(at).slice(0, 16).replace("T", " ")}.`, post.id);
         saveData();
         return json(res, 200, { post });
       } catch (error) {
@@ -1818,38 +2409,28 @@ async function handleApi(req, res, url) {
     if (method === "POST" && action === "status") {
       try {
         const body = await readBody(req);
-        const allowed = ["draft", "needs_review", "approved", "scheduled", "published", "failed", "blocked", "dry_run"];
-        if (!allowed.includes(body.status)) throw new Error("Invalid status");
-        if (DATA.settings.mediaRequired && ["scheduled", "approved", "published"].includes(body.status) && !post.mediaUrl) {
+        if (!POST_STATUSES.includes(body.status)) throw new Error("Invalid status");
+        if (DATA.settings.mediaRequired && MEDIA_REQUIRED_STATUSES.includes(body.status) && !post.mediaUrl) {
           throw new Error("Attach an image or video before scheduling or publishing.");
         }
+        if (post.status !== body.status) pushRevision(post);
         post.status = body.status;
         post.updatedAt = new Date().toISOString();
         if (body.status === "published" && !post.publishedAt) post.publishedAt = new Date().toISOString();
-        addActivity(DATA, "status", `Status “${post.title}” → ${body.status}.`, post.id);
+        addActivity(DATA, "status", `Status “${post.title}” → ${body.status.replace(/_/g, " ")}.`, post.id);
         saveData();
-        return json(res, 200, { post });
+        return json(res, 200, { post: listPost(post) });
       } catch (error) {
         return json(res, 400, { error: error.message });
       }
     }
 
     if (method === "POST" && action === "duplicate") {
-      const copy = {
-        ...post,
-        id: `portal-${Date.now()}-${randomUUID().slice(0, 6)}`,
-        title: `${post.title} (copy)`,
-        status: "draft",
-        results: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        publishedAt: null,
-        lastAttemptAt: null,
-      };
+      const copy = duplicatePost(post);
       DATA.posts.push(copy);
       addActivity(DATA, "created", `Duplicated “${post.title}”.`, copy.id);
       saveData();
-      return json(res, 201, { post: copy });
+      return json(res, 201, { post: listPost(copy) });
     }
 
     if (method === "POST" && action === "publish") {
@@ -1860,8 +2441,21 @@ async function handleApi(req, res, url) {
           return json(res, 403, { error: "Live publishing is locked. Set MARKETING_LIVE=true on the portal server." });
         }
         const channels = Array.isArray(body.channels) ? body.channels.map(String) : null;
-        const result = await publishPost(post, { dryRun, automatic: false, channels });
-        return json(res, 200, { post, result });
+        if (!dryRun && post.status === "published" && !channels?.length && body.force !== true) {
+          return json(res, 409, {
+            error: "This post is already published. Re-publishing would duplicate it on every channel; retry specific channels from Channel status instead.",
+          });
+        }
+        const previousStatus = post.status;
+        if (!dryRun) post.status = "publishing";
+        let result;
+        try {
+          result = await publishPost(post, { dryRun, automatic: false, channels });
+        } catch (error) {
+          if (post.status === "publishing") post.status = previousStatus;
+          throw error;
+        }
+        return json(res, 200, { post: listPost(post), result });
       } catch (error) {
         return json(res, 400, { error: error.message });
       }
@@ -1877,7 +2471,7 @@ async function handleApi(req, res, url) {
   }
 
   if (method === "GET" && pathname === "/api/metrics") {
-    const traffic = await getTraffic();
+    const traffic = await trafficForView();
     return json(res, 200, { metrics: DATA.metrics, totals: metricsTotals(), traffic });
   }
 
@@ -1891,20 +2485,33 @@ async function handleApi(req, res, url) {
   }
 
   if (method === "GET" && pathname === "/api/reports/summary") {
-    const traffic = await getTraffic();
-    await getSiteLive();
+    const [traffic] = await Promise.all([trafficForView(), siteLiveForView()]);
     return json(res, 200, { ...reportsSummary(), traffic });
   }
 
   if (method === "GET" && pathname === "/api/reports/export") {
+    const stamp = nowInTimezone(DATA.settings.timezone).slice(0, 10);
+    const filtered = [...url.searchParams.keys()].some((key) => ["status", "channel", "lang", "tag", "pillar", "q"].includes(key));
     if (url.searchParams.get("format") === "json") {
-      return json(res, 200, { posts: DATA.posts, metrics: DATA.metrics, reports: reportsSummary() });
+      const payload = JSON.stringify(
+        { exportedAt: new Date().toISOString(), posts: filtered ? filterPosts(url.searchParams) : DATA.posts, templates: DATA.templates, metrics: DATA.metrics, reports: reportsSummary() },
+        null,
+        2
+      );
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename=fatortak-portal-${stamp}.json`,
+        "Cache-Control": "no-store",
+      });
+      res.end(payload);
+      return;
     }
     res.writeHead(200, {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": "attachment; filename=fatortak-social-report.csv",
+      "Content-Disposition": `attachment; filename=fatortak-posts-${stamp}.csv`,
+      "Cache-Control": "no-store",
     });
-    res.end(exportCsv());
+    res.end(exportCsv(filtered ? filterPosts(url.searchParams) : DATA.posts));
     return;
   }
 
@@ -1920,19 +2527,34 @@ async function handleApi(req, res, url) {
   if (method === "PUT" && pathname === "/api/settings") {
     try {
       const body = await readBody(req);
-      const allowed = ["dryRun", "autoApprove", "requireLiveSite", "mediaRequired", "timezone", "publicUrl"];
-      for (const key of allowed) {
-        if (key in body) DATA.settings[key] = body[key];
+      const next = {};
+      for (const key of ["dryRun", "autoApprove", "requireLiveSite", "mediaRequired"]) {
+        if (key in body) {
+          if (typeof body[key] !== "boolean") throw new Error(`${key} must be true or false.`);
+          next[key] = body[key];
+        }
+      }
+      if ("timezone" in body) {
+        const zone = String(body.timezone || "").trim();
+        if (!isValidTimezone(zone)) throw new Error(`Unknown timezone “${zone}”. Use an IANA name such as Africa/Cairo.`);
+        next.timezone = zone;
       }
       if ("publicUrl" in body) {
         const value = String(body.publicUrl || "").trim().replace(/\/$/, "");
         if (value && !/^https?:\/\/[^/]+/i.test(value)) throw new Error("Public media host must be an http(s) URL.");
-        DATA.settings.publicUrl = value;
-        publicBaseOverride = value;
+        next.publicUrl = value;
+      }
+      const changed = Object.keys(next).filter((key) => DATA.settings[key] !== next[key]);
+      Object.assign(DATA.settings, next);
+      if ("publicUrl" in next) publicBaseOverride = next.publicUrl;
+      if (changed.length) {
+        const summary = changed
+          .map((key) => (typeof next[key] === "boolean" ? `${key} ${next[key] ? "on" : "off"}` : `${key} → ${next[key] || "(empty)"}`))
+          .join(", ");
+        addActivity(DATA, "settings", `Settings changed: ${summary}.`);
       }
       saveData();
-      addActivity(DATA, "settings", "Portal settings updated.");
-      return json(res, 200, { settings: DATA.settings });
+      return json(res, 200, { settings: DATA.settings, changed });
     } catch (error) {
       return json(res, 400, { error: error.message });
     }
@@ -1970,18 +2592,7 @@ let schedulerBusy = false;
 let lastSchedulerTick = null;
 
 function nowInTimezone(timeZone = "Africa/Cairo") {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timeZone || "Africa/Cairo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date());
-  const pick = (type) => parts.find((part) => part.type === type)?.value || "00";
-  return `${pick("year")}-${pick("month")}-${pick("day")}T${pick("hour")}:${pick("minute")}:${pick("second")}`;
+  return wallClock(new Date(), timeZone);
 }
 
 async function schedulerTick() {
@@ -1994,6 +2605,8 @@ async function schedulerTick() {
       .filter((post) => post.status === "scheduled" && String(post.scheduledAt) <= now)
       .sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)));
     for (const post of due) {
+      // Earlier publishes in this tick can take a while; skip posts edited, paused or deleted meanwhile.
+      if (DATA.settings.dryRun || post.status !== "scheduled" || !DATA.posts.includes(post)) continue;
       post.status = "publishing";
       saveData();
       try {

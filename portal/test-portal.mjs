@@ -1,0 +1,357 @@
+// End-to-end API tests for the portal server. Boots server.mjs on a free port with a
+// throwaway data directory and no credentials, so nothing can reach a real platform.
+// Run with `npm run test:portal` (or `npm test` for every suite).
+
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import net from "node:net";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "fatortak-portal-test-"));
+
+const port = await new Promise((resolve) => {
+  const probe = net.createServer().listen(0, "127.0.0.1", () => {
+    const { port: free } = probe.address();
+    probe.close(() => resolve(free));
+  });
+});
+
+const child = spawn(process.execPath, [path.join(HERE, "server.mjs")], {
+  env: {
+    PATH: process.env.PATH,
+    SYSTEMROOT: process.env.SYSTEMROOT || "",
+    PORTAL_PORT: String(port),
+    PORTAL_HOST: "127.0.0.1",
+    PORTAL_DATA_DIR: dataDir,
+    PORTAL_ENV_FILE: path.join(dataDir, "none.env"),
+    MARKETING_LIVE: "false",
+    PORTAL_AUTO_PUBLISH: "false",
+  },
+  stdio: ["ignore", "pipe", "pipe"],
+});
+let serverLog = "";
+child.stdout.on("data", (chunk) => (serverLog += chunk));
+child.stderr.on("data", (chunk) => (serverLog += chunk));
+
+const base = `http://127.0.0.1:${port}`;
+
+async function api(pathname, { method = "GET", body, headers = {} } = {}) {
+  const response = await fetch(base + pathname, {
+    method,
+    headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...headers },
+    body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+  });
+  const text = await response.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text };
+  }
+  return { status: response.status, data, headers: response.headers, text };
+}
+
+async function waitForServer() {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      const { status } = await api("/api/health");
+      if (status === 200) return;
+    } catch {
+      // not up yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Server did not start.\n${serverLog}`);
+}
+
+const media = {
+  mediaUrl: "/media/landing/dashboard.png",
+  mediaKind: "image",
+  mediaName: "dashboard.png",
+  mediaAlt: "Dashboard",
+};
+
+const tests = [];
+const test = (name, fn) => tests.push({ name, fn });
+
+test("health and meta respond", async () => {
+  const health = await api("/api/health");
+  assert.equal(health.data.ok, true);
+  const meta = await api("/api/meta");
+  assert.equal(meta.status, 200);
+  assert.ok(meta.data.statuses.includes("scheduled"));
+  assert.ok(!meta.data.statuses.includes("publishing"), "publishing is internal and must not be user-settable");
+  assert.equal(meta.data.limits.x, 280);
+  assert.match(meta.data.now, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
+});
+
+test("create normalizes the schedule and keeps tags", async () => {
+  const created = await api("/api/posts", {
+    method: "POST",
+    body: { content: "Hello {{site}}", channels: ["x"], scheduledAt: "2030-01-02T09:30", status: "draft", tags: ["Launch Week", "launch week"], ...media },
+  });
+  assert.equal(created.status, 201, created.text);
+  assert.equal(created.data.post.scheduledAt, "2030-01-02T09:30:00");
+  assert.deepEqual(created.data.post.tags, ["launch-week"]);
+  assert.equal(created.data.post.title, "Hello {{site}}", "title falls back to the first line");
+  assert.equal(created.data.post.revisionCount, 0);
+});
+
+test("invalid dates and statuses are rejected", async () => {
+  const badDate = await api("/api/posts", { method: "POST", body: { content: "x", channels: ["x"], scheduledAt: "2030-02-31T09:00" } });
+  assert.equal(badDate.status, 400);
+  const badStatus = await api("/api/posts", { method: "POST", body: { content: "x", channels: ["x"], status: "publishing" } });
+  assert.equal(badStatus.status, 400);
+});
+
+test("media is required before scheduling", async () => {
+  const response = await api("/api/posts", { method: "POST", body: { content: "No media", channels: ["x"], status: "scheduled" } });
+  assert.equal(response.status, 400);
+  assert.match(response.data.error, /image or video/i);
+});
+
+test("PUT keeps unspecified fields, can clear notes and switch video back to image", async () => {
+  const created = await api("/api/posts", {
+    method: "POST",
+    body: { content: "Video post", channels: ["facebook"], notes: "check copy", mediaUrl: "/media/clip.mp4", mediaKind: "video", mediaName: "clip.mp4" },
+  });
+  const id = created.data.post.id;
+  const updated = await api(`/api/posts/${id}`, { method: "PUT", body: { notes: "", ...media } });
+  assert.equal(updated.status, 200, updated.text);
+  assert.equal(updated.data.post.notes, "");
+  assert.equal(updated.data.post.mediaKind, "image");
+  assert.equal(updated.data.post.content, "Video post");
+  assert.equal(updated.data.post.revisionCount, 1);
+});
+
+test("PUT and DELETE tunneled through POST (X-Portal-Method) work like the PHP proxy", async () => {
+  const created = await api("/api/posts", { method: "POST", body: { content: "Tunnel", channels: ["x"], ...media } });
+  const id = created.data.post.id;
+  const updated = await api(`/api/posts/${id}`, { method: "POST", body: { content: "Tunneled edit" }, headers: { "X-Portal-Method": "PUT" } });
+  assert.equal(updated.status, 200, updated.text);
+  assert.equal(updated.data.post.content, "Tunneled edit");
+  const deleted = await api(`/api/posts/${id}`, { method: "POST", headers: { "X-Portal-Method": "DELETE" } });
+  assert.equal(deleted.status, 200, deleted.text);
+  assert.equal((await api(`/api/posts/${id}`)).status, 404);
+});
+
+test("stale edits are refused with 409", async () => {
+  const created = await api("/api/posts", { method: "POST", body: { content: "Concurrency", channels: ["x"], ...media } });
+  const { id, updatedAt } = created.data.post;
+  const first = await api(`/api/posts/${id}`, { method: "PUT", body: { content: "Edit one", updatedAt } });
+  assert.equal(first.status, 200);
+  const second = await api(`/api/posts/${id}`, { method: "PUT", body: { content: "Edit two", updatedAt } });
+  assert.equal(second.status, 409);
+});
+
+test("revisions can be restored", async () => {
+  const created = await api("/api/posts", { method: "POST", body: { content: "Version one", channels: ["x"], ...media } });
+  const id = created.data.post.id;
+  await api(`/api/posts/${id}`, { method: "PUT", body: { content: "Version two" } });
+  const full = await api(`/api/posts/${id}`);
+  assert.equal(full.data.post.revisions[0].content, "Version one");
+  assert.ok(Array.isArray(full.data.preview));
+  const restored = await api(`/api/posts/${id}/restore`, { method: "POST", body: { index: 0 } });
+  assert.equal(restored.status, 200, restored.text);
+  assert.equal(restored.data.post.content, "Version one");
+  assert.equal(restored.data.post.revisions.length, 2);
+});
+
+test("dry run reports without changing a scheduled post's status", async () => {
+  const created = await api("/api/posts", {
+    method: "POST",
+    body: { content: "Scheduled copy", channels: ["x", "bluesky"], status: "scheduled", scheduledAt: "2031-05-01T10:00", ...media },
+  });
+  const id = created.data.post.id;
+  const dry = await api(`/api/posts/${id}/publish`, { method: "POST", body: { dryRun: true } });
+  assert.equal(dry.status, 200, dry.text);
+  assert.equal(dry.data.post.status, "scheduled", "dry run must not pull the post out of the schedule");
+  assert.equal(dry.data.result.dryRun, true);
+  assert.ok(dry.data.result.results.every((result) => result.ready === false && /needs/i.test(result.reason)));
+  assert.ok(dry.data.post.preview?.at);
+});
+
+test("video posts send the poster to X/LinkedIn and keep video elsewhere", async () => {
+  const created = await api("/api/posts", {
+    method: "POST",
+    body: {
+      content: "Video post",
+      channels: ["x", "facebook"],
+      mediaUrl: "/media/clip.mp4",
+      mediaKind: "video",
+      mediaName: "clip.mp4",
+      posterUrl: "/media/landing/dashboard.png",
+      posterName: "dashboard.png",
+    },
+  });
+  assert.equal(created.status, 201, created.text);
+  assert.equal(created.data.post.posterUrl, "/media/landing/dashboard.png");
+  const dry = await api(`/api/posts/${created.data.post.id}/publish`, { method: "POST", body: { dryRun: true } });
+  const byChannel = Object.fromEntries(dry.data.result.results.map((result) => [result.channel, result]));
+  assert.equal(byChannel.x.media, "image");
+  assert.match(byChannel.x.mediaNote, /cover/i);
+  assert.equal(byChannel.facebook.media, "video");
+  const full = await api(`/api/posts/${created.data.post.id}`);
+  assert.match(full.data.preview.find((item) => item.channel === "x").notes.join(" "), /cover image is published/i);
+  const toImage = await api(`/api/posts/${created.data.post.id}`, { method: "PUT", body: { ...media } });
+  assert.equal(toImage.data.post.posterUrl, "", "switching to an image clears the video poster");
+});
+
+test("live publish is locked without MARKETING_LIVE", async () => {
+  const created = await api("/api/posts", { method: "POST", body: { content: "Live?", channels: ["x"], ...media } });
+  const live = await api(`/api/posts/${created.data.post.id}/publish`, { method: "POST", body: { dryRun: false } });
+  assert.equal(live.status, 403);
+});
+
+test("preview counts links the way X and Mastodon do", async () => {
+  const longUrl = `https://example.com/${"a".repeat(200)}`;
+  const preview = await api("/api/preview", { method: "POST", body: { content: `Read this ${longUrl}`, channels: ["x", "mastodon", "linkedin"] } });
+  assert.equal(preview.status, 200);
+  const byChannel = Object.fromEntries(preview.data.channels.map((item) => [item.channel, item]));
+  assert.equal(byChannel.x.length, "Read this ".length + 23);
+  assert.equal(byChannel.mastodon.length, "Read this ".length + 23);
+  assert.equal(byChannel.linkedin.length, "Read this ".length + longUrl.length);
+  assert.equal(byChannel.x.over, false);
+  const site = await api("/api/preview", { method: "POST", body: { content: "{{site}}", channels: ["x"] } });
+  assert.match(site.data.channels[0].text, /utm_source=x/);
+});
+
+test("bulk actions validate first and apply to the selection", async () => {
+  const ids = [];
+  for (const scheduledAt of ["2032-03-01T08:00", "2032-03-02T08:00"]) {
+    const created = await api("/api/posts", { method: "POST", body: { content: `Bulk ${scheduledAt}`, channels: ["x"], scheduledAt, ...media } });
+    ids.push(created.data.post.id);
+  }
+  const bad = await api("/api/posts/bulk", { method: "POST", body: { ids, action: "shift", value: 1.5 } });
+  assert.equal(bad.status, 400);
+
+  const shifted = await api("/api/posts/bulk", { method: "POST", body: { ids, action: "shift", value: 2 } });
+  assert.equal(shifted.data.updated, 2);
+  const tagged = await api("/api/posts/bulk", { method: "POST", body: { ids, action: "addTag", value: "Q1 Push" } });
+  assert.equal(tagged.data.updated, 2);
+  const channel = await api("/api/posts/bulk", { method: "POST", body: { ids, action: "addChannel", value: "linkedin" } });
+  assert.equal(channel.data.updated, 2);
+  const status = await api("/api/posts/bulk", { method: "POST", body: { ids, action: "status", value: "scheduled" } });
+  assert.equal(status.data.updated, 2);
+
+  const list = await api("/api/posts?tag=q1-push");
+  assert.equal(list.data.posts.length, 2);
+  assert.deepEqual(list.data.posts.map((post) => post.scheduledAt), ["2032-03-03T08:00:00", "2032-03-04T08:00:00"]);
+  assert.ok(list.data.posts.every((post) => post.channels.includes("linkedin") && post.status === "scheduled"));
+  assert.ok(list.data.posts.every((post) => post.revisions === undefined), "list payload excludes revision history");
+
+  const removeLast = await api("/api/posts/bulk", { method: "POST", body: { ids: [ids[0]], action: "removeChannel", value: "x" } });
+  assert.equal(removeLast.data.updated, 1);
+  const removeOnly = await api("/api/posts/bulk", { method: "POST", body: { ids: [ids[0]], action: "removeChannel", value: "linkedin" } });
+  assert.equal(removeOnly.data.updated, 0);
+  assert.equal(removeOnly.data.skipped.length, 1, "a post keeps at least one channel");
+
+  const deleted = await api("/api/posts/bulk", { method: "POST", body: { ids, action: "delete" } });
+  assert.equal(deleted.data.updated, 2);
+  const after = await api("/api/posts?tag=q1-push");
+  assert.equal(after.data.posts.length, 0);
+});
+
+test("templates CRUD", async () => {
+  const listed = await api("/api/templates");
+  assert.ok(listed.data.templates.length >= 2, "default templates are seeded");
+  const created = await api("/api/templates", { method: "POST", body: { name: "Weekly tip", content: "Tip: {{site}}", channels: ["x", "nope"] } });
+  assert.equal(created.status, 201);
+  assert.deepEqual(created.data.template.channels, ["x"]);
+  const id = created.data.template.id;
+  const updated = await api(`/api/templates/${id}`, { method: "PUT", body: { name: "Weekly tip v2" } });
+  assert.equal(updated.data.template.name, "Weekly tip v2");
+  assert.equal(updated.data.template.content, "Tip: {{site}}");
+  const missingName = await api("/api/templates", { method: "POST", body: { content: "x" } });
+  assert.equal(missingName.status, 400);
+  const removed = await api(`/api/templates/${id}`, { method: "DELETE" });
+  assert.equal(removed.status, 200);
+  const gone = await api(`/api/templates/${id}`, { method: "DELETE" });
+  assert.equal(gone.status, 404);
+});
+
+test("settings are type-checked and the timezone validated", async () => {
+  const badZone = await api("/api/settings", { method: "PUT", body: { timezone: "Mars/Olympus" } });
+  assert.equal(badZone.status, 400);
+  const badBool = await api("/api/settings", { method: "PUT", body: { dryRun: "false" } });
+  assert.equal(badBool.status, 400);
+  const ok = await api("/api/settings", { method: "PUT", body: { timezone: "Africa/Cairo", autoApprove: false } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.settings.autoApprove, false);
+  const activity = await api("/api/activity?type=settings");
+  assert.match(activity.data.items[0].message, /autoApprove off/);
+});
+
+test("media upload rejects unsupported types and protects files in use", async () => {
+  const exe = await api("/api/media", { method: "POST", body: "MZ", headers: { "Content-Type": "image/png", "X-File-Name": "evil.exe" } });
+  assert.equal(exe.status, 400);
+  const upload = await fetch(`${base}/api/media`, {
+    method: "POST",
+    headers: { "Content-Type": "image/png", "X-File-Name": "card.png" },
+    body: Buffer.from([137, 80, 78, 71]),
+  });
+  const uploaded = (await upload.json()).media;
+  assert.equal(upload.status, 201);
+  // Without a public media host the upload's publicUrl is a relative path; saving must still work.
+  const withUpload = await api("/api/posts", {
+    method: "POST",
+    body: { content: "Uses upload", channels: ["x"], status: "scheduled", mediaUrl: uploaded.url, mediaPublicUrl: uploaded.publicUrl, mediaKind: "image", mediaName: uploaded.name },
+  });
+  assert.equal(withUpload.status, 201, withUpload.text);
+  assert.equal(withUpload.data.post.mediaPublicUrl, "");
+  const listed = await api("/api/media");
+  const item = listed.data.media.find((entry) => entry.id === uploaded.id);
+  assert.equal(item.usage.pending, 1);
+  const blocked = await api(`/api/media/${encodeURIComponent(uploaded.id)}`, { method: "DELETE" });
+  assert.equal(blocked.status, 409);
+  const forced = await api(`/api/media/${encodeURIComponent(uploaded.id)}?force=1`, { method: "DELETE" });
+  assert.equal(forced.status, 200);
+});
+
+test("CSV export neutralizes formulas", async () => {
+  await api("/api/posts", { method: "POST", body: { title: "=HYPERLINK(\"x\")", content: "csv", channels: ["x"], ...media } });
+  const csv = await api("/api/reports/export?format=csv&q=csv");
+  assert.equal(csv.status, 200);
+  assert.match(csv.headers.get("content-disposition"), /attachment; filename=fatortak-posts-/);
+  assert.ok(csv.text.includes(`"'=HYPERLINK`), "formula-like cells are prefixed");
+  assert.ok(!csv.text.includes(`"=HYPERLINK`));
+});
+
+test("activity endpoint paginates and filters", async () => {
+  const page = await api("/api/activity?limit=3");
+  assert.equal(page.data.items.length, 3);
+  assert.ok(page.data.total >= 3);
+  assert.ok(page.data.types.includes("created"));
+});
+
+test("cross-origin writes are blocked", async () => {
+  const response = await api("/api/posts", { method: "POST", body: { content: "x", channels: ["x"] }, headers: { Origin: "https://evil.example" } });
+  assert.equal(response.status, 403);
+});
+
+let failed = 0;
+try {
+  await waitForServer();
+  for (const { name, fn } of tests) {
+    try {
+      await fn();
+      console.log(`ok   ${name}`);
+    } catch (error) {
+      failed += 1;
+      console.error(`FAIL ${name}\n     ${error.stack?.split("\n").slice(0, 3).join("\n     ")}`);
+    }
+  }
+} finally {
+  child.kill();
+  fs.rmSync(dataDir, { recursive: true, force: true });
+}
+if (failed) {
+  console.error(`\n${failed} of ${tests.length} portal tests failed.`);
+  if (process.env.PORTAL_TEST_LOG) console.error(serverLog);
+  process.exit(1);
+}
+console.log(`\nAll ${tests.length} portal tests passed.`);
