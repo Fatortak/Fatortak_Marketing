@@ -128,9 +128,24 @@ Make every card in three sizes from the same design source, same base name with 
   `rgba(0,153,204,.22)`) so sign-in matches the dashboard. Claude Code did not touch `deploy/`.
 - **Roadmap:** `portal/ROADMAP.md` has the competitive review and the phased plan. Pick items only
   after the owner chooses them.
-- **Per-channel feed media and story media.** The queue now has 4:5 launch cards, 16:9 cards and
-  9:16 video posters, but the portal still publishes one media file per post. Add `channelMedia`
-  (Facebook/Instagram 4:5, X/LinkedIn/Bluesky/Mastodon 16:9) and `storyMedia` (9:16) so the sizes can
-  be used without splitting a post into channel-specific copies. The 7 launch themes now have
-  4:5 stills (`photo-v4-*-4x5.jpg`) and 9:16 JPEG posters; the remaining 48 feed images still need
-  4:5 and 9:16 renders.
+- ~~Per-channel feed media and story media~~ — **done in the portal** (`de2d061`). See next item.
+- **WIRE AND DEPLOY per-channel media (owner approved, 4 Nov 2026).** In `portal/scripts/build-daily-10.mjs`:
+  1. For every post whose theme has a 4:5 still (the 7 launch themes, `photo-v4-*-4x5.jpg`), set
+     `channelMedia.instagram` and `channelMedia.facebook` to that file:
+     `{ mediaUrl, mediaPublicUrl: "https://fatortak.rabbeh.com/assets/...jpg", mediaKind: "image", mediaName, mediaAlt }`.
+     Leave the main `mediaUrl` as the 16:9 image so X/LinkedIn/Bluesky/Mastodon keep it.
+     Only add a channel key if the post targets that channel. Video posts keep the video as main media.
+  2. For every post with a 9:16 asset (video posters `video-v4-*.jpg`, any `*-9x16.jpg`), set
+     `storyMedia` to it (public https JPEG URL — Instagram stories require a public JPEG).
+  3. Add builder checks: every `channelMedia`/`storyMedia` file exists on disk, its public URL is
+     https, Instagram variants are JPEG; fail the build otherwise.
+  4. Rebuild the queue **preserving published history and the live `results`/`preview` of existing
+     posts** (only add `channelMedia`/`storyMedia` to scheduled posts; do not reset statuses, caps,
+     tags or schedules), run `npm test` in `portal/`, then deploy the portal code (`de2d061` and
+     later) and the updated data with the usual scripts, keeping the remote `.env`.
+  5. Verify on production: `/portal/?ping=1` healthy; the 4:5 and 9:16 public URLs return `200`;
+     a **dry run** (not a live publish) of one upcoming launch post shows Instagram/Facebook getting the
+     4:5 file (`mediaVariant: "channel"`) and X/Bluesky/Mastodon getting the 16:9 file.
+  6. Commit with a clear message and report what changed (counts of posts with channelMedia /
+     storyMedia, deploy result, dry-run result). Do not live-publish anything as a test.
+  The remaining 48 feed images still need 4:5 and 9:16 renders; do them after this is deployed.
