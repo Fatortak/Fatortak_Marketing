@@ -43,6 +43,71 @@ From a content audit of the 12/day queue (`build-daily-10.mjs`), score 42/100:
 5. **Engagement prompts:** only 10/360 posts ask a question. Aim for ~1 in 5.
 6. **Pillar mix:** 46% product, no insight posts. Add insight/tip/use-case posts.
 7. Tag offers with `offer` and launches with `launch` so the automation recipes can pick them up.
+8. **Upgrade videos and photos to high quality** — see the media brief below.
+
+## Media brief: high-quality videos and photos
+
+The owner wants professional, scroll-stopping media. Current state to replace:
+
+- `landing/scripts/generate-videos.mjs` turns each 1200×630 `social-v3-*` card into an 8 s 9:16 MP4:
+  the landscape card sits small on a blurred copy of itself, nothing moves, the audio track is
+  silent, and there are no captions. It reads as a static image, not a Reel.
+- Photo cards (`generate-social-v2/v3.mjs`) are 1200×630 only. Instagram's feed favours 4:5 and
+  Stories need 9:16, so the same card is cropped or letterboxed everywhere.
+
+### Videos (Reels, TikTok-style, Facebook video, Stories)
+
+- **Format:** 1080×1920 (9:16), H.264 High, `yuv420p`, 30 fps, AAC 48 kHz stereo,
+  `-movflags +faststart`, CRF ≈ 18–20, under 50 MB. Length 15–30 s (stories ≤ 15 s per clip).
+- **Designed for vertical**, not a landscape card on blur: full-bleed layout, large type, the app UI
+  cropped to the part that matters and scaled up so it is readable on a phone.
+- **Real motion:** screen recordings of the real app with demo data (`scripts/seed-demo.mjs`) —
+  cursor moving, clicks, an invoice being created, a report filtering — or at minimum smooth
+  pan/zoom (Ken Burns) on high-resolution screenshots plus animated text. No frozen frames > 2 s.
+- **Hook in the first 1.5 s:** a bold question or result ("Month-end close in 5 minutes?",
+  "فاتورتك بتحسب الضريبة لوحدها"). No logo intro first.
+- **Burned-in captions** in the post's language (Arabic right-to-left, correct shaping; English
+  sentence case), inside the safe zone. Most people watch muted.
+- **Safe zones:** keep text and key UI out of the top 250 px and bottom 340 px (platform UI covers them).
+- **Audio:** royalty-free music you are licensed to use (or none), loudness about −14 LUFS; no
+  copyrighted tracks. Optional voice-over in Arabic and English.
+- **End card (last 2 s):** logo, one call to action ("Try it free — link in bio"), no URL soup.
+- **Poster:** a 1080×1920 JPEG of the strongest frame (not a fade-in frame) with the same base name.
+- **One video per theme in each language**: render Arabic and English separately; don't just swap a caption.
+
+### Photos (feed and stories)
+
+Make every card in three sizes from the same design source, same base name with a suffix:
+
+| Use | Size | File |
+| --- | --- | --- |
+| Instagram / Facebook feed | 1080×1350 (4:5) | `<name>-4x5.jpg` |
+| X, LinkedIn, Bluesky, Mastodon, link previews | 1200×675 (16:9) | `<name>-16x9.jpg` |
+| Stories (used by the portal's Story automations) | 1080×1920 (9:16), text inside the safe zone | `<name>-9x16.jpg` |
+
+- Render at 2× and downscale for sharp text; export sRGB JPEG quality 88–92, under 1 MB
+  (Instagram accepts JPEG only for photos).
+- One message per card, at most ~12 words of on-image text, headline readable at thumbnail size.
+- Brand: Fatortak logo, purple/cyan palette from the existing cards, consistent type; Arabic cards
+  use a proper Arabic typeface and are laid out right-to-left, not mirrored English.
+- Real product UI with demo data only — never real customer names, amounts or tax numbers. No fake
+  testimonials, ratings or "#1" claims (the builder's banned-terms check must still pass).
+- Write an `alt` text for every image (what it shows, not "image of").
+
+### Wiring and checks
+
+- Put files in `landing/assets/videos/` and `landing/assets/screenshots/` (or a new
+  `landing/assets/stories/` for 9:16 stills), keeping the public URL pattern
+  `https://fatortak.rabbeh.com/assets/...` so Instagram/Threads can fetch them.
+- In `build-daily-10.mjs`, use the 4:5 image for Instagram/Facebook posts and the 16:9 image for the
+  others. The portal supports per-channel copy, but media is per post today. If you need per-channel
+  media, add a request below for the portal instead of hacking it.
+- Set `posterUrl`/`posterPublicUrl`/`posterName` on video posts (X and LinkedIn publish the poster).
+- Before committing, check every new file: `ffprobe` shows the expected size, codec, duration and
+  audio stream; images open, have the right dimensions and stay under the size limits; then preview
+  a few on a phone-sized screen. Regenerate the Instagram JPEG variants
+  (`landing/scripts/convert-instagram-jpegs.ps1`) if you add PNGs.
+- Keep the old `v3` files until the new ones are deployed and the queue points at them.
 
 ## Requests
 
