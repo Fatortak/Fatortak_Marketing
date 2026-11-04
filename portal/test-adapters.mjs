@@ -107,6 +107,7 @@ const cases = [
   ["linkedin", "LinkedIn image", media],
   ["x", "X image", media],
   ["bluesky", "Bluesky image", media],
+  ["bluesky", "Bluesky video", video],
   ["mastodon", "Mastodon image", media],
   ["telegram", "Telegram image", media],
   ["discord", "Discord image", media],
@@ -121,7 +122,6 @@ const cases = [
 const expectedBlocked = [
   ["linkedin", "LinkedIn video", video],
   ["x", "X video", video],
-  ["bluesky", "Bluesky video", video],
 ];
 
 const failures = [];

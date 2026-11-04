@@ -96,7 +96,7 @@ backed by a Facebook Developer Account as a tester.
 
 Live publishing is already enabled (`MARKETING_LIVE=true`, `PORTAL_AUTO_PUBLISH=true` and dry run off). To pause, turn **Dry run** on in Settings.
 
-The queue now holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00-21:30 Cairo) from 4 November to 3 December 2026, plus the published history. Every post has an image; the library uses **53 unique visuals**, including 12 new cards for the refreshed UI, reports hub, data import, platform console, onboarding and invoice templates. All new posts target Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn. Instagram gets JPEG publish variants; X still needs credits; LinkedIn stays skipped until its token; Dev.to is article-only and Threads is blocked.
+The queue now holds **360 new posts at 12 per day** (6 Arabic + 6 English, 08:00-21:30 Cairo) from 4 November to 3 December 2026, plus the published history. Every day includes **two video posts** (one Arabic, one English) at 10:15 and 16:15, with 1080×1920 MP4s and matching poster images. The library uses **53 images + 12 vertical videos**, including 12 new cards for the refreshed UI, reports hub, data import, platform console, onboarding and invoice templates. All new posts target Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn. Facebook, Instagram, Mastodon and Bluesky publish the video; X and LinkedIn currently publish the video poster until their video uploads are enabled. Instagram gets JPEG publish variants; X still needs credits; LinkedIn stays skipped until its token; Dev.to is article-only and Threads is blocked.
 
 ## Metrics and reports
 
@@ -125,9 +125,10 @@ The queue now holds **300 new posts at 10 per day** (5 Arabic + 5 English, 08:00
 
 ## Current publishing state
 
-- The queue is **306 posts** total: 6 history/published posts plus **300 new posts at 10 per day** (5 Arabic + 5 English) from 4 November to 3 December 2026.
-- Every new post has an image; the library uses **53 unique visuals**, including 12 new UI/feature cards. Instagram receives JPEG publish variants.
+- The queue is **366 posts** total: 6 history/published posts plus **360 new posts at 12 per day** (6 Arabic + 6 English) from 4 November to 3 December 2026, including **60 video posts** (2/day).
+- Every new post has an image or video; the library uses **53 images + 12 vertical videos**, including 12 new UI/feature cards. Instagram receives JPEG and MP4 publish variants.
 - The 3 November 19:00 post published to Bluesky, Facebook and Instagram; X returned `credits depleted`. The next post is **4 November 2026 at 08:00 Cairo**, leading with the refreshed UI, reports hub, data import, platform console, onboarding and invoice templates.
+- The first two video posts are **4 November at 10:15 (English)** and **16:15 (Arabic)**. Bluesky video upload was tested with the real account and the test post was deleted. A portal dry run confirmed Facebook and Bluesky receive the MP4 while X and LinkedIn receive the poster with a status note.
 - X still needs API credits; LinkedIn waits for its token; Threads is blocked/expired; Dev.to is article-only. The scheduler records every channel result and the status modal shows it.
 - Keep the Node service warm. The server-side keepalive pings every 5 minutes and survives app-pool recycles; the GitHub Actions workflow every 10 minutes is the fallback. If both are idle, the next portal request starts Node and the scheduler catches overdue posts on startup.
 

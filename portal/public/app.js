@@ -398,7 +398,7 @@
         ${posts.length ? `<div class="table-wrap"><table><thead><tr><th>Post</th><th>Channels</th><th>Schedule</th><th>Status</th><th></th></tr></thead><tbody>
           ${posts.map((post) => `
             <tr>
-              <td><div class="post-title-wrap">${post.mediaUrl ? `<div class="post-thumb"><img src="${esc(post.mediaUrl)}" alt="${esc(post.mediaAlt || "")}" loading="lazy" /></div>` : `<div class="post-thumb is-empty"></div>`}<div class="cell-title"><strong>${esc(post.title)}</strong><span>${esc(post.language.toUpperCase())} · ${esc(post.pillar)}${post.source === "queue" ? " · queue" : ""} · ${post.mediaUrl ? esc(post.mediaKind || "media") : "no media"}</span></div></div></td>
+              <td><div class="post-title-wrap">${post.mediaUrl ? `<div class="post-thumb" style="position:relative"><img src="${esc(post.posterUrl || post.mediaUrl)}" alt="${esc(post.mediaAlt || "")}" loading="lazy" />${post.mediaKind === "video" ? `<span style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,7,18,.28);color:#fff;font-size:1rem">▶</span>` : ""}</div>` : `<div class="post-thumb is-empty"></div>`}<div class="cell-title"><strong>${esc(post.title)}</strong><span>${esc(post.language.toUpperCase())} · ${esc(post.pillar)}${post.source === "queue" ? " · queue" : ""} · ${post.mediaUrl ? esc(post.mediaKind || "media") : "no media"}</span></div></div></td>
               <td>${channelChips(post.channels)}</td>
               <td>${fmtDate(post.scheduledAt)}</td>
               <td>${statusChip(post.status)}</td>
@@ -634,7 +634,7 @@ OCR invoice capture is built into Fatortak.
       return;
     }
     if (current.kind === "video") {
-      preview.innerHTML = `<video src="${esc(current.url)}" controls muted playsinline></video>`;
+      preview.innerHTML = `<video src="${esc(current.url)}" poster="${esc(current.posterUrl || "")}" controls muted playsinline></video>`;
     } else {
       preview.innerHTML = `<img src="${esc(current.url)}" alt="${esc(current.alt || "")}" />`;
     }
@@ -720,6 +720,7 @@ OCR invoice capture is built into Fatortak.
           name: post.mediaName || "",
           source: post.mediaSource || "",
           alt: post.mediaAlt || "",
+          posterUrl: post.posterUrl || "",
         }
       : null;
     setPostMedia(prefill?.media || existingMedia || (post?.id ? null : defaultMediaForPillar(prefill?.pillar || "product")));
@@ -806,7 +807,8 @@ OCR invoice capture is built into Fatortak.
     if (result.dryRun) return { label: "Dry run", className: "dry_run", detail: "Simulated only; nothing was sent." };
     if (result.ok) {
       const link = result.url || (result.id ? `id: ${result.id}` : "");
-      return { label: "Published", className: "published", detail: link || "Published successfully." };
+      const note = result.mediaNote ? ` · ${result.mediaNote}` : "";
+      return { label: "Published", className: "published", detail: (link || "Published successfully.") + note };
     }
     if (result.skipped) return { label: "Skipped", className: "blocked", detail: result.reason || "Skipped" };
     return { label: "Failed", className: "failed", detail: result.reason || result.error || "Unknown error" };

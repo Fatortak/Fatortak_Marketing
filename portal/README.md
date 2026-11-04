@@ -29,14 +29,16 @@ Open <http://127.0.0.1:4180>.
 
 ## Daily 10-post queue
 
-`node scripts/build-daily-10.mjs <input-portal.json> <output-portal.json>` builds 300 posts at 10/day
-(5 Arabic + 5 English, 08:00–21:30 Cairo) from 4 November to 3 December 2026. It preserves posts before
-4 November, assigns JPEG media, targets Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn, and
-validates server limits, banned claims, pricing and media.
+`node scripts/build-daily-10.mjs <input-portal.json> <output-portal.json>` builds 360 posts at 12/day
+(6 Arabic + 6 English, 08:00–21:30 Cairo) from 4 November to 3 December 2026, including **two video
+posts per day** (10:15 and 16:15). It preserves posts before 4 November, assigns JPEG/MP4 media,
+targets Facebook, Instagram, X, Bluesky, Mastodon and LinkedIn, and validates server limits, banned
+claims, pricing and media.
 
 The first two days lead with the refreshed UI, reports hub, data import, platform console, onboarding
 and invoice-template themes. `landing/scripts/generate-social-v3.mjs` renders the 12 matching English
-and Arabic cards from screenshots of the current app.
+and Arabic cards from screenshots of the current app. `landing/scripts/generate-videos.mjs` renders the
+12 vertical MP4s and posters into `landing/assets/videos/`.
 
 The legacy `scripts/rebuild-queue.mjs` remains for the original 3/day queue.
 
@@ -63,12 +65,12 @@ These have adapters in the portal. They publish when the corresponding API crede
 
 | Channel | Posting | Media | Monitoring | Credentials |
 | --- | --- | --- | --- | --- |
-| X | API v2 | Text via OAuth 1.0a; image upload | Partial (elevated access may be required) | `X_API_KEY`, `X_API_SECRET`, `X_OAUTH1_ACCESS_TOKEN`, `X_OAUTH1_ACCESS_TOKEN_SECRET`; optional `X_ACCESS_TOKEN` for OAuth 2.0 text |
-| LinkedIn company page | API | Image upload | Organization statistics need app review | `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN` |
+| X | API v2 | Text via OAuth 1.0a; image upload; video poster fallback | Partial (elevated access may be required) | `X_API_KEY`, `X_API_SECRET`, `X_OAUTH1_ACCESS_TOKEN`, `X_OAUTH1_ACCESS_TOKEN_SECRET`; optional `X_ACCESS_TOKEN` for OAuth 2.0 text |
+| LinkedIn company page | API | Image upload; video poster fallback | Organization statistics need app review | `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN` |
 | Facebook Page | Graph API | Image and video upload | Page Insights need app review | `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN` |
 | Instagram Business | Graph API | Public image URL; video as Reels | Insights need app review | `INSTAGRAM_USER_ID`, `INSTAGRAM_ACCESS_TOKEN` |
 | Threads | Threads API | Public image/video URL | Insights need app review | `THREADS_USER_ID`, `THREADS_ACCESS_TOKEN` |
-| Bluesky | AT Protocol | Image upload | Public profile; post metrics later | `BLUESKY_HANDLE`, `BLUESKY_APP_PASSWORD` |
+| Bluesky | AT Protocol | Image and video upload | Public profile; post metrics later | `BLUESKY_HANDLE`, `BLUESKY_APP_PASSWORD` |
 | Mastodon | API | Image and video upload | Public account metrics | `MASTODON_INSTANCE`, `MASTODON_ACCESS_TOKEN`, `MASTODON_ACCOUNT` |
 | Telegram | Bot API | Image and video upload | Member count only | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
 | Discord | Webhook | Image and video upload | No native message analytics | `DISCORD_WEBHOOK_URL` |
@@ -112,9 +114,9 @@ Text-only publishing is disabled by default (`mediaRequired: true`). The compose
 - **Media library**: ten real Fatortak screenshots plus nine branded 1200×630 social cards generated from them. Queue posts are automatically matched to a relevant card or screenshot by pillar and language.
 - **Upload**: images and videos up to 100 MB are stored in `portal/data/media/` (gitignored) and served from `/media/...`.
 - **Native upload**: Facebook, LinkedIn, Mastodon, Telegram, Discord and Bluesky accept the file directly.
-- **Image only**: X (OAuth 1.0a media keys) and Bluesky.
+- **Image only**: X (OAuth 1.0a media keys).
 - **Public URL required**: Instagram, Threads and Dev.to. Set **Public media host** in Settings or `PORTAL_PUBLIC_URL` to the public address of the portal, or attach a CDN URL. Local `127.0.0.1` URLs cannot be fetched by Meta.
-- **Video**: Facebook, Instagram (Reels), Threads, Mastodon, Telegram and Discord. LinkedIn, X and Bluesky video uploads are not implemented yet; the portal blocks those combinations instead of silently posting text.
+- **Video**: Facebook, Instagram (Reels), Threads, Mastodon, Telegram, Discord and Bluesky. X and LinkedIn receive the video poster with a status note until their video uploads are enabled; the portal does not silently post text.
 - **Alt text** is stored with every post and passed to channels that support it.
 
 The real screenshots use `https://fatortak.rabbeh.com/assets/screenshots/...` as their public URL. Until the landing page is uploaded, Instagram/Threads/Dev.to cannot fetch them; native-upload channels can use the local copy.

@@ -1292,6 +1292,9 @@ function validatePostInput(body, existing = null) {
     mediaAlt,
     mediaName,
     mediaSource,
+    posterUrl: String(body.posterUrl ?? existing?.posterUrl ?? "").slice(0, 500),
+    posterPublicUrl: String(body.posterPublicUrl ?? existing?.posterPublicUrl ?? "").slice(0, 500),
+    posterName: String(body.posterName ?? existing?.posterName ?? "").slice(0, 200),
     notes: String(body.notes || existing?.notes || ""),
     utm: body.utm || existing?.utm || null,
   };
@@ -1321,6 +1324,8 @@ async function resolvePostMedia(post) {
   };
 }
 
+const VIDEO_POSTER_CHANNELS = new Set(["x", "linkedin"]);
+
 async function publishPost(post, { dryRun = true, automatic = false, channels: requestedChannels = null } = {}) {
   CONFIG = loadConfig();
   const validChannels = post.channels.filter((channel) => CHANNEL_DEFS.some((def) => def.key === channel));
@@ -1331,6 +1336,16 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
   if (!channels.length) throw new Error("No valid channels selected");
   const subset = Boolean(requested);
   const media = await resolvePostMedia(post);
+  const poster = media?.kind === "video" && post.posterUrl
+    ? await resolvePostMedia({
+        ...post,
+        mediaUrl: post.posterUrl,
+        mediaPublicUrl: post.posterPublicUrl || post.posterUrl,
+        mediaKind: "image",
+        mediaName: post.posterName || path.basename(post.posterUrl),
+        mediaAlt: post.mediaAlt,
+      })
+    : null;
   if (DATA.settings.mediaRequired && !media) {
     post.status = "blocked";
     post.results = [{ ok: false, blocked: true, reason: "Text-only posts are disabled. Attach an image or video before publishing." }];
@@ -1400,15 +1415,21 @@ async function publishPost(post, { dryRun = true, automatic = false, channels: r
         continue;
       }
     }
+    const channelMedia = media?.kind === "video" && poster && VIDEO_POSTER_CHANNELS.has(channel)
+      ? poster
+      : media;
     if (dryRun) {
-      results.push({ channel, ok: true, dryRun: true, media: media?.kind || null });
+      results.push({ channel, ok: true, dryRun: true, media: channelMedia?.kind || null });
       continue;
     }
     let result;
     try {
-      result = await publishToChannel(channel, rendered, { config: CONFIG, media });
+      result = await publishToChannel(channel, rendered, { config: CONFIG, media: channelMedia });
     } catch (error) {
       result = { ok: false, error: error.message };
+    }
+    if (result.ok && channelMedia !== media) {
+      result.mediaNote = "Video cover published; video upload is not enabled for this channel yet.";
     }
     results.push({ channel, ...result });
   }

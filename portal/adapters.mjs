@@ -421,20 +421,27 @@ async function postBluesky(text, media) {
 
   let embed;
   if (media) {
-    if (isVideo(media)) return missing("Bluesky does not support video upload; attach an image.");
+    const video = isVideo(media);
     const upload = await fetch(`${service}/xrpc/com.atproto.repo.uploadBlob`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessJwt}`,
-        "Content-Type": media.contentType || "image/png",
+        "Content-Type": media.contentType || (video ? "video/mp4" : "image/png"),
       },
       body: await mediaBuffer(media),
     });
     const blob = await expectOk(upload);
-    embed = {
-      $type: "app.bsky.embed.images",
-      images: [{ alt: String(media.alt || "").slice(0, 1000), image: blob.blob }],
-    };
+    embed = video
+      ? {
+          $type: "app.bsky.embed.video",
+          video: blob.blob,
+          aspectRatio: { width: 1080, height: 1920 },
+          alt: String(media.alt || "").slice(0, 1000),
+        }
+      : {
+          $type: "app.bsky.embed.images",
+          images: [{ alt: String(media.alt || "").slice(0, 1000), image: blob.blob }],
+        };
   }
 
   const record = {

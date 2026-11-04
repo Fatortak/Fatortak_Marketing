@@ -14,6 +14,7 @@ import { renderText } from "../../automation/src/render.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MARKETING_ROOT = path.resolve(HERE, "../..");
 const SCREENSHOTS = path.join(MARKETING_ROOT, "landing/assets/screenshots");
+const VIDEOS = path.join(MARKETING_ROOT, "landing/assets/videos");
 const CONFIG = JSON.parse(fs.readFileSync(path.join(MARKETING_ROOT, "config.example.json"), "utf8"));
 const INPUT = process.argv[2];
 const OUTPUT = process.argv[3] || path.join(MARKETING_ROOT, "portal/data/portal-daily-10.json");
@@ -36,6 +37,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-01-ui.png",
+    video: "video-v3-01-ui.mp4",
+    videoPoster: "video-v3-01-ui.png",
   },
   {
     key: "reports",
@@ -44,6 +47,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-02-reports.png",
+    video: "video-v3-02-reports.mp4",
+    videoPoster: "video-v3-02-reports.png",
   },
   {
     key: "import",
@@ -52,6 +57,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-03-import.png",
+    video: "video-v3-03-import.mp4",
+    videoPoster: "video-v3-03-import.png",
   },
   {
     key: "platform",
@@ -60,6 +67,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-04-platform.png",
+    video: "video-v3-04-platform.mp4",
+    videoPoster: "video-v3-04-platform.png",
   },
   {
     key: "onboarding",
@@ -68,6 +77,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-05-onboarding.png",
+    video: "video-v3-05-onboarding.mp4",
+    videoPoster: "video-v3-05-onboarding.png",
   },
   {
     key: "templates",
@@ -76,6 +87,8 @@ const NEW_THEMES_EN = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-06-templates.png",
+    video: "video-v3-06-templates.mp4",
+    videoPoster: "video-v3-06-templates.png",
   },
 ];
 
@@ -87,6 +100,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-07-ui-ar.png",
+    video: "video-v3-07-ui-ar.mp4",
+    videoPoster: "video-v3-07-ui-ar.png",
   },
   {
     key: "reports",
@@ -95,6 +110,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-08-reports-ar.png",
+    video: "video-v3-08-reports-ar.mp4",
+    videoPoster: "video-v3-08-reports-ar.png",
   },
   {
     key: "import",
@@ -103,6 +120,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-09-import-ar.png",
+    video: "video-v3-09-import-ar.mp4",
+    videoPoster: "video-v3-09-import-ar.png",
   },
   {
     key: "platform",
@@ -111,6 +130,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-10-platform-ar.png",
+    video: "video-v3-10-platform-ar.mp4",
+    videoPoster: "video-v3-10-platform-ar.png",
   },
   {
     key: "onboarding",
@@ -119,6 +140,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-11-onboarding-ar.png",
+    video: "video-v3-11-onboarding-ar.mp4",
+    videoPoster: "video-v3-11-onboarding-ar.png",
   },
   {
     key: "templates",
@@ -127,6 +150,8 @@ const NEW_THEMES_AR = [
     pillar: "product",
     link: "{{site}}",
     media: "social-v3-12-templates-ar.png",
+    video: "video-v3-12-templates-ar.mp4",
+    videoPoster: "video-v3-12-templates-ar.png",
   },
 ];
 
@@ -201,6 +226,11 @@ const PILLAR_FILES = {
 };
 
 const existing = new Set(fs.readdirSync(SCREENSHOTS).filter((file) => file.endsWith(".png")));
+const videoExisting = new Set(
+  fs.existsSync(VIDEOS)
+    ? fs.readdirSync(VIDEOS).filter((file) => /\.(mp4|png)$/i.test(file))
+    : []
+);
 function mediaFor(language, pillar, used, offset) {
   const preferred = (PILLAR_FILES[pillar] || []).filter((file) => existing.has(file));
   const languagePool = language === "ar"
@@ -324,6 +354,54 @@ for (let day = 0; day < 30; day += 1) {
       lastAttemptAt: null,
     });
   }
+
+  const videoThemeIndex = (day + 5) % 6;
+  const videoSlots = [
+    { language: "en", theme: NEW_THEMES_EN[videoThemeIndex], time: "10:15", suffix: "v1" },
+    { language: "ar", theme: NEW_THEMES_AR[videoThemeIndex], time: "16:15", suffix: "v2" },
+  ];
+  for (const slot of videoSlots) {
+    const { language, theme, time, suffix } = slot;
+    const id = `queue-${dayIso.replace(/-/g, "")}-${suffix}`;
+    const rawContent = makeContent(theme, language, variantIndex);
+    const fitted = fitForX(rawContent, id);
+    if (fitted.adjusted) adjustedForX += 1;
+    xLengths.push(fitted.length);
+    const title = uniqueTitle(firstLine(rawContent));
+    const videoFile = theme.video;
+    const posterFile = theme.videoPoster;
+    const videoBase = videoFile.replace(/\.mp4$/i, "");
+    const videoUrl = `https://fatortak.rabbeh.com/assets/videos/${videoFile}`;
+    const posterUrl = `https://fatortak.rabbeh.com/assets/videos/${posterFile}`;
+    posts.push({
+      id,
+      queueId: id,
+      source: "queue",
+      title,
+      content: fitted.content,
+      channels: CHANNELS,
+      language,
+      pillar: "product",
+      scheduledAt: `${dayIso}T${time}:00`,
+      status: "scheduled",
+      mediaUrl: videoUrl,
+      mediaPublicUrl: videoUrl,
+      mediaKind: "video",
+      mediaAlt: title,
+      mediaName: videoFile,
+      mediaSource: `library:${videoBase}`,
+      posterUrl,
+      posterPublicUrl: posterUrl,
+      posterName: posterFile,
+      utm: { campaign: "daily-10-video", content: id },
+      notes: "",
+      results: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      publishedAt: null,
+      lastAttemptAt: null,
+    });
+  }
 }
 
 const banned = /\bZATCA\b|\bETA\b|100%|\bguarantee|\bcertified\b|\bfake\b|testimonial|trusted by|#1|best in/i;
@@ -335,16 +413,29 @@ const pricingPosts = posts.filter((post) => /Starter 300/.test(post.content));
 if (!pricingPosts.some((post) => post.language === "en") || !pricingPosts.some((post) => post.language === "ar")) {
   throw new Error("Pricing posts are missing");
 }
-const missingMedia = posts.filter((post) => !post.mediaPublicUrl || !existing.has(post.mediaName));
+const missingMedia = posts.filter((post) => {
+  if (post.mediaKind === "video") {
+    return (
+      !post.mediaPublicUrl ||
+      !videoExisting.has(post.mediaName) ||
+      !post.posterName ||
+      !videoExisting.has(post.posterName)
+    );
+  }
+  return !post.mediaPublicUrl || !existing.has(post.mediaName);
+});
 if (missingMedia.length) throw new Error(`${missingMedia.length} posts have missing media`);
 const byDay = {};
 for (const post of posts) {
   const day = post.scheduledAt.slice(0, 10);
-  byDay[day] = byDay[day] || { total: 0, en: 0, ar: 0 };
+  byDay[day] = byDay[day] || { total: 0, en: 0, ar: 0, video: 0 };
   byDay[day].total += 1;
   byDay[day][post.language] += 1;
+  if (post.mediaKind === "video") byDay[day].video += 1;
 }
-const badDays = Object.entries(byDay).filter(([, value]) => value.total !== 10 || value.en !== 5 || value.ar !== 5);
+const badDays = Object.entries(byDay).filter(
+  ([, value]) => value.total !== 12 || value.en !== 6 || value.ar !== 6 || value.video !== 2
+);
 if (badDays.length) throw new Error(`Day balance failed: ${JSON.stringify(badDays.slice(0, 3))}`);
 
 data.posts = [...history, ...posts].sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)));
@@ -352,7 +443,7 @@ data.activity = Array.isArray(data.activity) ? data.activity : [];
 data.activity.unshift({
   at: new Date().toISOString(),
   type: "queue",
-  message: `Rebuilt queue: ${posts.length} posts, 10/day, 5 Arabic + 5 English. All short-form channels.`,
+  message: `Rebuilt queue: ${posts.length} posts, 12/day, 6 Arabic + 6 English, including 2 videos/day. All short-form channels.`,
   postId: null,
 });
 data.activity = data.activity.slice(0, 200);
@@ -365,13 +456,17 @@ console.log(JSON.stringify({
   newPosts: posts.length,
   history: history.length,
   days: Object.keys(byDay).length,
-  first: posts[0]?.scheduledAt,
-  last: posts[posts.length - 1]?.scheduledAt,
+  first: posts.map((post) => post.scheduledAt).sort()[0],
+  last: posts.map((post) => post.scheduledAt).sort().at(-1),
   languages: { en: posts.filter((post) => post.language === "en").length, ar: posts.filter((post) => post.language === "ar").length },
   channels: CHANNELS,
   pricing: pricingPosts.length,
   xMaxLength: Math.max(...xLengths),
   xAdjusted: adjustedForX,
   mediaUnique: new Set(posts.map((post) => post.mediaName)).size,
+  videoPosts: posts.filter((post) => post.mediaKind === "video").length,
+  videosUnique: new Set(
+    posts.filter((post) => post.mediaKind === "video").map((post) => post.mediaName)
+  ).size,
   dayBalance: badDays.length === 0,
 }, null, 2));
